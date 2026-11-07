@@ -1,6 +1,6 @@
 // Ticket 10: each companion looks different in battle. Body draw helpers are stubbed to nothing, so any difference left is the ally's shots.
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
-const sim = require("./sim.js"), dlg = require("../dialogue.js"), menu = require("../menu.js");
+const sim = require("./sim.js"), snd = require("./sound.js"), dlg = require("../dialogue.js"), menu = require("../menu.js");
 const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPrimitive ? () => 0 : k === "length" ? 0 : stub(), set: () => true, apply: () => stub() });
 
 function shotLog(allyId) {
@@ -8,7 +8,7 @@ function shotLog(allyId) {
   const M = Object.create(Math); M.random = () => .5;
   const sp = { name: "x", color: "#fff", pitch: 200, spin: 1, shape: "shard", close: 0 };
   const ctx = vm.createContext({
-    ...sim, ...dlg, fixKeys: menu.fixKeys, keyLabel: menu.keyLabel, MENU: menu.createMenu(dlg.KEYS, { get: () => null, set: () => {} }), HITBOX: 4, console, Math: M, Set, Object, Array, String, JSON, Number, Date,
+    ...sim, ...snd, ...dlg, fixKeys: menu.fixKeys, keyLabel: menu.keyLabel, MENU: menu.createMenu(dlg.KEYS, { get: () => null, set: () => {} }), HITBOX: 4, console, Math: M, Set, Object, Array, String, JSON, Number, Date,
     SPEAKERS: { e: sp, lumi: sp, hexa: sp, glitch: sp, keeper: sp },
     $: id => id === "ar" ? { getContext: () => rec } : stub(), stage: stub(), act: stub(), bgm: stub(), sweep: () => {}, noise: () => {}, retrigger: () => {}, setPortrait: () => {}, kickPortrait: () => {}, setCast: () => {},
     performance: { now: () => 0 }, requestAnimationFrame: cb => (rafs.push(cb), rafs.length), cancelAnimationFrame: () => {},

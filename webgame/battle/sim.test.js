@@ -512,3 +512,15 @@ test("phaseRules: a key omitted in the phase entry falls back to the cfg-level r
   const ev = run(b, .1);
   assert.ok(!ev.some(v => v.type === "playerHurt"), "wrong-colour bullet is harmless under the cfg-level colorRule");
 });
+
+test("hud(): display-ready, clamped fractions; bond/invert/survive appear only when they apply", () => {
+  const { createBattle } = require("./sim.js");
+  const mk = extra => createBattle({ speaker: "e", hp: 100, cuts: [.5], playerHp: 20, moves: [{ x: "none" }], phases: [h => h.rain(.5)], names: ["a", "b"], talks: {}, ...extra }, { rng: () => .5, hitbox: 4 });
+  const b = mk(), h = b.hud();
+  assert.equal(h.enemy.survive, false); assert.equal(h.enemy.frac, 1); assert.equal(h.player.frac, 1); assert.equal(h.player.max, 20);
+  assert.equal(h.bond, null); assert.equal(h.invert, null); assert.equal(h.auto, true);
+  b.state.hp = -5; b.state.eHp = 150; b.state.pGhost = 99;                       // out-of-range raw values never reach the bars
+  const c = b.hud(); assert.equal(c.player.hp, 0); assert.equal(c.player.frac, 0); assert.equal(c.player.ghost, 1); assert.equal(c.enemy.frac, 1);
+  const f = mk({ invuln: true, survive: 10 }).hud(); assert.equal(f.enemy.survive, true); assert.equal(f.enemy.left, 10); assert.equal(f.enemy.frac, 0);
+  const a = mk({ ally: "lumi" }).hud(); assert.equal(a.bond.lv >= 0, true); assert.equal(a.bond.gauge, 0);
+});

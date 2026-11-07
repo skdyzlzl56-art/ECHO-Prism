@@ -1,6 +1,6 @@
 // Ticket 09: each enemy shape draws its own body in battle, not the glitch shard. Records canvas calls from the real frame loop.
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
-const sim = require("./sim.js"), dlg = require("../dialogue.js"), menu = require("../menu.js");
+const sim = require("./sim.js"), snd = require("./sound.js"), dlg = require("../dialogue.js"), menu = require("../menu.js");
 const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPrimitive ? () => 0 : k === "length" ? 0 : stub(), set: () => true, apply: () => stub() });
 
 // frames of a battle whose enemy has the given shape -> every canvas call/assignment made while drawing, as one string
@@ -8,7 +8,7 @@ function drawLog(shape) {
   const rafs = [], log = [], rec = new Proxy({}, { get: (_, k) => (...a) => (log.push(k + JSON.stringify(a)), stub()), set: (_, k, v) => (log.push(k + "=" + v), true) });
   const M = Object.create(Math); M.random = () => .5;
   const ctx = vm.createContext({
-    ...sim, ...dlg, fixKeys: menu.fixKeys, keyLabel: menu.keyLabel, MENU: menu.createMenu(dlg.KEYS, { get: () => null, set: () => {} }), HITBOX: 4, console, Math: M, Set, Object, Array, String, JSON, Number, Date,
+    ...sim, ...snd, ...dlg, fixKeys: menu.fixKeys, keyLabel: menu.keyLabel, MENU: menu.createMenu(dlg.KEYS, { get: () => null, set: () => {} }), HITBOX: 4, console, Math: M, Set, Object, Array, String, JSON, Number, Date,
     SPEAKERS: { e: { name: "e", color: "#fff", pitch: 200, spin: 1, shape, close: 0 } },
     $: id => id === "ar" ? { getContext: () => rec } : stub(), stage: stub(), act: stub(), bgm: stub(), sweep: () => {}, noise: () => {}, retrigger: () => {}, setPortrait: () => {}, kickPortrait: () => {}, setCast: () => {},
     performance: { now: () => 0 }, requestAnimationFrame: cb => (rafs.push(cb), rafs.length), cancelAnimationFrame: () => {},

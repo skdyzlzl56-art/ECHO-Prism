@@ -2,7 +2,7 @@
 // Catches view-level crashes the sim tests cannot see (e.g. reading s.talk after the last line cleared it). Looks are not checked.
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
 const rd = f => fs.readFileSync(path.join(__dirname, f), "utf8");
-const sim = require("./battle/sim.js"), dlg = require("./dialogue.js"), menu = require("./menu.js");
+const sim = require("./battle/sim.js"), snd = require("./battle/sound.js"), dlg = require("./dialogue.js"), menu = require("./menu.js");
 
 // anything-goes stub: reads return another stub (callable), writes are accepted
 const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPrimitive ? () => 0 : k === "length" ? 0 : stub(), set: () => true, apply: () => stub() });
@@ -10,7 +10,7 @@ const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPri
 function load() {
   const rafs = [], handlers = {}, hushLog = [], timers = [], MENU = menu.createMenu(dlg.KEYS, { get: () => null, set: () => {} });
   const ctx = vm.createContext({
-    ...sim, ...dlg, fixKeys: menu.fixKeys, keyLabel: menu.keyLabel, MENU, HITBOX: 4, console, Math, Set, Object, Array, String, JSON, Number, Date,
+    ...sim, ...snd, ...dlg, fixKeys: menu.fixKeys, keyLabel: menu.keyLabel, MENU, HITBOX: 4, console, Math, Set, Object, Array, String, JSON, Number, Date,
     SPEAKERS: new Proxy({}, { get: (t, k) => t[k] || (t[k] = { name: String(k), color: "#fff", pitch: 200, spin: 1, shape: "bloom", close: 0 }) }),
     $: () => stub(), stage: stub(), act: stub(), bgm: stub(), sweep: () => {}, noise: () => {}, retrigger: () => {}, setPortrait: () => {}, kickPortrait: () => {}, setCast: () => {},
     performance: { now: () => 0 }, requestAnimationFrame: cb => (rafs.push(cb), rafs.length), cancelAnimationFrame: () => {},

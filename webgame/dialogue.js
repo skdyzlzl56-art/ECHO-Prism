@@ -17,6 +17,22 @@
     return t;
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { KEYS, talkRate, createTyper };
-  else { root.KEYS = KEYS; root.talkRate = talkRate; root.createTyper = createTyper; }
+  // Canvas talk box: `text` wrapped to maxW px (measure(str) -> px width, so any font fits), with only the first `pos` characters revealed.
+  // Rows keep their place while typing (not-yet-typed rows come back as ""), so the box never jumps. Breaks at the last space when there is one, else anywhere.
+  function talkRows(measure, text, maxW, pos) {
+    const rows = []; let row = "", lastSp = -1;
+    for (const ch of text) {
+      if (measure(row + ch) > maxW && row) {
+        if (lastSp > 0) { rows.push(row.slice(0, lastSp + 1)); row = row.slice(lastSp + 1) + ch; } else { rows.push(row); row = ch; }
+        lastSp = -1;
+      } else row += ch;
+      if (ch === " ") lastSp = row.length - 1;
+    }
+    rows.push(row);
+    let shown = pos | 0;
+    return rows.map(r => { const out = r.slice(0, Math.max(0, shown)); shown -= r.length; return out; });
+  }
+
+  if (typeof module !== "undefined" && module.exports) module.exports = { KEYS, talkRate, createTyper, talkRows };
+  else { root.KEYS = KEYS; root.talkRate = talkRate; root.createTyper = createTyper; root.talkRows = talkRows; }
 })(typeof window !== "undefined" ? window : globalThis);

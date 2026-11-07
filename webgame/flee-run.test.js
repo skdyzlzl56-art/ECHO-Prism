@@ -1,6 +1,6 @@
 // Real s2_flee (30s escape) played to the end on the stubbed frame loop: it must win and call done. Run: npm test
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
-const sim = require("./battle/sim.js"), dlg = require("./dialogue.js"), menu = require("./menu.js");
+const sim = require("./battle/sim.js"), snd = require("./battle/sound.js"), dlg = require("./dialogue.js"), menu = require("./menu.js");
 const rd = f => fs.readFileSync(path.join(__dirname, f), "utf8");
 const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPrimitive ? () => 0 : k === "length" ? 0 : stub(), set: () => true, apply: () => stub() });
 
@@ -8,7 +8,7 @@ test("s2_flee: after 30 seconds the battle ends in a win and hands control back"
   const D = vm.runInNewContext("const BATTLES = {}, ACTS = {}, FX = {}, sweep = () => {}, noise = () => {}, runBattle = () => {};\n" + ["script.js", "stage1/battles.js", "stage2/battles.js"].map(rd).join("\n") + "\n({ BATTLES });");
   const rafs = [], timers = [], MENU = menu.createMenu(dlg.KEYS, { get: () => null, set: () => {} });
   const ctx = vm.createContext({
-    ...sim, ...dlg, fixKeys: menu.fixKeys, keyLabel: menu.keyLabel, MENU, HITBOX: 4, console, Math, Set, Object, Array, String, JSON, Number, Date,
+    ...sim, ...snd, ...dlg, fixKeys: menu.fixKeys, keyLabel: menu.keyLabel, MENU, HITBOX: 4, console, Math, Set, Object, Array, String, JSON, Number, Date,
     SPEAKERS: new Proxy({}, { get: (t, k) => t[k] || (t[k] = { name: String(k), color: "#fff", pitch: 200, spin: 1, shape: "bloom", close: 0 }) }),
     $: () => stub(), stage: stub(), act: stub(), bgm: stub(), sweep: () => {}, noise: () => {}, retrigger: () => {}, setPortrait: () => {}, kickPortrait: () => {}, setCast: () => {},
     performance: { now: () => 0 }, requestAnimationFrame: cb => (rafs.push(cb), rafs.length), cancelAnimationFrame: () => {},

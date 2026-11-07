@@ -84,21 +84,9 @@ function runBattle(cfg, done) {
   const ALLY_SHOT = { hexa: 6, glitch: 3, keeper: 4 };                              // ally bullet = n-gon (lumi: dot), so companions read apart by their shots too
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   if (cfg.silent) hush(true);
-  const asShot = f => cfg.silent ? (...a) => { sfxBus("shot"); try { return f(...a); } finally { sfxBus("sfx"); } } : f;   // enemy attack sounds ride their own bus (final fight: they return first)
-  let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
-  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0, lead: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
+  const snd = createBattleSound({ sweep, noise, bus: cfg.silent ? sfxBus : null, hurtTier: dmg => hitFeel(dmg, s.maxHp).tier, fade: cfg.fade, beat: cfg.beat });   // battle/sound.js: every sound of the fight
+  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0, lead: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, stopT = 0, vigT = 0;
 
-  const wrapPx = (g, text, maxW) => {                                                  // break at spaces when possible, else anywhere; rows keep every character so typer.pos still indexes the full line
-    const rows = []; let row = "", lastSp = -1;
-    for (const ch of text) {
-      if (g.measureText(row + ch).width > maxW && row) {
-        if (lastSp > 0) { rows.push(row.slice(0, lastSp + 1)); row = row.slice(lastSp + 1) + ch; } else { rows.push(row); row = ch; }
-        lastSp = -1;
-      } else row += ch;
-      if (ch === " ") lastSp = row.length - 1;
-    }
-    rows.push(row); return rows;
-  };
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
   const advTalk = () => {                                               // first press finishes the typing, the next goes to the next line
@@ -123,89 +111,57 @@ function runBattle(cfg, done) {
   };
   const end = () => { cleanup(); act.hidden = true; act.innerHTML = ""; stage.classList.remove("battle"); done(); };
 
-  // boss attack sounds. Shots of one frame are gathered into a volley (flushed after the step) so a ring / wall is ONE heavy thud,
-  // not 30 blips; heavy single orbs get a boom, lasers and body-slams get a rising charge before they fire.
-  let volley = { n: 0, pw: 0 };
-  const shotSfx = (size, sp) => { volley.n++; volley.pw = Math.max(volley.pw, (size - 6) / 8 + (sp - 150) / 400); };
-  const boom = (v = 1, low = 90) => { const q = quiet * v; sweep(low * 1.6, low * .4, .55, "sine", .6 * q); sweep(low * 2.4, low * .5, .35, "sawtooth", .3 * q); noise(.3, .45 * q); };
-  const charge = (dur, v = 1, f = 120) => { const q = quiet * v; sweep(f, f * 8, dur, "sawtooth", .16 * q); sweep(f / 2, f * 4, dur, "sine", .3 * q); sweep(f * 12, f * 28, dur, "square", .035 * q); };
-  const flushVolley = asShot(() => {
-    const { n, pw } = volley; volley = { n: 0, pw: 0 }; if (!n) return;
-    const t = performance.now();
-    if (n >= 6) { if (t - lastBig < 250) return; lastBig = t; boom(1, 80); sweep(70, 40, .5, "triangle", .35 * quiet); return; }    // wall / ring: one heavy thump
-    if (n >= 2) { if (t - lastBig < 150) return; lastBig = t; sweep(240, 70, .2, "sine", .45 * quiet); sweep(500, 120, .14, "sawtooth", .16 * quiet); noise(.1, .3 * quiet); return; }   // short volley
-    if (pw >= 1) { if (t - lastBig < 300) return; lastBig = t; charge(.18, .8, 300); setTimeout(asShot(() => boom(.8, 110)), 150); return; }                                              // heavy orb: wind-up, then boom
-    if (pw < .3) { if (t - lastShot < 90) return; lastShot = t; sweep(1100 + Math.random() * 300, 450, .1, "triangle", .18 * quiet); noise(.03, .1 * quiet); return; }
-    if (t - lastBig < 200) return; lastBig = t;
-    sweep(900 - 300 * pw, 300, .14 + .2 * pw, "sawtooth", (.2 + .15 * pw) * quiet); noise(.08 + .1 * pw, .3 * quiet);
-  });
-
-  // events from the simulation -> sound and visual effects
+  // events from the simulation -> sound (battle/sound.js) and visual effects (here)
   function onEvent(v) {
+    snd.event(v);
     switch (v.type) {
-      case "enemyShot": shotSfx(v.size, v.speed); break;
-      case "playerShot": sweep(1000, 700, .05, "triangle", .05); break;
-      case "allyShot": sweep(1400, 900, .06, "sine", .05); break;
       case "enemyHit": {
         hitFlash = .08; kickPortrait();
-        if (v.dmg) { const f = 450 + Math.min(v.combo, 16) * 40; sweep(f, f * 1.6, .08, "square", .13); noise(.04, .2); }
-        else { const n = performance.now(); if (n - lastTing > 80) { lastTing = n; sweep(2600, 2500, .3, "sine", .22); sweep(3900, 3800, .2, "sine", .1); } }   // 팅! it can't be hurt
         say(v.dmg ? "-" + fmtNum(v.dmg) : "0", v.x + (Math.random() - .5) * 30, v.y - 10, v.dmg ? (v.ally ? allyCol : "#fff") : "#8fa3b5");
         fx.push({ x: v.x, y: v.y, age: 0 });                                              // round burst
         for (let i = 0; i < 5; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 140; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); }
         break;
       }
-      case "graze": { const n = performance.now(); if (n - lastGraze > 70) { lastGraze = n; sweep(2200, 3000, .04, "sine", .06); } break; }
-      case "playerHurt": {   // damage-scaled: sound tier, shake, hit-stop, red vignette, number and sparks
+      case "playerHurt": {   // damage-scaled: shake, hit-stop, red vignette, number and sparks
         const h = hitFeel(v.dmg, s.maxHp);
-        if (h.tier === 0) { noise(.08, .4); sweep(400, 150, .12, "square", .22); }
-        else if (h.tier === 1) { noise(.14, .6); sweep(300, 80, .2, "square", .35); }
-        else { noise(.3, .8); sweep(220, 40, .4, "sawtooth", .45); boom(.8, 60); }
         const st = $("stage"); st.style.setProperty("--a", h.shakeAmp); st.style.setProperty("--ms", h.shakeMs + "ms"); retrigger(st, "shake", h.shakeMs); setTimeout(() => { st.style.removeProperty("--a"); st.style.removeProperty("--ms"); }, h.shakeMs + 50);
         stopT = h.stop; vigT = h.vignette;
         say("-" + fmtNum(v.dmg), s.p.x, s.p.y - 20, "#ff5a5a");
         for (let i = 0; i < 3 + 4 * h.tier; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 140; fx.push({ x: s.p.x, y: s.p.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); }
         break;
       }
-      case "shieldBlock": say("방패!", s.p.x, s.p.y - 20, allyCol); sweep(900, 1800, .25, "sine", .25); noise(.08, .3); break;
-      case "shieldReady": sweep(500, 1200, .3, "sine", .12); break;
-      case "heal": say("+" + v.amount, s.p.x, s.p.y - 20, allyCol); sweep(600, 1400, .25, "sine", .12); break;
+      case "shieldBlock": say("방패!", s.p.x, s.p.y - 20, allyCol); break;
+      case "heal": say("+" + v.amount, s.p.x, s.p.y - 20, allyCol); break;
       case "burst":
-        burstFx = 1; say(v.dmg ? "-" + fmtNum(v.dmg) : "0", s.e.x, s.e.y + 40, v.dmg ? allyCol : "#8fa3b5"); if (!v.dmg) sweep(2600, 2500, .5, "sine", .25); say("+3", s.p.x, s.p.y - 20, allyCol);
-        sweep(400, 2000, .8, "sine", .3); sweep(200, 1000, .8, "triangle", .2); noise(.3, .4); retrigger($("flash"), "on", 600);
+        burstFx = 1; say(v.dmg ? "-" + fmtNum(v.dmg) : "0", s.e.x, s.e.y + 40, v.dmg ? allyCol : "#8fa3b5"); say("+3", s.p.x, s.p.y - 20, allyCol);
+        retrigger($("flash"), "on", 600);
         banner = { txt: v.up ? `유대 Lv.${v.level}! 지원이 강해졌다` : "유대의 빛!", age: 0, bond: true };
         break;
       case "jointLight":   // 합동 유대의 빛: every ally at once, a bigger flash and a rising chord
         burstFx = 1.6; banner = { txt: "합동 유대의 빛!", age: 0, bond: true }; retrigger($("flash"), "on", 900);
-        v.allies.forEach((id, i) => setTimeout(() => sweep(300 * (1 + i * .25), 2400, 1.1, "sine", .22), i * 120)); noise(.5, .5); break;
-      case "rewind": retrigger($("flash"), "on", 250); sweep(1400, 300, .35, "sawtooth", .16); break;   // 되감기: the bullets jump back
+        break;
+      case "rewind": retrigger($("flash"), "on", 250); break;   // 되감기: the bullets jump back
       case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
-      case "signature": if (v.call) { const a = s.al || s.p; say(v.call, a.x, a.y - 40, allyCol); } banner = { txt: { mend: "치유", blast: "일격", reflect: "반사", clear: "탄막 소거" }[v.kind], age: 0, bond: true }; retrigger($("flash"), "on", 300); sweep(500, 1800, .4, "sine", .2); break;
-      case "dash": sweep(900, 300, .12, "sawtooth", .12); noise(.08, .15); break;
-      case "swap":allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
+      case "signature": if (v.call) { const a = s.al || s.p; say(v.call, a.x, a.y - 40, allyCol); } banner = { txt: { mend: "치유", blast: "일격", reflect: "반사", clear: "탄막 소거" }[v.kind], age: 0, bond: true }; retrigger($("flash"), "on", 300); break;
+      case "swap":allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; break;
       case "phase":
         if (cfg.silent) { hushLayer(v.level); if (v.level >= 3) ripple(); }   // each phase gives one more thing back: attacks, music, sky, the rest
-        if (cfg.fade) { quiet = Math.max(.15, 1 - cfg.fade * v.level); bgm.vol(quiet); }   // each phase swallows more of the sound
-        if (v.name) { banner = { txt: v.name, age: 0, level: v.level }; sweep(300, 900, .35, "sawtooth", .18); }
-        if (!v.start) { noise(.3, .5); sweep(100, 600, .5, "sawtooth", .25); retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); }
+        if (cfg.fade) bgm.vol(snd.quiet);   // each phase swallows more of the sound
+        if (v.name) banner = { txt: v.name, age: 0, level: v.level };
+        if (!v.start) { retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); }
         if (v.talk) typer.reset();
         break;
-      case "laserWarn": asShot(charge)(v.warn || 1, 1, 110); break;
-      case "laserFire": asShot(() => { boom(1.2, 70); sweep(1500, 60, .9, "sawtooth", .3 * quiet); })(); break;
-      case "blast": boom(.9, 70); retrigger(stage, "shake", 250); say("폭발!", v.x, v.y, "#ff5a5a"); for (let i = 0; i < 10; i++) { const a = Math.random() * TAU, sp = 100 + Math.random() * 180; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
-      case "break": noise(.12, .4 * quiet); sweep(500, 90, .22, "square", .2 * quiet); for (let i = 0; i < 8; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 160; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
-      case "split": noise(.18, .45 * quiet); sweep(900, 100, .3, "sawtooth", .3 * quiet); sweep(2400, 600, .12, "square", .1 * quiet); break;
-      case "dashWarn": charge(.9, 1, 90); break;
-      case "dashStart": sweep(900, 60, .6, "sawtooth", .35); noise(.35, .4); break;
-      case "dashEnd": boom(1.3, 60); retrigger(stage, "shake", 300); break;
+      case "blast": retrigger(stage, "shake", 250); say("폭발!", v.x, v.y, "#ff5a5a"); for (let i = 0; i < 10; i++) { const a = Math.random() * TAU, sp = 100 + Math.random() * 180; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
+      case "break": for (let i = 0; i < 8; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 160; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
+      case "dashEnd": retrigger(stage, "shake", 300); break;
       case "lose":
-        bgm.stop(); noise(.5, .5); sweep(400, 40, 1, "sawtooth", .3);
+        bgm.stop();
         setTimeout(() => { act.onclick = () => { cleanup(); runBattle(cfg, done); }; }, 600);
         break;
       case "win":
         BOND.lv = s.lv; BOND.xp = s.xp;
         if (cfg.ally) BOND.base = Math.max(BOND.base, s.bondLv);                         // the bond carries over to the next battle / stage
-        bgm.stop(); noise(.6, .7); sweep(80, 1600, .9, "sawtooth", .3); sweep(200, 40, .6, "sine", .6);
+        bgm.stop();
         retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); setTimeout(end, 1600);
         break;
     }
@@ -216,7 +172,7 @@ function runBattle(cfg, done) {
     if (k > 0 && k < 1) { g.globalAlpha = .9; g.beginPath(); g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + k * TAU); g.stroke(); } g.restore(); };
 
   function draw() {
-    const { p, e, t } = s;
+    const { p, e, t } = s, hud = battle.hud();
     g.clearRect(0, 0, 960, 540);
     g.save(); g.globalCompositeOperation = "lighter";
     g.lineWidth = 2; g.strokeStyle = col;                                               // enemy aura: slow rings, faster in later phases
@@ -310,36 +266,36 @@ function runBattle(cfg, done) {
       g.fillStyle = "#f33"; g.globalAlpha = s.split.active ? .45 : .15 + .15 * Math.abs(Math.sin(t * 10)); g.fillRect(ux, BOX.y, hw, BOX.h);
       g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 3; g.setLineDash([8, 6]); g.beginPath(); g.moveTo(BOX.x + hw, BOX.y); g.lineTo(BOX.x + hw, BOX.y + BOX.h); g.stroke(); g.restore();
     }
-    if (s.invertWarn || s.inverted) {                                                     // 조작 반전: a side panel left of the box with a draining bar (bigger than the old label, which sat on the enemy HP bar), plus a pulsing frame
-      const on = s.inverted, c = on ? "#f6f" : "#ff0", pu = .6 + .4 * Math.abs(Math.sin(t * (on ? 8 : 14))), px = 40, py = BOX.y + 40, pw = BOX.x - 70, fr = Math.max(0, Math.min(1, s.invertLeft / (s.invertMax || 1)));
+    if (hud.invert) {                                                     // 조작 반전: a side panel left of the box with a draining bar (bigger than the old label, which sat on the enemy HP bar), plus a pulsing frame
+      const on = hud.invert.on, c = on ? "#f6f" : "#ff0", pu = .6 + .4 * Math.abs(Math.sin(t * (on ? 8 : 14))), px = 40, py = BOX.y + 40, pw = BOX.x - 70, fr = hud.invert.frac;
       g.save(); g.fillStyle = "rgba(10,5,30,.88)"; g.fillRect(px, py, pw, 130); g.strokeStyle = c; g.lineWidth = 4; g.globalAlpha = pu; g.strokeRect(px, py, pw, 130); g.globalAlpha = 1;
       g.textAlign = "center"; g.fillStyle = c; g.font = "bold 30px Galmuri11,'Malgun Gothic'"; g.fillText(on ? "조작 반전!" : "조작 반전 경고", px + pw / 2, py + 40);
       g.font = "bold 40px Galmuri11,'Malgun Gothic'"; g.fillText(on ? "← → ⇄" : "⇄", px + pw / 2, py + 84);   // arrows mirrored
       g.fillStyle = "#333"; g.fillRect(px + 14, py + 100, pw - 28, 16); g.fillStyle = c; g.fillRect(px + 14, py + 100, (pw - 28) * fr, 16);   // time left: until it starts (warning) / until it ends
-      g.font = "14px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText(`${on ? "끝날 때까지" : "시작까지"} ${Math.max(0, s.invertLeft).toFixed(1)}초`, px + pw / 2, py + 125);
+      g.font = "14px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText(`${on ? "끝날 때까지" : "시작까지"} ${hud.invert.left.toFixed(1)}초`, px + pw / 2, py + 125);
       g.strokeStyle = c; g.lineWidth = 6; g.globalAlpha = pu * .8; g.strokeRect(BOX.x - 3, BOX.y - 3, BOX.w + 6, BOX.h + 6); g.restore();
     }
     g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(BOX.x, BOX.y, BOX.w, BOX.h);
 
     g.fillStyle = "#333"; g.fillRect(BOX.x, 168, BOX.w, 10);
-    if (cfg.survive) {                                                                  // escape battle: the enemy can't be hurt, so show the clock instead of its HP
-      g.fillStyle = "#7dd3ff"; g.fillRect(BOX.x, 168, BOX.w * (1 - s.surviveLeft / cfg.survive), 10);
-      g.font = "bold 16px Galmuri11,'Malgun Gothic'"; g.textAlign = "right"; g.fillStyle = "#7dd3ff"; g.fillText(`탈출까지 ${Math.ceil(s.surviveLeft)}초`, BOX.x + BOX.w, 164); g.textAlign = "left";
-    } else { g.fillStyle = "#fff"; g.fillRect(BOX.x, 168, BOX.w * Math.max(s.eGhost, 0) / s.eMax, 10); g.fillStyle = s.level > 1 ? "#ff3b5c" : "#ffd84f"; g.fillRect(BOX.x, 168, BOX.w * Math.max(s.eHp, 0) / s.eMax, 10); }   // enemy HP bar
+    if (hud.enemy.survive) {                                                            // escape battle: the enemy can't be hurt, so show the clock instead of its HP
+      g.fillStyle = "#7dd3ff"; g.fillRect(BOX.x, 168, BOX.w * hud.enemy.frac, 10);
+      g.font = "bold 16px Galmuri11,'Malgun Gothic'"; g.textAlign = "right"; g.fillStyle = "#7dd3ff"; g.fillText(`탈출까지 ${Math.ceil(hud.enemy.left)}초`, BOX.x + BOX.w, 164); g.textAlign = "left";
+    } else { g.fillStyle = "#fff"; g.fillRect(BOX.x, 168, BOX.w * hud.enemy.ghost, 10); g.fillStyle = hud.enemy.enraged ? "#ff3b5c" : "#ffd84f"; g.fillRect(BOX.x, 168, BOX.w * hud.enemy.frac, 10); }   // enemy HP bar
     g.font = "bold 16px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.textBaseline = "bottom"; g.fillStyle = SPEAKERS[cfg.speaker].color; g.fillText(SPEAKERS[cfg.speaker].name, BOX.x, 164);
     g.font = "bold 26px Galmuri11,'Malgun Gothic'"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
     for (const f of floats) { g.globalAlpha = 1 - f.age / .6; g.fillStyle = f.col || "#fff"; const hw = (+g.measureText(f.txt).width || 0) / 2 + 8; g.fillText(f.txt, Math.max(hw, Math.min(960 - hw, f.x)), f.y - f.age * 60); }   // long lines stay inside the canvas
     g.globalAlpha = 1;
-    if (s.combo > 2) { g.font = "bold 22px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${fmtNum(s.combo)} HIT`, BOX.x + BOX.w + 20, 215); }
+    if (hud.combo > 2) { g.font = "bold 22px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${fmtNum(hud.combo)} HIT`, BOX.x + BOX.w + 20, 215); }
 
-    g.font = "20px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${fmtNum(Math.max(s.hp, 0))} / ${fmtNum(s.maxHp)}`, BOX.x, 485);
-    g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#fff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(s.pGhost, 0) / s.maxHp, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(s.hp, 0) / s.maxHp, 20);
-    g.font = "bold 18px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#ffd36b"; g.fillText(`Lv.${s.lv}`, 20, 485);   // level + exp bar, bottom-left, clear of HP and the controls hint
-    g.fillStyle = "#333"; g.fillRect(80, 475, 200, 12); g.fillStyle = "#ffd36b"; g.fillRect(80, 475, 200 * s.xp / 100, 12);
-    g.font = "bold 20px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = s.auto ? "#7dffb0" : "#889"; g.fillText(s.auto ? "사격 ON" : "사격 OFF", BOX.x + BOX.w + 20, 250);
-    if (s.hasAlly) {                                                                    // bond gauge: fills by grazing bullets
-      g.font = "bold 15px Galmuri11,'Malgun Gothic'"; g.fillStyle = allyCol; g.fillText(`유대 Lv.${s.bondLv}${s.shieldOn ? " · 방패" : ""}`, BOX.x + BOX.w + 20, 276);
-      g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * s.gauge / 100, 8);
+    g.font = "20px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${fmtNum(hud.player.hp)} / ${fmtNum(hud.player.max)}`, BOX.x, 485);
+    g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#fff"; g.fillRect(BOX.x + 130, 475, 170 * hud.player.ghost, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * hud.player.frac, 20);
+    g.font = "bold 18px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#ffd36b"; g.fillText(`Lv.${hud.lv}`, 20, 485);   // level + exp bar, bottom-left, clear of HP and the controls hint
+    g.fillStyle = "#333"; g.fillRect(80, 475, 200, 12); g.fillStyle = "#ffd36b"; g.fillRect(80, 475, 200 * hud.xp, 12);
+    g.font = "bold 20px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = hud.auto ? "#7dffb0" : "#889"; g.fillText(hud.auto ? "사격 ON" : "사격 OFF", BOX.x + BOX.w + 20, 250);
+    if (hud.bond) {                                                                     // bond gauge: fills by grazing bullets
+      g.font = "bold 15px Galmuri11,'Malgun Gothic'"; g.fillStyle = allyCol; g.fillText(`유대 Lv.${hud.bond.lv}${hud.bond.shield ? " · 방패" : ""}`, BOX.x + BOX.w + 20, 276);
+      g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * hud.bond.gauge, 8);
       g.font = "12px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
     }
     {                                                                                   // cooldown rings: dash around the player, heal / shield / special around the companion out now; bright + thick when ready
@@ -362,8 +318,8 @@ function runBattle(cfg, done) {
       g.fillStyle = "#0b1026"; g.fillRect(60, 400, 840, 120); g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(60, 400, 840, 120);
       g.textAlign = "left"; g.textBaseline = "top"; g.font = "bold 24px Galmuri11,'Malgun Gothic'"; g.fillStyle = sp.color; g.fillText(sp.name, 84, 414);
       g.font = "24px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff";                    // the whole line is wrapped to the box (measured, so any font fits); the typewriter reveals it in place
-      let shown = typer.pos | 0, ly = 446;
-      for (const row of wrapPx(g, L.t, 740)) { g.fillText(row.slice(0, Math.max(0, shown)), 84, ly); shown -= row.length; ly += 34; }
+      let ly = 446;
+      for (const row of talkRows(w => g.measureText(w).width, L.t, 740, typer.pos)) { g.fillText(row, 84, ly); ly += 34; }
       if (typer.pos >= L.t.length) { g.textAlign = "right"; g.fillText("▼", 880, 480); }
       g.textBaseline = "middle";
     }
@@ -393,8 +349,8 @@ function runBattle(cfg, done) {
         if (wake.length > 6) wake.shift();
       }
       prevP = { x: s.p.x, y: s.p.y };
-      flushVolley();
-      if (cfg.beat && !s.over && s.t > 0 && (beatT -= dt) <= 0) { beatT = .7; sweep(85, 45, .22, "sine", .45); setTimeout(() => sweep(70, 40, .2, "sine", .3), 170); }   // all that is left of the sound: a heartbeat
+      snd.flush();
+      snd.heartbeat(dt, !s.over && s.t > 0);
       vigT = Math.max(0, vigT - dt * 1.5);
       const low = isLowHp(s.hp, s.maxHp); $("vig").style.opacity = Math.max(vigT, low ? .25 + .2 * Math.sin(s.t * 6) : 0);   // red edge: hit flash, plus a heartbeat pulse at low hp
       hitFlash -= dt; burstFx = Math.max(0, burstFx - dt * 1.5);

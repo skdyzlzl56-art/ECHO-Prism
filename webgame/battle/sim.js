@@ -4,6 +4,7 @@
 // const battle = createBattle(cfg, { rng, bondBase, hitbox });
 //   battle.state            plain object for drawing (read-only for the view)
 //   battle.step(dt, {dx, dy})  advance the world; returns the events of this step (plain data)
+//   battle.hud()            display-ready bars and labels for the HUD (fractions 0..1); the view reads positions / bullets from state, numbers from here
 //   battle.toggleFire()     shooting ON/OFF -> returns the new value
 //   battle.advance()        next dialogue line (state.talk becomes null after the last one)
 //
@@ -343,6 +344,17 @@
         const f = (left, total) => total > 0 ? Math.max(0, Math.min(1, 1 - left / total)) : 1, c = s.cool[s.allyId] || { heal: 0, shield: 0, sig: 0 }, lv = blv();
         const k = kit();                                                     // null = this companion has no such ability (yet): the view draws no ring
         return { dash: f(s.dashCd, DASH_CD), heal: k.heal ? f(c.heal, HEAL_IV[lv]) : null, shield: s.shieldOn ? 1 : k.shield && lv >= SHIELD_LV ? f(c.shield, SHIELD_CD[lv]) : null, sig: SIG[s.allyId] ? f(c.sig, SIG_CD[lv]) : null };
+      },
+      hud() {                                                                // display: every bar / label the HUD draws, as clamped fractions (the view never interprets s.hp / s.eHp / s.gauge itself)
+        const cl = x => Math.max(0, Math.min(1, x)), hp = Math.max(s.hp, 0);
+        return {
+          enemy: cfg.survive ? { survive: true, left: s.surviveLeft, frac: cl(1 - s.surviveLeft / cfg.survive) }
+            : { survive: false, frac: cl(s.eHp / s.eMax), ghost: cl(s.eGhost / s.eMax), enraged: s.level > 1 },   // ghost = the pale trail of recent damage
+          player: { hp, max: s.maxHp, frac: cl(hp / s.maxHp), ghost: cl(s.pGhost / s.maxHp) },
+          lv: s.lv, xp: cl(s.xp / 100), auto: s.auto, combo: s.combo,
+          bond: s.hasAlly ? { lv: s.bondLv, gauge: cl(s.gauge / 100), shield: s.shieldOn } : null,
+          invert: s.invertWarn || s.inverted ? { on: s.inverted, left: Math.max(0, s.invertLeft), frac: cl(s.invertLeft / (s.invertMax || 1)) } : null,   // 조작 반전: warning (counting down to it) or on (counting down to its end)
+        };
       },
       toggleFire() { s.auto = !s.auto; return s.auto; },
       swap() {                                                               // 교대: hand the support role to the next companion; bond level and gauge are shared
