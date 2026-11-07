@@ -24,7 +24,7 @@
     const BOX = { ...BOX0 };   // the box is battle state: move s.BOX and everything follows
     const cx = BOX.x + BOX.w / 2, allies = cfg.allies, SHIELD_LV = allies ? 1 : 2;   // a shield-bearer swapped in guards from bond Lv.1
     const s = {
-      BOX, t: 0, hp: MAX_HP, maxHp: MAX_HP, eHp: E_MAX, eMax: E_MAX, level: 0, lv: opts.lv || 1, xp: opts.xp || 0, phaseName: "", over: null, auto: true, inv: 0, combo: 0,
+      BOX, t: 0, hp: MAX_HP, maxHp: MAX_HP, eHp: E_MAX, eMax: E_MAX, eGhost: E_MAX, pGhost: MAX_HP, level: 0, lv: opts.lv || 1, xp: opts.xp || 0, phaseName: "", over: null, auto: true, inv: 0, combo: 0,
       p: { x: cx, y: BOX.y + BOX.h * .75 }, e: { x: EX, y: 85, mode: "idle", tt: 0, dashT: 0, lx: EX },     // enemy mode: idle | warn | dive | back
       al: cfg.ally ? { x: BOX.x - 38, y: BOX.y + BOX.h * .75 } : null,
       bullets: [], lasers: [], zones: [], shots: [], gauge: cfg.gauge0 || 0, bondLv: 0, shieldOn: false, talk: null, hasAlly: !!cfg.ally,
@@ -107,6 +107,13 @@
       if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && shieldT <= 0) s.shieldOn = true;
     }
 
+    const gT = {}, gP = {};   // ghost hp bar: the white chunk waits .6s after the latest hit, then drains at 40% of max per second
+    function trail(k, v, max, dt) {
+      if (v < (gP[k] ?? s[k])) gT[k] = .6;
+      gP[k] = v;
+      if (v >= s[k]) s[k] = v;
+      else if ((gT[k] -= dt) <= 0) s[k] = Math.max(v, s[k] - max * .4 * dt);
+    }
     function update(dt, input) {
       // 조작 반전 규칙 / 판 분할 규칙: cycles of `period` s; the last `warn` s of each cycle is the warning, the first `dur` s the effect
       const ir = rl("invertRule"), sr = rl("splitRule"), cyc = r => { const c = s.t % r.period; return c >= r.period - r.warn ? "warn" : c < r.dur && s.t >= r.period ? "on" : null; };
@@ -260,6 +267,7 @@
         if (i >= 0) { const d = s.bullets[i].dmg; spent.add(s.bullets[i].id); s.bullets.splice(i, 1); hurt(d); }
       }
       if (cfg.survive) s.surviveLeft = Math.max(0, cfg.survive - Math.max(0, s.t - 1));   // escape battle: outlast the clock after the 1s grace
+      trail("eGhost", s.eHp, E_MAX, dt); trail("pGhost", s.hp, MAX_HP, dt);
       if (s.hp <= 0) { s.over = "lose"; emit("lose"); }
       else if (s.eHp <= 0 || (cfg.survive && s.surviveLeft <= 0)) { s.over = "win"; s.bullets = []; s.lasers = []; s.zones = []; emit("win"); }
       s.bondLv = blv(); s.phaseName = (cfg.names && cfg.names[s.level]) || "";
@@ -292,6 +300,9 @@
     return look;
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook };
-  else { root.createBattle = createBattle; root.moveLook = moveLook; }
+  // every number drawn on screen goes through this: 3 significant figures (>= 100 stays whole), no 3.5999999
+  const fmtNum = x => Math.abs(x) < 1e-3 ? "0" : Math.abs(x) >= 100 ? String(Math.round(x)) : String(+x.toPrecision(3));
+
+  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook, fmtNum };
+  else { root.createBattle = createBattle; root.moveLook = moveLook; root.fmtNum = fmtNum; }
 })(typeof window !== "undefined" ? window : globalThis);
