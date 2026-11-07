@@ -11,11 +11,11 @@
 //                                       between warned body-slams down into the box (0 = never)
 //   talks: { 3: [{ who, t }, ...] },    dialogue shown when phase N starts
 //   ally: "lumi",                       optional companion; strength grows with the bond (유대), see BOND
-//   allies: ["lumi", "hexa"],           optional: X swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
+//   allies: ["lumi", "hexa"],           optional: A swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
 //   invuln, survive: 30,                escape battle: hits deal 0 (팅) and surviving 30s wins; bgm: null = silence, beat = heartbeat
 //   fade: .2,                           each phase turns the bgm / enemy-shot volume down by this much
 //   playerHp, winText, ew, gauge0 }
-// Controls: arrows/WASD move, Z toggles shooting (ON at start), X swaps companion, Space/Enter/Z/click advance dialogue.
+// Controls: arrows (+W/S/D) move, Z toggles shooting (ON at start), A swaps companion, Space/Enter/Z/click advance dialogue.
 //
 // BOND (유대): BOND.base is the story-given level (scenes raise it). In battle, grazing bullets fills the bond gauge;
 // a full gauge unleashes "유대의 빛" and raises the level by one (max 4). See battle/sim.js for the exact numbers.
@@ -81,7 +81,7 @@ function runBattle(cfg, done) {
     if (ev.repeat) return;
     if (s.talk) { if (ev.code === "Space" || ev.code === "Enter" || ev.code === "KeyZ") advTalk(); }
     else if (ev.code === "KeyZ") toggle();
-    else if (ev.code === "KeyX") battle.swap();                                  // 교대
+    else if (ev.code === "KeyA") battle.swap();                                  // 교대
   };
   const ku = ev => { keys[ev.code] = false; };
   const cleanup = () => {
@@ -258,7 +258,7 @@ function runBattle(cfg, done) {
       g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * s.gauge / 100, 8);
       g.font = "12px 'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
     }
-    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText("이동: 방향키/WASD · 사격 ON/OFF: Z 또는 클릭" + (cfg.allies ? " · 교대: X" : ""), BOX.x + BOX.w, 515);
+    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText("이동: 방향키 · 사격 ON/OFF: Z 또는 클릭" + (cfg.allies ? " · 교대: A" : ""), BOX.x + BOX.w, 515);
     if (banner) {                                                                       // phase (spell) name / bond announcement
       const k = banner.age, a = Math.min(1, k * 4, (3 - k) * 2), sx = BOX.x + BOX.w + 20 + (1 - Math.min(1, k * 4)) * 30;
       g.globalAlpha = Math.max(0, a); g.textAlign = "left"; g.textBaseline = "middle";
@@ -291,7 +291,7 @@ function runBattle(cfg, done) {
     if (s.talk) { talkN += dt * 25; setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
     else {
       setCast(null);
-      const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
+      const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
       for (const v of battle.step(dt, input)) onEvent(v);
       flushVolley();
       if (cfg.beat && !s.over && s.t > 0 && (beatT -= dt) <= 0) { beatT = .7; sweep(85, 45, .22, "sine", .45); setTimeout(() => sweep(70, 40, .2, "sine", .3), 170); }   // all that is left of the sound: a heartbeat
