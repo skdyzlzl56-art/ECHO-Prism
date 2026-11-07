@@ -37,7 +37,7 @@
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
-    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false;
+    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], rev = null, spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -197,14 +197,14 @@
       const r = s.eHp / E_MAX, lv2 = cuts.filter(c => r <= c).length;      // each phase has its own pattern
       if (lv2 > s.level) {
         s.level = lv2; s.xp += XP_PHASE; if (s.xp >= XP_LV) { s.xp -= XP_LV; s.lv++; }   // exp per phase broken; level is display only
-        s.bullets = []; s.lasers = []; s.zones = []; tm = {}; hist = []; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; e.mode = "idle"; e.y = 85; e.dashT = 0;
+        s.bullets = []; s.lasers = []; s.zones = []; tm = {}; hist = []; rev = null; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; e.mode = "idle"; e.y = 85; e.dashT = 0;
         const lines = cfg.talks && cfg.talks[lv2];
         emit("phase", { level: lv2, name: (cfg.names && cfg.names[lv2]) || "", talk: !!lines });
         if (lines) s.talk = { lines, i: 0 };
       }
 
-      if (s.t > 1 && !s.talk && (e.mode === "idle" || e.mode === "warn")) cfg.phases[Math.min(s.level, cfg.phases.length - 1)](h);   // 1s grace; the enemy rests its guns while diving
-      for (const b of s.bullets) {
+      if (s.t > 1 && !s.talk && !rev && (e.mode === "idle" || e.mode === "warn")) cfg.phases[Math.min(s.level, cfg.phases.length - 1)](h);   // 1s grace; the enemy rests its guns while diving
+      for (const b of rev ? [] : s.bullets) {                              // bullets stand still in the sim while a rewind replays them
         b.age += dt; if (b.life && b.age > b.life) b.dead = true;
         if (b.gr) b.r = b.r0 * (1 + (b.gr - 1) * Math.min(1, b.age / b.split.t));
         if (b.sa) { b.y += b.vy * dt; b.x = b.bx + b.sa * Math.sin(b.sf * b.age + b.ph); }
@@ -225,10 +225,20 @@
         }
       }
       s.bullets = s.bullets.filter(b => !b.dead && b.y < BOX.y + BOX.h + 20 && b.y > BOX.y - 120 && b.x > BOX.x - 40 && b.x < BOX.x + BOX.w + 40);
-      if (rl("rewind")) {                                                    // 되감기 규칙: every cfg.rewind seconds the bullets jump back to where they were REWIND_BACK s ago
-        if (!hist.length || s.t - hist[hist.length - 1].t >= .05) hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) });   // ponytail: 50ms snapshots, not every frame
-        while (hist[0].t < s.t - REWIND_BACK) hist.shift();
-        if (s.t >= nextRw) { nextRw += rl("rewind"); s.bullets = hist[0].b.filter(b => !spent.has(b.id)); hist = []; emit("rewind"); }   // bullets that already hit are not replayed
+      if (rl("rewind")) {                                                    // 되감기 규칙: every cfg.rewind seconds the bullets fly back along their path for REWIND_BACK s
+        if (rev) {
+          const sn = rev.snaps, tgt = sn[sn.length - 1].t - (s.t - rev.t0);
+          if (tgt <= sn[0].t) { s.bullets = sn[0].b.filter(b => !spent.has(b.id)); rev = null; }   // arrived at the spot of REWIND_BACK s ago
+          else {
+            let k = sn.length - 2; while (k > 0 && sn[k].t > tgt) k--;
+            const a = sn[k], c = sn[k + 1], f = (tgt - a.t) / (c.t - a.t), cm = new Map(c.b.map(b => [b.id, b]));
+            s.bullets = a.b.filter(b => !spent.has(b.id)).map(b => { const n = cm.get(b.id); return n ? { ...b, x: b.x + (n.x - b.x) * f, y: b.y + (n.y - b.y) * f } : { ...b }; });   // lerp between 50ms snapshots
+          }
+        } else {
+          if (!hist.length || s.t - hist[hist.length - 1].t >= .05) hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) });   // ponytail: 50ms snapshots, not every frame
+          while (hist[0].t < s.t - REWIND_BACK) hist.shift();
+          if (s.t >= nextRw) { nextRw += rl("rewind"); hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) }); if (hist.length > 1) rev = { snaps: hist, t0: s.t }; hist = []; emit("rewind"); }
+        }
       }
       for (const l of s.lasers) {
         l.age += dt;
