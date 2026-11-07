@@ -1,6 +1,6 @@
 // Stage 1 battle configs (engine: ../battle.js runBattle). Scenes in story.js call these via ACTS names below.
 // Bullet size: 6 = normal, 12+ = heavy orb (louder, longer shot sound, 6 damage).
-// Pattern helpers (h.*): rain wall wave aim aimFan fan ring side spiral laser. Options: { col, w, acc, split, sa, sf }.
+// Pattern helpers (h.*): rain wall wave aim aimFan fan ring side spiral laser (boss-only: door bloom closing). Options: { col, w, acc, split, sa, sf }.
 // Each helper has its own bullet tone (same hue, different saturation/lightness) so patterns are told apart by colour.
 // moves: enemy movement per phase (sway / chase, optional dash = seconds between warned body-slams).
 
@@ -31,11 +31,11 @@ BATTLES.s1_boss = { stage: 1,
   names: ["문 「육각 방벽」", "문 「조준 철퇴」", "문 「삼중 나선」", "문 「붕괴의 빛」", "문 「침묵의 비명」", "문 「최후의 문」"],
   phases: [
     h => { h.ring(1.7, 13, 95, 8); h.wall(3.2, 85); h.rain(.9, 110); },                                             // 1: 육각 방벽
-    h => { h.aim(1.6, 120, 14, { split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.wave(1.8, 85); h.breakable(3.5); }, // 2: 조준 철퇴 (분열탄). 큰 탄은 쏴서 깎는다
+    h => { h.aim(1.6, 120, 14, { split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.door(2.6); h.breakable(3.5); }, // 2: 조준 철퇴 (분열탄) + 문 닫기(옆에서 닫히는 문, 틈으로). 큰 탄은 쏴서 깎는다
     h => { h.spiral(.1, 3, .5, 105, 7, { w: .25 }); h.side(.7, 140, 7); h.laser(4.2, false); h.toggle(4); },                      // 3: 삼중 나선 + 낙뢰
-    h => { h.laser(2.4, true); h.fan(1.4, 5, .35, 110, 12); h.aim(.6, 240, 5, { col: "#fff" }); },                   // 4: 붕괴의 빛 (조준 광선)
+    h => { h.laser(2.4, true); h.bloom(1.8, 12); h.aim(.6, 240, 5, { col: "#fff" }); },                   // 4: 붕괴의 빛 (조준 광선 + 휘는 꽃잎)
     h => { h.ring(1.4, 17, 100, 9, { w: .4 }); h.spiral(.13, 2, .4, 110, 7); h.aim(1.6, 130, 14, { split: { t: 1, n: 12, sp: 95, size: 6 } }); }, // 5: 침묵의 비명
-    h => { h.spiral(.09, 4, .35, 115, 7); h.laser(2, true); h.wall(2.8, 100); h.aim(1.7, 130, 14, { split: { t: 1, n: 14, sp: 100, size: 6 } }); }, // 6: 최후의 문
+    h => { h.spiral(.09, 4, .35, 115, 7); h.laser(2, true); h.door(3); h.bloom(2.2, 14); h.aim(1.7, 130, 14, { split: { t: 1, n: 14, sp: 100, size: 6 } }); }, // 6: 최후의 문
   ],
   talks: {
     1: [{ who: "lumi", t: "헥사! 나야, 루미야! 나 기억 안 나?" }, { who: "hexa", t: "루미...? 그 이름은... 아니다. 지운다!" }],
