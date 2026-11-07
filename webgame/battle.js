@@ -88,6 +88,17 @@ function runBattle(cfg, done) {
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
   let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0, lead: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
 
+  const wrapPx = (g, text, maxW) => {                                                  // break at spaces when possible, else anywhere; rows keep every character so typer.pos still indexes the full line
+    const rows = []; let row = "", lastSp = -1;
+    for (const ch of text) {
+      if (g.measureText(row + ch).width > maxW && row) {
+        if (lastSp > 0) { rows.push(row.slice(0, lastSp + 1)); row = row.slice(lastSp + 1) + ch; } else { rows.push(row); row = ch; }
+        lastSp = -1;
+      } else row += ch;
+      if (ch === " ") lastSp = row.length - 1;
+    }
+    rows.push(row); return rows;
+  };
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
   const advTalk = () => {                                               // first press finishes the typing, the next goes to the next line
@@ -348,7 +359,9 @@ function runBattle(cfg, done) {
       g.fillStyle = "rgba(0,0,0,.7)"; g.fillRect(0, 0, 960, 540);
       g.fillStyle = "#0b1026"; g.fillRect(60, 400, 840, 120); g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(60, 400, 840, 120);
       g.textAlign = "left"; g.textBaseline = "top"; g.font = "bold 24px Galmuri11,'Malgun Gothic'"; g.fillStyle = sp.color; g.fillText(sp.name, 84, 414);
-      g.font = "28px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText(L.t.slice(0, typer.pos | 0), 84, 456);
+      g.font = "24px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff";                    // the whole line is wrapped to the box (measured, so any font fits); the typewriter reveals it in place
+      let shown = typer.pos | 0, ly = 446;
+      for (const row of wrapPx(g, L.t, 740)) { g.fillText(row.slice(0, Math.max(0, shown)), 84, ly); shown -= row.length; ly += 34; }
       if (typer.pos >= L.t.length) { g.textAlign = "right"; g.fillText("▼", 880, 480); }
       g.textBaseline = "middle";
     }
