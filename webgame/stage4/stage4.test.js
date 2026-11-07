@@ -50,3 +50,8 @@ test("4 allies cycle with X: lumi -> hexa -> glitch -> keeper -> lumi, each with
   for (let i = 0; i < 4; i++) { for (let t = 0; t < 1.6; t += 1 / 60) b.step(1 / 60, {}); assert.ok(b.swap()); seen.push(b.state.allyId); }
   assert.deepStrictEqual(seen, ["lumi", "hexa", "glitch", "keeper", "lumi"]);
 });
+
+test("stage 4 has its own music: keeper boss uses s4_boss and no stage 4 line uses stage 2 tracks", () => {
+  assert.strictEqual(D.BATTLES.s4_keeper.bgm, "s4_boss");
+  for (const l of D.STAGE4) if (l.bgm) assert.ok(!/^s2_/.test(l.bgm), `${l.bgm}: ${l.text || l.act}`);
+});
