@@ -6,7 +6,7 @@ SPEAKERS.librarian = { name: "사서", pitch: 170, spin: .7, shape: "rings", col
 SPEAKERS.scrap = { name: "쪽지", pitch: 330, spin: 1.4, shape: "orb", color: "#d8d0b8", close: 0 };       // 책에서 떨어져 나온 낱장 (잡몹). "이름"만 되뇐다
 
 // ---- 1) 쪽지 무리: 보통 전투 ----
-BATTLES.s5_pages = {
+BATTLES.s5_pages = { stage: 5,
   ...PARTY4, speaker: "scrap", hp: 260, bgm: "battle", color: "#c9c0a8", cuts: [.5], playerHp: 24,
   names: ["쪽지 「찢어진 낱장」", "쪽지 「흩날리는 문장」"],
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "chase", speed: 85, dash: 9 }],
@@ -19,7 +19,7 @@ BATTLES.s5_pages = {
 ACTS.s5_pages = done => runBattle(BATTLES.s5_pages, done);
 
 // ---- 2) 색인 서랍: 방향 규칙 입문. 탄에 「책」이 적혀 있다 ----
-BATTLES.s5_index = {
+BATTLES.s5_index = { stage: 5,
   ...PARTY4, speaker: "scrap", hp: 260, bgm: "battle", color: "#b8b4d8", dirRule: { name: "책" }, cuts: [.5], playerHp: 22,
   winText: "이름을 읽었다!",
   names: ["쪽지 「첫 번째 색인」", "쪽지 「엇갈린 색인」"],
@@ -36,7 +36,7 @@ BATTLES.s5_index = {
 ACTS.s5_index = done => runBattle(BATTLES.s5_index, done);
 
 // ---- 3) 사서: 4페이즈. 모든 탄에 「이름」이 적혀 있다 (방향 규칙) ----
-BATTLES.s5_librarian = {
+BATTLES.s5_librarian = { stage: 5,
   ...PARTY4, speaker: "librarian", hp: 580, bgm: "s5_boss", color: "#a9b8e0", dirRule: { name: "이름" }, cuts: [.75, .5, .25], playerHp: 28, ew: 90,
   winText: "이름이 풀려난다!",
   names: ["사서 「조용히 해 주십시오」", "사서 「대출 중」", "사서 「열람 금지」", "사서 「마지막 장」"],
