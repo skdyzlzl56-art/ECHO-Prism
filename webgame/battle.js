@@ -9,7 +9,7 @@
 //   phases: [h => {...}, ...],          one pattern per phase, built from the helpers h.* (battle/sim.js)
 //   moves: [{ x, amp, spd, speed, dash }, ...]   enemy movement per phase: x = "none" | "sway" | "chase", dash = seconds
 //                                       between warned body-slams down into the box (0 = never)
-//   talks: { 3: [{ who, t }, ...] },    dialogue shown when phase N starts
+//   talks: { 3: [{ who, t }, ...] },    dialogue shown when phase N starts (0 = before the first pattern)
 //   ally: "lumi",                       optional companion; strength grows with the bond (유대), see BOND
 //   allies: ["lumi", "hexa"],           optional: A swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
 //   invuln, survive: 30,                escape battle: hits deal 0 (팅) and surviving 30s wins; bgm: null = silence, beat = heartbeat
