@@ -29,7 +29,7 @@ BATTLES.s2_silence = { stage: 2,
           { x: "sway", amp: 90, spd: 1.3, dash: 6.5 }, { x: "chase", speed: 110, dash: 5.5 }],
   phases: [
     h => { h.ring(1.9, 13, 90, 7); h.rain(.8, 110); },                                                              // 1: 소거
-    h => { h.aim(1.5, 130, 12, { split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.closing(2.6, 16, 75); h.stall(1.5); },                  // 2: 잔향 지우기
+    h => { h.aim(1.5, 130, 12, { split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.closing(2.6, 16, 75); h.stall(1.5); h.burster(3.4); },                  // 2: 잔향 지우기
     h => { h.spiral(.12, 3, .45, 105, 7, { w: .2 }); h.closing(3, 18, 80); h.laser(4, false); },                      // 3: 이름 삼키기 (판 분할)
     h => { h.laser(2.5, true); h.fan(1.5, 5, .35, 110, 12); h.aim(.7, 220, 5, { col: "#fff" }); },                  // 4: 빛의 소멸
     h => { h.spiral(.1, 4, .35, 112, 7); h.bloom(2, 14, 95); h.closing(3.2, 20, 85); h.zone(3.5); h.aim(1.8, 130, 14, { split: { t: 1, n: 12, sp: 95, size: 6 } }); },   // 5: 완전한 고요

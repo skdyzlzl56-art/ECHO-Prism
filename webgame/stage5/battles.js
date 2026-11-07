@@ -43,7 +43,7 @@ BATTLES.s5_librarian = { stage: 5,
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 }, { x: "sway", amp: 90, spd: 1.3, dash: 6.5 }],
   phases: [
     h => { h.rain(.6, 105); h.side(1, 120); },                                                                                  // 1: 책장에서 쏟아지는 이름
-    h => { h.ring(2.2, 13, 85, 7); h.aim(1.6, 125, 10, { split: { t: 1.1, n: 8, sp: 85, size: 6 } }); },                       // 2: 이름이 갈라져 퍼진다
+    h => { h.ring(2.2, 13, 85, 7); h.aim(1.6, 125, 10, { split: { t: 1.1, n: 8, sp: 85, size: 6 } }); h.burster(3.2, 4); },                       // 2: 이름이 갈라져 퍼진다
     h => { h.spiral(.13, 3, .45, 95, 7, { w: .2 }); h.shelf(3.6); h.laser(4, false); },                                       // 3: 책장을 넘기는 나선
     h => { h.spiral(.11, 4, .35, 100, 7); h.ring(1.7, 15, 90, 8); h.shelf(3.4); h.dirWall(6.5); h.aim(1.9, 125, 12, { split: { t: 1, n: 10, sp: 85, size: 6 } }); },   // 4: 마지막 장
   ],

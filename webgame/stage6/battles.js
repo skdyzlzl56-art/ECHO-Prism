@@ -47,7 +47,7 @@ BATTLES.s6_silence = { stage: 6,
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 }, { x: "sway", amp: 90, spd: 1.3, dash: 7 }, { x: "sway", amp: 60, spd: .7 }],
   phases: [
     h => { h.ring(1.9, 13, 90, 7, { col: RED }); h.rain(.7, 110); },                                                            // 1: 색 규칙. 붉은 고리만 위험
-    h => { h.ring(2, 13, 85, 7); h.aim(1.4, 130, 10, { split: { t: 1.1, n: 8, sp: 90, size: 6 } }); },                          // 2: 되감기 규칙. 분열탄이 두 번 온다
+    h => { h.ring(2, 13, 85, 7); h.aim(1.4, 130, 10, { split: { t: 1.1, n: 8, sp: 90, size: 6 } }); h.bomb(7); },                          // 2: 되감기 규칙. 분열탄이 두 번 온다
     h => { h.spiral(.13, 3, .45, 100, 7, { w: .2 }); h.side(.9, 125); h.laser(4, false); h.dirWall(7); },                    // 3: 방향 규칙. 나선이 도는 쪽으로
     h => { h.spiral(.12, 3, .4, 105, 7, { col: RED }); h.wall(3.2, 90, 6, { col: RED }); h.aim(1.6, 130, 12, { col: RED, split: { t: 1, n: 10, sp: 90, size: 6 } }); h.rain(.6, 100); },   // 4: 붉은 탄 + 되감기
     h => { h.rain(.55, 95); h.aim(1.6, 110, 8); h.hush(2.6, 18); },                                                      // 5: 규칙 없음. 스치며 유대를 채워 합동의 빛을 터뜨린다

@@ -33,7 +33,7 @@ BATTLES.s4_keeper = { stage: 4,
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 }, { x: "sway", amp: 90, spd: 1.3, dash: 6.5 }],
   phases: [
     h => { h.ring(2, 13, 85, 7); h.rain(.7, 105); },                                                                            // 1: 종소리 같은 고리, 되감기로 두 번 온다
-    h => { h.aim(1.4, 130, 10, { split: { t: 1.1, n: 8, sp: 90, size: 6 } }); h.wave(1.8, 85); },                             // 2: 분열탄
+    h => { h.aim(1.4, 130, 10, { split: { t: 1.1, n: 8, sp: 90, size: 6 } }); h.wave(1.8, 85); h.bomb(6); },                             // 2: 분열탄
     h => { h.spiral(.12, 3, .45, 100, 7, { w: .2 }); h.side(.9, 130); h.laser(4, false); h.stall(1.8, 120, 7); },   // 3: 초침처럼 도는 나선, 멈췄다 달리는 초침탄 (되감기와 겹친다)
     h => { h.spiral(.1, 4, .35, 108, 7); h.ring(1.6, 15, 95, 8); h.wall(3, 90); h.aim(1.8, 130, 12, { split: { t: 1, n: 10, sp: 90, size: 6 } }); h.homing(2.4, 110, 7); },   // 4: 마지막 한 분
   ],

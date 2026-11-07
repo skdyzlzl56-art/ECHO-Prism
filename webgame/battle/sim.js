@@ -83,9 +83,10 @@
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
     const add = (x, y, a, sp, size = 6, o = {}) => {
       s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: Math.round((size >= 10 ? 6 : 4) * atkK), col: o.col || col, nm: rl("dirRule") && rl("dirRule").name,   // 방향 규칙: name written on the bullet
-        id: uid++, hp: o.hp, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, bn: o.bn || 0, stall: o.stall, home: o.home, gr: o.gr, r0: size, age: 0, tr: [] });
+        id: uid++, hp: o.hp, burst: o.burst, det: o.det, blast: o.blast, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, bn: o.bn || 0, stall: o.stall, home: o.home, gr: o.gr, r0: size, age: 0, tr: [] });
       if (!s.over) emit("enemyShot", { size, speed: sp });
     };
+    const ring = (x, y, o) => { const off = rng() * TAU; for (let i = 0; i < o.n; i++) add(x, y, off + i * TAU / o.n, o.sp, o.size || 6, { col: o.col }); };   // radial burst of small bullets
     const laser = (x, y, a, w, warn, dur) => { s.lasers.push({ x, y, a, w, warn, dur, age: 0, ping: false, boom: false }); };
 
     const zone = (x, y, r, warn, dur) => { s.zones.push({ x, y, r, warn, dur, age: 0 }); };
@@ -106,6 +107,10 @@
       }),
       wave: (iv, sp = 85, size = 6, o = {}) => every("v", iv, () => { for (let i = 0; i < 5; i++) add(BOX.x + 30 + i * (BOX.w - 60) / 4, BOX.y - 12, Math.PI / 2, sp, size, { ...C("wave", o), sa: 38, sf: 3, ph: i * .9 }); }),
       breakable: (iv, sp = 40, size = 14, o = {}) => every("k", iv, () => add(p.x, BOX.y - 12, Math.PI / 2, sp, size, { ...C("rain", o), hp: o.hp || 5 })),   // big bullet that player/ally shots wear down; hp 0 = gone
+      // 탄막 with HP (player / ally shots wear it down). burster: shot to death it bursts into a ring of small bullets (hurts if you stand there, so pick when to pop it);
+      // bomb: drifts toward the player and, unless shot to death first, detonates into a dense ring when it gets within `det` px (popping it early is harmless).
+      burster: (iv, hp = 3, o = {}) => every("bs", iv, () => add(BOX.x + 30 + rng() * (BOX.w - 60), BOX.y - 12, Math.PI / 2, 70, 11, { col: "#ffd36b", hp, burst: { n: 8, sp: 95, size: 6, col: "#ffd36b" }, ...o })),
+      bomb: (iv, hp = 8, o = {}) => every("bm", iv, () => add(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), 55, 16, { col: "#ff5a5a", hp, det: 110, blast: { n: 16, sp: 110, size: 6, col: "#ff5a5a" }, ...o })),
       // bullet that hangs above the player and flips state on every player/ally hit: o.states = [{vx, vy, col}] cycled in order (default still <-> sideways)
       toggle: (iv, size = 12, o = {}) => every("t", iv, () => {
         const c0 = C("rain", o).col, st = o.states || [{ vx: 0, vy: 0, col: c0 }, { vx: 90, vy: 0, col: `hsl(${(hue + 180) % 360},100%,70%)` }];
@@ -245,8 +250,9 @@
       const hitTargets = s.bullets.some(b => b.hp > 0 || b.tg);              // most frames have none: skip the shots x bullets passes
       if (hitTargets) for (const sh of s.shots) for (const b of s.bullets) if (b.hp > 0 && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // breakable bullet absorbs the shot
         sh.dead = true; b.hp -= sh.dmg;
-        if (b.hp <= 0) { b.dead = true; spent.add(b.id); emit("break", { x: b.x, y: b.y }); }
+        if (b.hp <= 0) { b.dead = true; spent.add(b.id); emit("break", { x: b.x, y: b.y }); if (b.burst) ring(b.x, b.y, b.burst); }
       }
+      for (const b of s.bullets) if (b.det && b.hp > 0 && !b.dead && Math.hypot(b.x - p.x, b.y - p.y) < b.det) { b.dead = true; spent.add(b.id); emit("blast", { x: b.x, y: b.y }); ring(b.x, b.y, b.blast); }   // a bomb that got close
       if (hitTargets) for (const sh of s.shots) for (const b of s.bullets) if (b.tg && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // toggle bullet: a hit absorbs the shot and flips its state
         sh.dead = true; b.st = (b.st + 1) % b.tg.length; const t = b.tg[b.st]; b.vx = t.vx; b.vy = t.vy; b.col = t.col;
       }
