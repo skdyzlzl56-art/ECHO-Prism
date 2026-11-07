@@ -150,6 +150,7 @@ function runBattle(cfg, done) {
         break;
       case "laserWarn": charge(v.warn || 1, 1, 110); break;
       case "laserFire": boom(1.2, 70); sweep(1500, 60, .9, "sawtooth", .3 * quiet); break;
+      case "break": noise(.12, .4 * quiet); sweep(500, 90, .22, "square", .2 * quiet); for (let i = 0; i < 8; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 160; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
       case "split": noise(.18, .45 * quiet); sweep(900, 100, .3, "sawtooth", .3 * quiet); sweep(2400, 600, .12, "square", .1 * quiet); break;
       case "dashWarn": charge(.9, 1, 90); break;
       case "dashStart": sweep(900, 60, .6, "sawtooth", .35); noise(.35, .4); break;
@@ -215,6 +216,7 @@ function runBattle(cfg, done) {
       g.globalAlpha = .35; g.beginPath(); g.arc(b.x, b.y, b.r * 1.9, 0, TAU); g.fill();
       g.globalAlpha = 1; g.shadowColor = b.col; g.shadowBlur = b.r > 8 ? 18 : 10; g.beginPath(); g.arc(b.x, b.y, b.r, 0, TAU); g.fill();
       g.shadowBlur = 0; g.fillStyle = "#fff"; g.beginPath(); g.arc(b.x, b.y, b.r * .45, 0, TAU); g.fill();
+      if (b.hp > 0) { g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 2; g.beginPath(); g.arc(b.x, b.y, b.r + 3, 0, TAU); g.stroke(); g.fillStyle = "#fff"; g.font = "bold 11px sans-serif"; g.textAlign = "center"; g.fillText(b.hp, b.x, b.y + 4); g.fillStyle = b.col; }   // breakable: white ring + hp
       if (b.nm) { g.save(); g.globalAlpha = 1; g.font = "11px 'Malgun Gothic'"; g.textAlign = "center"; g.fillStyle = "#fff"; g.fillText(b.nm, b.x, b.y - b.r - 4); g.restore(); }   // 방향 규칙: name written on the bullet
     }
     if (burstFx > 0) {                                                                  // 유대의 빛: a ring of light sweeping out from the player
