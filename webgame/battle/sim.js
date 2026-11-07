@@ -9,14 +9,14 @@
 //
 // cfg: see ../battle.js. Events: start-of-phase, enemyShot{size,speed}, enemyHit{x,y,dmg,ally,combo}, playerShot, allyShot,
 //   graze, playerHurt{dmg}, shieldBlock, shieldReady, heal{amount}, burst{dmg,level,up}, bondStart{level},
-//   laserWarn, laserFire, split, dashWarn, dashStart, dashEnd, phase{level,name,talk,start}, win, lose.
+//   rewind, laserWarn, laserFire, split, dashWarn, dashStart, dashEnd, phase{level,name,talk,start}, win, lose.
 (function (root) {
   "use strict";
   const TAU = Math.PI * 2, BOX = { x: 330, y: 190, w: 300, h: 260 }, EX = 480, E_R = 26, BOND_MAX = 4;
   // companion kits when cfg.allies lets the player swap (교대): cd = shot interval x, dm = shot damage x, heal / shield = abilities.
   // A single cfg.ally keeps the old all-round companion (KIT.all).
   const KIT = { all: { cd: 1, dm: 1, heal: 1, shield: 1 }, lumi: { cd: .8, dm: 1, heal: 1, shield: 0 }, hexa: { cd: 1.6, dm: 2, heal: 0, shield: 1 } };
-  const SWAP_CD = 1.5;
+  const SWAP_CD = 1.5, REWIND_BACK = 1.5;
 
   function createBattle(cfg, opts = {}) {
     const rng = opts.rng || Math.random, HITBOX = opts.hitbox == null ? 4 : opts.hitbox, bondBase = opts.bondBase || 0;
@@ -33,7 +33,7 @@
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
-    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false;
+    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], spent = new Set(), nextRw = cfg.rewind || 0, uid = 0;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -44,8 +44,8 @@
 
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
     const add = (x, y, a, sp, size = 6, o = {}) => {
-      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col,
-        w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, age: 0, tr: [] });
+      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col, nm: cfg.dirRule && cfg.dirRule.name,   // 방향 규칙: name written on the bullet
+        id: uid++, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, age: 0, tr: [] });
       if (!s.over) emit("enemyShot", { size, speed: sp });
     };
     const laser = (x, y, a, w, warn, dur) => { s.lasers.push({ x, y, a, w, warn, dur, age: 0, ping: false, boom: false }); };
@@ -81,6 +81,7 @@
       s.gauge = 0; const was = blv(); bonus++;
       const lt = light(), dmg = cfg.invuln ? 0 : Math.round((8 + 4 * blv()) * (lt === "power" ? 1.5 : 1)); s.eHp -= dmg; s.bullets = []; s.lasers = []; if (!lt || lt === "heal") s.hp = Math.min(MAX_HP, s.hp + 3);   // invuln: the light still clears the field, it just can't hurt
       emit("burst", { dmg, level: blv(), up: blv() > was, light: lt });
+      if (cfg.jointLight && blv() >= BOND_MAX) emit("jointLight", { allies: cfg.allies || [cfg.ally] });   // 합동 유대의 빛: bond full, everyone bursts
       if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && shieldT <= 0) s.shieldOn = true;
     }
 
@@ -166,6 +167,10 @@
         }
       }
       s.bullets = s.bullets.filter(b => !b.dead && b.y < BOX.y + BOX.h + 20 && b.y > BOX.y - 120 && b.x > BOX.x - 40 && b.x < BOX.x + BOX.w + 40);
+      if (cfg.rewind) {                                                    // 되감기 규칙: every cfg.rewind seconds the bullets jump back to where they were REWIND_BACK s ago
+        hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) }); while (hist[0].t < s.t - REWIND_BACK) hist.shift();
+        if (s.t >= nextRw) { nextRw += cfg.rewind; s.bullets = hist[0].b.filter(b => !spent.has(b.id)); hist = []; emit("rewind"); }   // bullets that already hit are not replayed
+      }
       for (const l of s.lasers) {
         l.age += dt;
         if (!l.ping) { l.ping = true; emit("laserWarn", { warn: l.warn, w: l.w }); }
@@ -177,8 +182,8 @@
       }
       s.lasers = s.lasers.filter(l => l.age < l.warn + l.dur + .15);
       if (s.inv <= 0) {
-        const i = s.bullets.findIndex(b => (!cfg.colorRule || b.col === cfg.colorRule) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
-        if (i >= 0) { const d = s.bullets[i].dmg; s.bullets.splice(i, 1); hurt(d); }
+        const i = s.bullets.findIndex(b => (!cfg.colorRule || b.col === cfg.colorRule) && !(b.nm && dx * b.vx + dy * b.vy > 0) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
+        if (i >= 0) { const d = s.bullets[i].dmg; spent.add(s.bullets[i].id); s.bullets.splice(i, 1); hurt(d); }
       }
       if (cfg.survive) s.surviveLeft = Math.max(0, cfg.survive - Math.max(0, s.t - 1));   // escape battle: outlast the clock after the 1s grace
       if (s.hp <= 0) { s.over = "lose"; emit("lose"); }

@@ -132,6 +132,9 @@ function runBattle(cfg, done) {
         sweep(400, 2000, .8, "sine", .3); sweep(200, 1000, .8, "triangle", .2); noise(.3, .4); retrigger($("flash"), "on", 600);
         banner = { txt: v.up ? `유대 Lv.${v.level}! 지원이 강해졌다` : "유대의 빛!", age: 0, bond: true };
         break;
+      case "jointLight":   // 합동 유대의 빛: every ally at once, a bigger flash and a rising chord
+        burstFx = 1.6; banner = { txt: "합동 유대의 빛!", age: 0, bond: true }; retrigger($("flash"), "on", 900);
+        v.allies.forEach((id, i) => setTimeout(() => sweep(300 * (1 + i * .25), 2400, 1.1, "sine", .22), i * 120)); noise(.5, .5); break;
       case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
       case "swap": allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
       case "phase":

@@ -122,6 +122,52 @@ test("colour rule: graze and the bond gauge still work", () => {
   assert.ok(ev.some(v => v.type === "graze") && b.state.gauge > 0 && b.state.hp === b.state.maxHp);
 });
 
+// 되감기 규칙: cfg.rewind = period in seconds; bullets jump back to where they were 1.5s earlier
+const drop = (x, y, vy) => ({ ...bul({ x, y }, 0, "#f00"), vy });
+
+test("rewind: bullets return to their earlier position at the period; without the option nothing rewinds", () => {
+  const b = still({ rewind: 3 }), o = still({});
+  for (const x of [b, o]) x.state.bullets.push(drop(BOX.x + 20, BOX.y + 10, 50));
+  const ev = []; let at = null;
+  for (let t = 0; t < 3.2; t += 1 / 60) { ev.push(...b.step(1 / 60)); if (Math.abs(t - 1.5) < 1 / 120) at = b.state.bullets[0].y; }
+  assert.strictEqual(ev.filter(v => v.type === "rewind").length, 1);
+  const y = b.state.bullets[0].y;                                         // 0.2s of travel after jumping back to the 1.5s position
+  assert.ok(Math.abs(y - (at + 50 * .2)) < 4, `y ${y} vs ${at}`);
+  const ev2 = run(o, 3.2); assert.ok(!ev2.some(v => v.type === "rewind") && o.state.bullets[0].y > BOX.y + 10 + 50 * 3);
+});
+
+test("rewind: a bullet that already hit the player is not replayed", () => {
+  const b = still({ rewind: 2 }), p = b.state.p;
+  b.state.bullets.push(drop(p.x, p.y - 50 * 1.2, 50));                    // hits honestly at ~1.2s, long before the rewind
+  const ev = run(b, 4.5);
+  assert.ok(ev.some(v => v.type === "rewind"));
+  assert.strictEqual(b.state.maxHp - b.state.hp, 4);
+});
+
+// 방향 규칙: cfg.dirRule = {name}; a named bullet is harmless to a player moving the way it moves
+test("direction rule: moving with a named bullet is safe; standing still or moving against it hurts; off by default", () => {
+  for (const [rule, dx, dmg] of [[{ name: "동쪽" }, 1, 0], [{ name: "동쪽" }, 0, 4], [{ name: "동쪽" }, -1, 4], [undefined, 1, 4]]) {
+    const b = still({ dirRule: rule }); const bl = bul(b.state.p, 0, "#f00"); bl.vx = 120; bl.nm = rule && rule.name; b.state.bullets.push(bl);
+    run(b, .05, { dx });
+    assert.strictEqual(b.state.maxHp - b.state.hp, dmg, `rule ${!!rule} dx ${dx}`);
+  }
+});
+
+test("direction rule: bullets carry the configured name for display", () => {
+  const b = createBattle({ ...quiet, dirRule: { name: "동쪽" }, phases: [h => h.rain(.2)] }, { rng: seeded(4) });
+  b.state.auto = false; run(b, 1.5);
+  assert.ok(b.state.bullets.length > 0 && b.state.bullets.every(x => x.nm === "동쪽"));
+});
+
+// 합동 유대의 빛: cfg.jointLight - the burst that fills the bond to the top becomes a joint light of all allies
+test("joint bond light: only when enabled and the bond reaches full; otherwise no event", () => {
+  const go = (jointLight, bondBase) => run(createBattle({ ...quiet, hp: 1000, ally: "lumi", allies: ["lumi", "hexa"], gauge0: 100, jointLight }, { rng: seeded(9), bondBase }), .1);
+  const ev = go(true, 3), j = ev.find(v => v.type === "jointLight");
+  assert.ok(j && j.allies.join() === "lumi,hexa");
+  assert.ok(!go(false, 3).some(v => v.type === "jointLight"), "off by default");
+  assert.ok(!go(true, 1).some(v => v.type === "jointLight"), "bond not full yet");
+});
+
 // ---- the real stage 1 configs: every phase actually fires, with the player standing still and a huge HP pool ----
 global.SPEAKERS = {}; global.BATTLES = {}; global.ACTS = {}; global.runBattle = () => {};
 require("../stage1/battles.js"); require("../stage2/battles.js");
