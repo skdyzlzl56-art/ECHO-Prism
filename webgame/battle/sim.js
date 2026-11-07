@@ -53,7 +53,7 @@
 
     // bullet colour = the battle colour's hue; saturation / lightness set by pattern kind so patterns read apart at a glance
     const hue = (() => { const n = parseInt(col.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b); if (mx === mn) return 0; const d = mx - mn; return 60 * (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4); })();
-    const TONE = { rain: [.45, .5], wall: [.55, .84], wave: [.9, .58], aim: [1, .62], aimFan: [1, .77], fan: [.85, .5], ring: [.6, .72], side: [.3, .62], spiral: [1, .44], bounce: [.75, .66], stall: [.95, .8], homing: [.7, .38], swell: [.8, .55] };   // [saturation, lightness]
+    const TONE = { rain: [.45, .5], wall: [.55, .84], wave: [.9, .58], aim: [1, .62], aimFan: [1, .77], fan: [.85, .5], ring: [.6, .72], side: [.3, .62], spiral: [1, .44], bounce: [.75, .66], stall: [.95, .8], homing: [.7, .38], swell: [.8, .55], door: [.65, .3], bloom: [.5, .8], closing: [.35, .46] };   // [saturation, lightness]
     const C = (k, o) => ({ col: `hsl(${hue},${TONE[k][0] * 100}%,${TONE[k][1] * 100}%)`, ...o });
 
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
@@ -89,6 +89,11 @@
       }),
       // 방향 벽: a full-height column with no gap sweeps the box sideways, alternating sides; under a dirRule only moving WITH it is safe (sp must beat the player's speed so it overtakes)
       dirWall: (iv, sp = 260, size = 8, o) => every("dw", iv, () => { dwSide = -dwSide; for (let y = BOX.y + 6; y < BOX.y + BOX.h; y += 14) add(dwSide > 0 ? BOX.x - 10 : BOX.x + BOX.w + 10, y, dwSide > 0 ? 0 : Math.PI, sp, size, C("wall", o)); }),
+      // boss-only barrages. door: a full-height row from alternating sides with one gap; bloom: ring whose bullets curve alternately left / right (petals);
+      // closing: ring drawn around the player's position with one gap, bullets converge slowly
+      door: (iv, sp = 150, size = 7, o) => every("dr", iv, () => { dwSide = -dwSide; const gap = BOX.y + 40 + rng() * (BOX.h - 80); for (let y = BOX.y + 6; y < BOX.y + BOX.h; y += 16) if (Math.abs(y - gap) > 34) add(dwSide > 0 ? BOX.x - 10 : BOX.x + BOX.w + 10, y, dwSide > 0 ? 0 : Math.PI, sp, size, C("door", o)); }),
+      bloom: (iv, n = 12, sp = 90, size = 6, o) => every("bl", iv, () => { const off = rng() * TAU; for (let i = 0; i < n; i++) add(e.x, e.y + 55, off + i * TAU / n, sp, size, C("bloom", { w: i % 2 ? 1.1 : -1.1, ...o })); }),
+      closing: (iv, n = 16, r = 70, sp = 45, size = 6, o) => every("cl", iv, () => { const off = rng() * TAU, g = Math.floor(rng() * n); for (let i = 0; i < n; i++) if (i !== g && i !== (g + 1) % n) { const a = off + i * TAU / n; add(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, a + Math.PI, sp, size, C("closing", o)); } }),
       // new motions: bounce (reflects off the side walls bn times), stall (stops at t for d s, then leaves at speed sp), homing (steers toward the player for t s)
       bounce: (iv, sp = 170, size = 6, o) => every("bn", iv, () => add(e.x, e.y + 55, Math.PI / 2 + (rng() < .5 ? -.8 : .8), sp, size, C("bounce", { bn: 3, ...o }))),
       stall: (iv, sp = 130, size = 6, o) => every("st", iv, () => add(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), sp, size, C("stall", { stall: { t: .5, d: .6, sp: sp * 2 }, ...o }))),
