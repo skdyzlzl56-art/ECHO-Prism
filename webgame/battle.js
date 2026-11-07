@@ -86,7 +86,7 @@ function runBattle(cfg, done) {
   if (cfg.silent) hush(true);
   const asShot = f => cfg.silent ? (...a) => { sfxBus("shot"); try { return f(...a); } finally { sfxBus("sfx"); } } : f;   // enemy attack sounds ride their own bus (final fight: they return first)
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
-  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
+  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0, lead: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
 
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
@@ -287,7 +287,7 @@ function runBattle(cfg, done) {
     if (s.over !== "lose" && (s.inv <= 0 || s.dashT > 0 || Math.floor(s.inv * 12) % 2)) {
       g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = allyCol || "#4fc3ff";   // faint trail of recent positions
       wake.forEach((q, i) => { g.globalAlpha = (i + 1) / wake.length * .18; g.beginPath(); g.arc(q.x, q.y, 3 + 5 * (i + 1) / wake.length, 0, TAU); g.fill(); }); g.restore();
-      g.save(); g.translate(p.x, p.y); g.rotate(look.rot); g.scale(look.sx, look.sy); g.rotate(-look.rot); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
+      g.save(); g.translate(p.x + Math.cos(look.rot) * look.lead, p.y + Math.sin(look.rot) * look.lead); g.rotate(look.rot); g.scale(look.sx, look.sy); g.rotate(-look.rot); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
       if (s.shieldOn) { g.strokeStyle = allyCol; g.lineWidth = 3; g.shadowColor = allyCol; g.shadowBlur = 14; g.globalAlpha = .6 + .3 * Math.sin(t * 6); g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.stroke(); }
       g.restore();
     }

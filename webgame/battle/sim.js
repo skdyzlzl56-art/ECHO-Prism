@@ -354,11 +354,12 @@
     };
   }
 
-  // Display only (never read by the rules): squash & stretch of the player sprite. v = velocity in px/s; look = {sx, sy, rot} is eased in place.
+  // Display only (never read by the rules): the player sprite flattens along its direction of travel (pressed against the wind), bulges sideways and leans a few px
+  // ahead, so left/right and diagonal moves read as a direction. v = velocity in px/s; look = {sx, sy, rot, lead} is eased in place.
   function moveLook(look, vx, vy, dt) {
     const r = Math.min(1, Math.hypot(vx, vy) / 210), k = 1 - Math.exp(-dt * 14);
     if (r > .05) look.rot = Math.atan2(vy, vx);
-    look.sx += (1 + .35 * r - look.sx) * k; look.sy += (1 - .25 * r - look.sy) * k;
+    look.sx += (1 - .28 * r - look.sx) * k; look.sy += (1 + .2 * r - look.sy) * k; look.lead += (4 * r - (look.lead || 0)) * k;
     return look;
   }
 
