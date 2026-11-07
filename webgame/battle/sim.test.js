@@ -389,3 +389,38 @@ test("the box is battle state: moving it moves the player's limits and the bulle
   assert.strictEqual(b.state.bullets.length, 0, "bullet outside the moved box is culled");
   assert.strictEqual(BOX.x, 330, "the shared default box is untouched");
 });
+
+// ---- bullets lasting (ticket 05) ----
+test("hazard zone: safe while warning, hurts once active, then disappears", () => {
+  const b = createBattle({ ...quiet, playerHp: 100, phases: [h => { if (b.state.t < 1.2) h.zone(.01, { r: 60, warn: 1, dur: 1 }); }] }, { rng: seeded(2) });
+  b.state.auto = false;
+  run(b, 1.1);
+  const z = b.state.zones[0];
+  assert.ok(z, "a zone was laid");
+  z.x = b.state.p.x; z.y = b.state.p.y;                                   // player stands in it
+  run(b, .5);
+  assert.strictEqual(b.state.hp, 100, "warning zone does no harm");
+  run(b, .9);                                                             // now past the warning
+  assert.ok(b.state.hp < 100, "active zone hurts");
+  run(b, 2);
+  assert.strictEqual(b.state.zones.length, 0, "zone expires");
+});
+
+test("swelling bullet grows, then bursts into a ring", () => {
+  const b = createBattle({ ...quiet, phases: [h => { if (!b.state.bullets.length && b.state.t < 1.2) h.swell(.01, 0, 8, { t: 1, k: 3 }); }] }, { rng: seeded(1) });
+  b.state.auto = false;
+  run(b, 1.5);
+  const orb = b.state.bullets.find(x => x.id === 0);
+  assert.ok(orb && orb.r > 8 * 1.5, "it has grown");
+  const ev = run(b, 1.2);
+  assert.ok(ev.some(v => v.type === "split"), "it burst");
+  assert.ok(!b.state.bullets.some(x => x.id === 0), "the orb is gone");
+  assert.ok(b.state.bullets.length > 4, "ring bullets left behind");
+});
+
+test("zone and swell have their own tones", () => {
+  const b = createBattle({ ...quiet, phases: [h => { if (b.state.t < 1.2) h.swell(.01, 0, 8, { t: 1, k: 3 }); }] }, { rng: seeded(1) });
+  run(b, 1.1);
+  const c = b.state.bullets[0].col;
+  assert.ok(!["rain", "wall", "wave", "aim", "bounce", "stall", "homing"].some(k => { const d = createBattle({ ...quiet, phases: [h => { if (d.state.t < 1.2) h[k] ? h[k](.01, 100, 8) : 0; }] }, { rng: seeded(1) }); run(d, 1.1); return d.state.bullets[0] && d.state.bullets[0].col === c; }));
+});
