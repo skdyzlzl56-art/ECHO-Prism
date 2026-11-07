@@ -44,3 +44,8 @@ test("stage 3 has its own music: painter boss uses s3_boss and no stage 3 line u
   assert.strictEqual(D.BATTLES.s3_painter.bgm, "s3_boss");
   for (const l of D.STAGE3) if (l.bgm) assert.ok(!/^s2_/.test(l.bgm), `${l.bgm}: ${l.text || l.act}`);
 });
+
+test("the join scene introduces glitch signature (반사) before the party card", () => {
+  const i = D.STAGE3.findIndex(l => l.act === "s3_party"), j = D.STAGE3.findIndex(l => l.act === "s3_morph");
+  assert.ok(D.STAGE3.slice(j - 8, i).some(l => l.who && /반사/.test(l.text)));
+});
