@@ -23,6 +23,13 @@
     stage: { hp: [1, 1.1, 1.2, 1.3, 1.4, 1.5], atk: [1, 1, 1.1, 1.2, 1.2, 1.3] },
     ally: { cd: [1.3, 1.05, .9, .8, .8], hits: [1, 1, 2, 2, 2], dmg: [2, 2.5, 2, 2.5, 3] },
   };
+    // Signature moves (cfg.allies only): the ally out fires its own move when cool[id].sig runs out. power by bond level 0..4.
+  const SIG_CD = [18, 16, 14, 12, 10], SIG = {
+    lumi: { kind: "ward", power: [1, 1.5, 2, 2.5, 3] },                   // invulnerable for power s
+    hexa: { kind: "blast", power: [6, 9, 12, 15, 18] },                  // damage to the enemy
+    glitch: { kind: "reflect", power: [100, 140, 180, 220, 260] },       // bullets within power px fly back
+    keeper: { kind: "clear", power: [140, 180, 230, 300, 9999] },        // 시계지기: bullets within power px vanish
+  };
   const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, HEAL_IV = [10, 8.5, 7, 6, 5], SWAP_CD = 1.5, REWIND_BACK = 1.5;
 
   function createBattle(cfg, opts = {}) {
@@ -45,7 +52,7 @@
     const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr && k in pr ? pr[k] : cfg[k]; };   // a key absent from the phase entry falls back to the cfg-level option
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
-    for (const id of allies || [cfg.ally]) s.cool[id] = { heal: HEAL_IV[0], shield: 0 };
+    for (const id of allies || [cfg.ally]) s.cool[id] = { heal: HEAL_IV[0], shield: 0, sig: 8 };
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
     let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, bonus = 0, started = false, hist = [], rev = null, spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false, dwSide = -1;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
@@ -53,7 +60,7 @@
 
     // bullet colour = the battle colour's hue; saturation / lightness set by pattern kind so patterns read apart at a glance
     const hue = (() => { const n = parseInt(col.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b); if (mx === mn) return 0; const d = mx - mn; return 60 * (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4); })();
-    const TONE = { rain: [.45, .5], wall: [.55, .84], wave: [.9, .58], aim: [1, .62], aimFan: [1, .77], fan: [.85, .5], ring: [.6, .72], side: [.3, .62], spiral: [1, .44], bounce: [.75, .66], stall: [.95, .8], homing: [.7, .38], swell: [.8, .55] };   // [saturation, lightness]
+    const TONE = { rain: [.45, .5], wall: [.55, .84], wave: [.9, .58], aim: [1, .62], aimFan: [1, .77], fan: [.85, .5], ring: [.6, .72], side: [.3, .62], spiral: [1, .44], bounce: [.75, .66], stall: [.95, .8], homing: [.7, .38], swell: [.8, .55], door: [.65, .3], bloom: [.5, .8], closing: [.35, .46] };   // [saturation, lightness]
     const C = (k, o) => ({ col: `hsl(${hue},${TONE[k][0] * 100}%,${TONE[k][1] * 100}%)`, ...o });
 
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
@@ -89,6 +96,11 @@
       }),
       // 방향 벽: a full-height column with no gap sweeps the box sideways, alternating sides; under a dirRule only moving WITH it is safe (sp must beat the player's speed so it overtakes)
       dirWall: (iv, sp = 260, size = 8, o) => every("dw", iv, () => { dwSide = -dwSide; for (let y = BOX.y + 6; y < BOX.y + BOX.h; y += 14) add(dwSide > 0 ? BOX.x - 10 : BOX.x + BOX.w + 10, y, dwSide > 0 ? 0 : Math.PI, sp, size, C("wall", o)); }),
+      // boss-only barrages. door: a full-height row from alternating sides with one gap; bloom: ring whose bullets curve alternately left / right (petals);
+      // closing: ring drawn around the player's position with one gap, bullets converge slowly
+      door: (iv, sp = 150, size = 7, o) => every("dr", iv, () => { dwSide = -dwSide; const gap = BOX.y + 40 + rng() * (BOX.h - 80); for (let y = BOX.y + 6; y < BOX.y + BOX.h; y += 16) if (Math.abs(y - gap) > 34) add(dwSide > 0 ? BOX.x - 10 : BOX.x + BOX.w + 10, y, dwSide > 0 ? 0 : Math.PI, sp, size, C("door", o)); }),
+      bloom: (iv, n = 12, sp = 90, size = 6, o) => every("bl", iv, () => { const off = rng() * TAU; for (let i = 0; i < n; i++) add(e.x, e.y + 55, off + i * TAU / n, sp, size, C("bloom", { w: i % 2 ? 1.1 : -1.1, ...o })); }),
+      closing: (iv, n = 16, r = 70, sp = 45, size = 6, o) => every("cl", iv, () => { const off = rng() * TAU, g = Math.floor(rng() * n); for (let i = 0; i < n; i++) if (i !== g && i !== (g + 1) % n) { const a = off + i * TAU / n; add(p.x + Math.cos(a) * r, p.y + Math.sin(a) * r, a + Math.PI, sp, size, C("closing", o)); } }),
       // new motions: bounce (reflects off the side walls bn times), stall (stops at t for d s, then leaves at speed sp), homing (steers toward the player for t s)
       bounce: (iv, sp = 170, size = 6, o) => every("bn", iv, () => add(e.x, e.y + 55, Math.PI / 2 + (rng() < .5 ? -.8 : .8), sp, size, C("bounce", { bn: 3, ...o }))),
       stall: (iv, sp = 130, size = 6, o) => every("st", iv, () => add(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), sp, size, C("stall", { stall: { t: .5, d: .6, sp: sp * 2 }, ...o }))),
@@ -152,7 +164,9 @@
       p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + vy * dt));
       s.t += dt; s.inv -= dt; s.swapCd -= dt; cd -= dt; comboT -= dt; dtc = dt; if (comboT <= 0) s.combo = 0;
       if (!started && s.t > 1) {
-        started = true; emit("phase", { level: 0, name: (cfg.names && cfg.names[0]) || "", talk: false, start: true });
+        started = true; const l0 = cfg.talks && cfg.talks[0];                  // talks[0]: spoken before the first pattern
+        emit("phase", { level: 0, name: (cfg.names && cfg.names[0]) || "", talk: !!l0, start: true });
+        if (l0) s.talk = { lines: l0, i: 0 };
         if (cfg.ally && blv()) emit("bondStart", { level: blv() });
       }
 
@@ -179,7 +193,7 @@
       if (firing && cd <= 0) { cd = .12; s.shots.push({ x: p.x, y: p.y - 12, vx: 0, vy: -560, dmg: GROWTH.shotDmg(s.lv) }); emit("playerShot"); }
       if (cfg.ally) {                                                      // companion: strength follows the bond level
         const lv = blv();
-        al.y += (p.y - al.y) * Math.min(1, dt * 3); allyCd -= dt; for (const c of Object.values(s.cool)) { c.heal = Math.max(0, c.heal - dt); c.shield = Math.max(0, c.shield - dt); }
+        al.y += (p.y - al.y) * Math.min(1, dt * 3); allyCd -= dt; for (const c of Object.values(s.cool)) { c.heal = Math.max(0, c.heal - dt); c.shield = Math.max(0, c.shield - dt); c.sig = Math.max(0, c.sig - dt); }
         if (allyCd <= 0 && s.t > 1) {
           allyCd = GROWTH.ally.cd[lv] * kit().cd; const a = Math.atan2(e.y - al.y, e.x - al.x), dmg = GROWTH.ally.dmg[lv] * kit().dm, n = GROWTH.ally.hits[lv];
           for (let i = 0; i < n; i++) { const aa = a + (i ? .12 : n > 1 ? -.12 : 0); s.shots.push({ x: al.x, y: al.y, vx: Math.cos(aa) * 460, vy: Math.sin(aa) * 460, dmg, ally: true }); }
@@ -187,6 +201,14 @@
         }
         const me = s.cool[s.allyId], ha = lv >= 3 ? 3 : 2;
         if (me.heal <= 0) { me.heal = HEAL_IV[lv]; if (kit().heal && s.hp < MAX_HP) { s.hp = Math.min(MAX_HP, s.hp + ha); emit("heal", { amount: ha }); } }
+        if (allies && SIG[s.allyId] && me.sig <= 0 && s.t > 1) {            // signature move: a different action per companion, stronger with the bond
+          const g = SIG[s.allyId], pw = g.power[lv]; me.sig = SIG_CD[lv];
+          if (g.kind === "ward") s.inv = Math.max(s.inv, pw);
+          else if (g.kind === "blast") s.eHp = cfg.invuln ? s.eHp : rl("finale") ? Math.max(1, s.eHp - pw) : s.eHp - pw;
+          else if (g.kind === "reflect") for (const b of s.bullets) { if (Math.hypot(b.x - p.x, b.y - p.y) <= pw) { b.vx = -b.vx; b.vy = -b.vy; b.acc = 0; b.w = 0; b.home = null; } }
+          else s.bullets = s.bullets.filter(b => Math.hypot(b.x - p.x, b.y - p.y) > pw);
+          emit("signature", { ally: s.allyId, kind: g.kind, power: pw });
+        }
         // shield: blocks one hit, then regrows after shieldT seconds (the timer only runs while a shield-bearer is out)
         if (lv >= SHIELD_LV && kit().shield && !s.shieldOn && me.shield <= 0) { s.shieldOn = true; emit("shieldReady"); }
         for (const b of s.bullets) {                                       // graze: slipping past a bullet fills the bond gauge

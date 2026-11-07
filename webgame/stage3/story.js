@@ -96,7 +96,7 @@ const STAGE3 = [
   { act: "s3_painter", bgm: "s3_boss" },
 
   // ---- 6. 화가의 해방 ----
-  { who: "painter", bgm: "s3_field", fx: "impact", text: "......아." },
+  { who: "painter", bgm: "s3_field", theme: "atelier", fx: "impact", text: "......아." },
   { who: "painter", text: "붓이... 손에서 미끄러졌습니다. 그렇군요. 이제야 알겠습니다." },
   { who: "lumi", fx: "color", text: "와! 방 전체가 물들어! 파랑, 노랑, 빨강... 전부 돌아왔어!" },
   { who: "painter", text: "제가 지웠던 색은... 사라진 게 아니라, 제 안에 숨어 있었군요." },
@@ -139,6 +139,7 @@ const STAGE3 = [
   { who: "glitch", fx: "impact", text: "......흥. 맘대로 해라." },
   { who: "voice", text: "동료 '글리치'가 함께합니다! 이제 A키로 루미, 헥사, 글리치를 번갈아 부를 수 있어요." },
   { who: "voice", text: "글리치는 빠르게, 강하게 쏘지만 치료도 방패도 없어요. 대신 유대의 빛이 터지면 공격력이 올라가요." },
+  { act: "s3_morph", form: { who: "glitch", to: "calm" } },
   { act: "s3_party" },
 
   // ---- 7. 클리어 ----

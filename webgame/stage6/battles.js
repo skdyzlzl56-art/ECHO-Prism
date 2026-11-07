@@ -40,7 +40,7 @@ ACTS.s6_trial = done => runBattle(BATTLES.s6_trial, done);
 
 // ---- 3) 침묵: 5페이즈. 색 → 되감기 → 방향 → 색+되감기 → 마지막은 합동 유대의 빛 ----
 BATTLES.s6_silence = { stage: 6,
-  ...PARTY4, speaker: "silence", hp: 700, bgm: "s6_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 32, ew: 90, jointLight: true,
+  ...PARTY4, speaker: "silence", hp: 700, bgm: "s6_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 32, ew: 90, jointLight: true, silent: true,
   phaseRules: [{ colorRule: RED }, { rewind: 5 }, { dirRule: DIR6 }, { colorRule: RED, rewind: 5 }, { finale: true }],
   winText: "침묵이 돌아간다!",
   names: ["침묵 「붉게 번지는 소리」", "침묵 「되돌아오는 소리」", "침묵 「이름을 찾는 소리」", "침묵 「겹쳐 우는 소리」", "침묵 「처음의 기억」"],
@@ -53,11 +53,11 @@ BATTLES.s6_silence = { stage: 6,
     h => { h.rain(.55, 95); h.aim(1.6, 110, 8); h.ring(2.4, 13, 80, 7); },                                                      // 5: 규칙 없음. 스치며 유대를 채워 합동의 빛을 터뜨린다
   ],
   talks: {
-    1: [{ who: "silence", t: "......붉은... 것만... 남긴다." }, { who: "voice", t: "붉은 탄만 맞아요! 다른 색은 믿어요!" }],
-    2: [{ who: "silence", t: "......돌아와... 돌아와......" }, { who: "keeper", t: "되감깁니다. 이 소리는 돌아오고 싶어 하는군요." }],
-    3: [{ who: "lumi", t: "탄에 「기억」이라고 적혀 있어! 같이 움직이면 안전하댔지!" }, { who: "silence", t: "......이름... 내 이름... 어디......" }],
-    4: [{ who: "hexa", t: "색과 시간이 한꺼번에 온다. 붉은 것만 보고, 되감기 직전의 자리를 기억해라." }, { who: "glitch", t: "......합쳐서 덤비는군. 나도 그래 줄 테다." }],
-    5: [{ who: "silence", t: "......아파... 외로워... 불러... 줘......" }, { who: "voice", t: "이제 공격은 닿지 않아요! 탄을 스치며 유대를 가득 채워요. 모두의 빛이 하나로 터질 때까지!" }, { who: "lumi", t: "다 같이! 우리 넷이서 한 번에!" }],
+    0: [{ who: "silence", t: "......붉은... 것만... 남긴다." }, { who: "voice", t: "붉은 탄만 맞아요! 다른 색은 믿어요!" }],
+    1: [{ who: "silence", t: "......돌아와... 돌아와......" }, { who: "keeper", t: "되감깁니다. 이 소리는 돌아오고 싶어 하는군요." }],
+    2: [{ who: "lumi", t: "탄에 「기억」이라고 적혀 있어! 같이 움직이면 안전하댔지!" }, { who: "silence", t: "......이름... 내 이름... 어디......" }],
+    3: [{ who: "hexa", t: "색과 시간이 한꺼번에 온다. 붉은 것만 보고, 되감기 직전의 자리를 기억해라." }, { who: "glitch", t: "......합쳐서 덤비는군. 나도 그래 줄 테다." }],
+    4: [{ who: "silence", t: "......아파... 외로워... 불러... 줘......" }, { who: "voice", t: "이제 공격은 닿지 않아요! 탄을 스치며 유대를 가득 채워요. 모두의 빛이 하나로 터질 때까지!" }, { who: "lumi", t: "다 같이! 우리 넷이서 한 번에!" }],
   },
 };
 ACTS.s6_silence = done => runBattle(BATTLES.s6_silence, done);
