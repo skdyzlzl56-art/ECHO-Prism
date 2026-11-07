@@ -316,6 +316,10 @@
     return {
       state: s, BOX,
       step(dt, input = {}) { dt = Math.min(dt, .05); if (!s.over && !s.talk) update(dt, input); const out = ev; ev = []; return out; },
+      cooldownRings() {                                                      // display: fill 0..1 per ring, 1 = ready (companion rings follow the one out now)
+        const f = (left, total) => total > 0 ? Math.max(0, Math.min(1, 1 - left / total)) : 1, c = s.cool[s.allyId] || { heal: 0, shield: 0, sig: 0 }, lv = blv();
+        return { dash: f(s.dashCd, DASH_CD), heal: f(c.heal, HEAL_IV[lv]), shield: s.shieldOn ? 1 : f(c.shield, [0, 22, 18, 14, 10][lv]), sig: f(c.sig, SIG_CD[lv]) };
+      },
       toggleFire() { s.auto = !s.auto; return s.auto; },
       swap() {                                                               // 교대: hand the support role to the next companion; bond level and gauge are shared
         if (!allies || s.over || s.talk || s.swapCd > 0) return false;
