@@ -53,7 +53,16 @@ function drawEnemyBody(g, key, x, y, t, warn) {
     g.fillStyle = "#05080c"; g.beginPath(); g.arc(0, 0, 20, 0, TAU); g.fill(); g.stroke();
     for (let i = 0; i < 3; i++) { const q = (t / 2 + i / 3) % 1; g.globalAlpha = q; g.beginPath(); g.arc(0, 0, 62 - 44 * q, 0, TAU); g.stroke(); }
     g.globalAlpha = 1;
-  } else {
+  } else if (sp.shape === "gear") {                                                     // keeper / tick: a toothed wheel turning in steps, one hand fixed up
+    g.save(); g.rotate(Math.floor(t * 2) * .26 + Math.min(1, (t * 2 % 1) * 5) * .26); g.fillStyle = col + "33"; g.beginPath();
+    for (let i = 0; i < 16; i++) { const R = i % 2 ? 20 : 29, q = i * Math.PI / 8; g.lineTo(Math.cos(q) * R, Math.sin(q) * R); }
+    g.closePath(); g.fill(); g.stroke(); g.beginPath(); g.arc(0, 0, 11, 0, TAU); g.stroke(); g.restore();
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -16); g.stroke();
+  } else if (sp.shape === "easel") {                                                    // painter: a canvas on a tripod, a grey smear brushed across it
+    g.fillStyle = col + "22"; g.beginPath(); g.rect(-20, -26, 40, 32); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(-14, 6); g.lineTo(-24, 28); g.moveTo(14, 6); g.lineTo(24, 28); g.moveTo(0, 6); g.lineTo(0, 24); g.stroke();
+    g.globalAlpha = .6 + .3 * Math.sin(t * 3); g.beginPath(); g.moveTo(-14, -10); g.quadraticCurveTo(0, -22, 14, -6); g.stroke(); g.globalAlpha = 1;
+  } else {                                                                              // shard: the glitch's own jagged crystal (and fragment / blot)
     g.rotate(t * .8); g.fillStyle = col + "55"; g.beginPath();
     [26, 10, 22, 8, 28, 11, 20, 9, 24].forEach((R, j) => g.lineTo(Math.cos(j * TAU / 9) * R, Math.sin(j * TAU / 9) * R));
     g.closePath(); g.fill(); g.stroke();
