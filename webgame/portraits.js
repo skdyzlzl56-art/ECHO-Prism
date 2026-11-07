@@ -165,10 +165,13 @@ const THEMES = {
   clocktower: { sky: "linear-gradient(#3a2d17,#0d0a06)", rgb: "230,200,130", vx: 0, vy: .15 },     // stopped brass hours, dust hanging in the air
   library: { sky: "linear-gradient(#1d2140,#07091a)", rgb: "205,195,235", vx: .05, vy: -.12 },   // ink-blue stacks, pages drifting slowly up
   core:    { sky: "linear-gradient(#26153f,#06030f)", rgb: "230,210,255", vx: 0, vy: -.3 },   // prism core: violet, light rising like breath
+  atelier: { sky: "linear-gradient(#3b2a1e,#120b08)", rgb: "240,210,170", vx: 0, vy: -.05 },   // painter's studio: warm wood and lamplight, specks of pigment drifting
   flee:    { sky: "linear-gradient(#3d0f1c,#0a0306)", rgb: "255,120,130", vx: -22, vy: 0, streak: 5 }, // red alarm sky, stars streak past
 };
 let theme = THEMES.night, themeKey = "night", warpMs = 0, lastBg = 0;
 function setTheme(to) { theme = THEMES[to]; themeKey = to; document.getElementById("stage").style.background = theme.sky; }
+let rippleMs = -1;                                               // name events: rings spread through the sky (backdrop.js rippleRings)
+function ripple() { rippleMs = 0; }
 function warp(to = "lantern") { warpMs = 1800; setTimeout(() => setTheme(to), 900); }
 function drawBg(t) {
   const dt = Math.min(t - lastBg, 50); lastBg = t;
@@ -179,6 +182,11 @@ function drawBg(t) {
     bg.lineTo(960, 540); bg.closePath(); bg.fill();
   }
   bg.globalAlpha = 1;
+  if (rippleMs >= 0) {
+    rippleMs += dt; bg.lineWidth = 3;
+    for (const R of rippleRings(rippleMs / 1000)) { bg.strokeStyle = `rgba(${theme.rgb},${R.alpha})`; bg.beginPath(); bg.arc(480, 270, R.r, 0, Math.PI * 2); bg.stroke(); }
+    if (rippleMs > 3000) rippleMs = -1;
+  }
   const w = Math.max(warpMs > 0 ? Math.sin(Math.PI * warpMs / 1800) : 0, stageEl.classList.contains("battle") ? ambientWarp(t / 1000) : 0);   // 0 -> 1 (mid-warp) -> 0; battles add a faint periodic warp
   warpMs = Math.max(0, warpMs - dt);
   for (const s of stars) {

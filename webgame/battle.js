@@ -13,6 +13,7 @@
 //   ally: "lumi",                       optional companion; strength grows with the bond (유대), see BOND
 //   allies: ["lumi", "hexa"],           optional: A swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
 //   invuln, survive: 30,                escape battle: hits deal 0 (팅) and surviving 30s wins; bgm: null = silence, beat = heartbeat
+//   silent: true,                       no bgm and no sound effects at all for the whole fight (restored afterwards)
 //   fade: .2,                           each phase turns the bgm / enemy-shot volume down by this much
 //   playerHp, winText, ew, gauge0 }
 // Controls: arrows (+W/S/D) move, Z toggles shooting (ON at start), A swaps companion, Space/Enter/Z/click advance dialogue.
@@ -76,6 +77,7 @@ function runBattle(cfg, done) {
   const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX, lv: BOND.lv, xp: BOND.xp }), s = battle.state, BOX = s.BOX;
   const ALLY_SHOT = { hexa: 6, glitch: 3, keeper: 4 };                              // ally bullet = n-gon (lumi: dot), so companions read apart by their shots too
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
+  if (cfg.silent) hush(true);
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
   let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
 
@@ -98,7 +100,7 @@ function runBattle(cfg, done) {
   };
   const ku = ev => { keys[ev.code] = false; if (ev.key === KEYS.skip) keys.skip = false; };
   const cleanup = () => {
-    $("portrait").style.visibility = ""; setCast(null);cancelAnimationFrame(raf); bgm.stop(); removeEventListener("keydown", kd); removeEventListener("keyup", ku);
+    $("portrait").style.visibility = ""; setCast(null);cancelAnimationFrame(raf); bgm.stop(); if (cfg.silent) hush(false); removeEventListener("keydown", kd); removeEventListener("keyup", ku);
     act.onclick = act.onmousedown = null;
   };
   const end = () => { cleanup(); act.hidden = true; act.innerHTML = ""; stage.classList.remove("battle"); done(); };
