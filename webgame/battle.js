@@ -84,6 +84,7 @@ function runBattle(cfg, done) {
   const ALLY_SHOT = { hexa: 6, glitch: 3, keeper: 4 };                              // ally bullet = n-gon (lumi: dot), so companions read apart by their shots too
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   if (cfg.silent) hush(true);
+  const asShot = f => cfg.silent ? (...a) => { sfxBus("shot"); try { return f(...a); } finally { sfxBus("sfx"); } } : f;   // enemy attack sounds ride their own bus (final fight: they return first)
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
   let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
 
@@ -117,16 +118,16 @@ function runBattle(cfg, done) {
   const shotSfx = (size, sp) => { volley.n++; volley.pw = Math.max(volley.pw, (size - 6) / 8 + (sp - 150) / 400); };
   const boom = (v = 1, low = 90) => { const q = quiet * v; sweep(low * 1.6, low * .4, .55, "sine", .6 * q); sweep(low * 2.4, low * .5, .35, "sawtooth", .3 * q); noise(.3, .45 * q); };
   const charge = (dur, v = 1, f = 120) => { const q = quiet * v; sweep(f, f * 8, dur, "sawtooth", .16 * q); sweep(f / 2, f * 4, dur, "sine", .3 * q); sweep(f * 12, f * 28, dur, "square", .035 * q); };
-  const flushVolley = () => {
+  const flushVolley = asShot(() => {
     const { n, pw } = volley; volley = { n: 0, pw: 0 }; if (!n) return;
     const t = performance.now();
     if (n >= 6) { if (t - lastBig < 250) return; lastBig = t; boom(1, 80); sweep(70, 40, .5, "triangle", .35 * quiet); return; }    // wall / ring: one heavy thump
     if (n >= 2) { if (t - lastBig < 150) return; lastBig = t; sweep(240, 70, .2, "sine", .45 * quiet); sweep(500, 120, .14, "sawtooth", .16 * quiet); noise(.1, .3 * quiet); return; }   // short volley
-    if (pw >= 1) { if (t - lastBig < 300) return; lastBig = t; charge(.18, .8, 300); setTimeout(() => boom(.8, 110), 150); return; }                                              // heavy orb: wind-up, then boom
+    if (pw >= 1) { if (t - lastBig < 300) return; lastBig = t; charge(.18, .8, 300); setTimeout(asShot(() => boom(.8, 110)), 150); return; }                                              // heavy orb: wind-up, then boom
     if (pw < .3) { if (t - lastShot < 90) return; lastShot = t; sweep(1100 + Math.random() * 300, 450, .1, "triangle", .18 * quiet); noise(.03, .1 * quiet); return; }
     if (t - lastBig < 200) return; lastBig = t;
     sweep(900 - 300 * pw, 300, .14 + .2 * pw, "sawtooth", (.2 + .15 * pw) * quiet); noise(.08 + .1 * pw, .3 * quiet);
-  };
+  });
 
   // events from the simulation -> sound and visual effects
   function onEvent(v) {
@@ -172,13 +173,14 @@ function runBattle(cfg, done) {
       case "dash": sweep(900, 300, .12, "sawtooth", .12); noise(.08, .15); break;
       case "swap":allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
       case "phase":
+        if (cfg.silent) { hushLayer(v.level); if (v.level >= 3) ripple(); }   // each phase gives one more thing back: attacks, music, sky, the rest
         if (cfg.fade) { quiet = Math.max(.15, 1 - cfg.fade * v.level); bgm.vol(quiet); }   // each phase swallows more of the sound
         if (v.name) { banner = { txt: v.name, age: 0, level: v.level }; sweep(300, 900, .35, "sawtooth", .18); }
         if (!v.start) { noise(.3, .5); sweep(100, 600, .5, "sawtooth", .25); retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); }
         if (v.talk) typer.reset();
         break;
-      case "laserWarn": charge(v.warn || 1, 1, 110); break;
-      case "laserFire": boom(1.2, 70); sweep(1500, 60, .9, "sawtooth", .3 * quiet); break;
+      case "laserWarn": asShot(charge)(v.warn || 1, 1, 110); break;
+      case "laserFire": asShot(() => { boom(1.2, 70); sweep(1500, 60, .9, "sawtooth", .3 * quiet); })(); break;
       case "break": noise(.12, .4 * quiet); sweep(500, 90, .22, "square", .2 * quiet); for (let i = 0; i < 8; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 160; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
       case "split": noise(.18, .45 * quiet); sweep(900, 100, .3, "sawtooth", .3 * quiet); sweep(2400, 600, .12, "square", .1 * quiet); break;
       case "dashWarn": charge(.9, 1, 90); break;

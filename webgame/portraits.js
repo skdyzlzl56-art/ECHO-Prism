@@ -15,14 +15,15 @@ function orb(t, col) {
   c.strokeStyle = col; c.lineWidth = 2;                                              // expanding ripples
   for (let i = 0; i < 3; i++) { const p = (ph / 1500 + i / 3) % 1; c.globalAlpha = (1 - p) * .5; c.beginPath(); c.arc(0, 0, 40 + 110 * p, 0, 7); c.stroke(); }
   c.globalAlpha = 1;
-  const r = 70 + 6 * pulse + 5 * Math.sin(ph / 150);
-  const g = c.createRadialGradient(0, 0, 0, 0, 0, r * 1.8);
-  g.addColorStop(0, "#fff"); g.addColorStop(.25, col); g.addColorStop(1, "transparent");
-  c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 1.8, 0, 7); c.fill();
-  c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 30;
-  for (let i = 0; i < 3; i++) {                       // orbiting satellites
+  const r = 70 + 6 * pulse + 5 * Math.sin(ph / 150);                                  // 침묵 is black: a lightless disc, only a pale rim and halo show where it is
+  const g = c.createRadialGradient(0, 0, r * .8, 0, 0, r * 1.9);
+  g.addColorStop(0, col); g.addColorStop(.35, "rgba(159,180,199,.18)"); g.addColorStop(1, "transparent");
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 1.9, 0, 7); c.fill();
+  c.fillStyle = "#000"; c.shadowColor = col; c.shadowBlur = 30; c.lineWidth = 3;
+  c.beginPath(); c.arc(0, 0, r, 0, 7); c.fill(); c.stroke();
+  for (let i = 0; i < 3; i++) {                       // orbiting satellites, black with a rim
     const a = ph / 350 + i * 2.09;
-    c.beginPath(); c.arc(Math.cos(a) * r * 1.4, Math.sin(a) * r * .5, 6, 0, 7); c.fill();
+    c.beginPath(); c.arc(Math.cos(a) * r * 1.4, Math.sin(a) * r * .5, 7, 0, 7); c.fill(); c.stroke();
   }
 }
 
@@ -216,9 +217,38 @@ function setTheme(to) { theme = THEMES[to]; themeKey = to; document.getElementBy
 let rippleMs = -1;                                               // name events: rings spread through the sky (backdrop.js rippleRings)
 function ripple() { rippleMs = 0; }
 function warp(to = "lantern") { warpMs = 1800; setTimeout(() => setTheme(to), 900); }
+// Scenery behind the silhouettes: outdoors gets a big sky body + horizon glow, indoors gets tall arched windows throwing slanted light (core: prism beams, clocktower: a dial).
+function drawScenery(t) {
+  const rgb = theme.rgb, a = (o) => `rgba(${rgb},${o})`;
+  if (!isIndoor(themeKey)) {
+    const x = themeKey === "lantern" ? 700 : 740, y = themeKey === "lantern" ? 330 : 120, r = themeKey === "flee" ? 70 + 8 * Math.sin(t / 250) : 54;
+    const g = bg.createRadialGradient(x, y, r * .3, x, y, r * 3.4); g.addColorStop(0, a(.5)); g.addColorStop(1, a(0));
+    bg.fillStyle = g; bg.fillRect(0, 0, 960, 540);
+    bg.fillStyle = a(themeKey === "silence" ? .1 : .22); bg.beginPath(); bg.arc(x, y, r, 0, 7); bg.fill();
+    if (themeKey === "silence") { bg.strokeStyle = a(.25); bg.lineWidth = 2; bg.beginPath(); bg.arc(x, y, r + 12, 0, 7); bg.stroke(); }
+    const h = bg.createLinearGradient(0, 380, 0, 540); h.addColorStop(0, a(0)); h.addColorStop(1, a(.14)); bg.fillStyle = h; bg.fillRect(0, 380, 960, 160);   // horizon glow
+    return;
+  }
+  if (themeKey === "clocktower") {                                            // a huge dial, one hand creeping
+    bg.strokeStyle = a(.14); bg.lineWidth = 4; bg.beginPath(); bg.arc(480, 250, 150, 0, 7); bg.stroke();
+    for (let i = 0; i < 12; i++) { const q = i * Math.PI / 6; bg.beginPath(); bg.moveTo(480 + Math.cos(q) * 130, 250 + Math.sin(q) * 130); bg.lineTo(480 + Math.cos(q) * 146, 250 + Math.sin(q) * 146); bg.stroke(); }
+    const q = t / 8000; bg.beginPath(); bg.moveTo(480, 250); bg.lineTo(480 + Math.cos(q) * 110, 250 + Math.sin(q) * 110); bg.stroke();
+    return;
+  }
+  for (const x of [170, 480, 790]) {                                         // arched window + slanted light across the floor
+    bg.fillStyle = a(themeKey === "core" ? .09 : .07);
+    bg.beginPath(); bg.moveTo(x - 46, 330); bg.lineTo(x - 46, 150); bg.arc(x, 150, 46, Math.PI, 0); bg.lineTo(x + 46, 330); bg.closePath(); bg.fill();
+    const sway = themeKey === "core" ? 30 * Math.sin(t / 2500 + x) : 0, g = bg.createLinearGradient(x, 200, x + 160 + sway, 540);
+    g.addColorStop(0, a(.12)); g.addColorStop(1, a(0)); bg.fillStyle = g;
+    bg.beginPath(); bg.moveTo(x - 40, 200); bg.lineTo(x + 40, 200); bg.lineTo(x + 240 + sway, 540); bg.lineTo(x + 40 + sway, 540); bg.closePath(); bg.fill();
+  }
+}
 function drawBg(t) {
   const dt = Math.min(t - lastBg, 50); lastBg = t;
   bg.clearRect(0, 0, 960, 540);
+  const bare = typeof hushed !== "undefined" && hushed && silenceLayer < 3;   // 침묵 fight, before the sky returns: nothing behind the fight
+  if (bare) return;
+  drawScenery(t);
   for (const L of backdropLayers(themeKey, t / 1000)) {         // parallax silhouettes behind the stars (backdrop.js)
     bg.globalAlpha = L.alpha; bg.fillStyle = `rgb(${theme.rgb})`; bg.beginPath(); bg.moveTo(0, 540);
     for (const [x, y] of L.pts) bg.lineTo(x, y);

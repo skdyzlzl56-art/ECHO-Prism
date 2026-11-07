@@ -14,7 +14,7 @@ function load() {
     SPEAKERS: new Proxy({}, { get: (t, k) => t[k] || (t[k] = { name: String(k), color: "#fff", pitch: 200, spin: 1, shape: "bloom", close: 0 }) }),
     $: () => stub(), stage: stub(), act: stub(), bgm: stub(), sweep: () => {}, noise: () => {}, retrigger: () => {}, setPortrait: () => {}, kickPortrait: () => {}, setCast: () => {},
     performance: { now: () => 0 }, requestAnimationFrame: cb => (rafs.push(cb), rafs.length), cancelAnimationFrame: () => {},
-    ACTS: {}, FX: {}, TAU: Math.PI * 2, drawShape: () => {}, myShape: stub(), PLAYER_SHAPES: [stub()], addEventListener: (k, f) => { handlers[k] = f; }, removeEventListener: () => {}, setTimeout: f => (timers.push(f), 0), hush: on => hushLog.push(on), localStorage: { getItem: () => null, setItem: () => {} },
+    ACTS: {}, FX: {}, TAU: Math.PI * 2, drawShape: () => {}, myShape: stub(), PLAYER_SHAPES: [stub()], addEventListener: (k, f) => { handlers[k] = f; }, removeEventListener: () => {}, setTimeout: f => (timers.push(f), 0), hush: on => hushLog.push(on), hushLayer: n => hushLog.push("L" + n), ripple: () => {}, sfxBus: () => {}, localStorage: { getItem: () => null, setItem: () => {} },
   });
   vm.runInContext(rd("battle.js") + "\n;globalThis.__run = runBattle; globalThis.__bond = BOND;", ctx);
   return { ctx, rafs, handlers, hushLog, timers };
@@ -51,8 +51,8 @@ test("a silent battle (cfg.silent) hushes all sound while it runs and restores i
   const plain = load(); plain.ctx.__run(cfg(), () => {}); assert.deepEqual(plain.hushLog, []);   // other battles never touch the sound
   const { ctx, rafs, hushLog, timers } = load(); let done = false;
   ctx.__run(cfg({ silent: true, invuln: true, survive: 1, hp: 999, cuts: [] }), () => { done = true; });
-  assert.deepEqual(hushLog, [true]);
+  assert.deepEqual(hushLog.filter(x => x === true || x === false), [true]);
   drive(rafs, 200);                                                  // past the 1s grace + the 1s survive clock: win
   timers.forEach(f => f());                                          // the win outro timer runs end()
-  assert.ok(done); assert.deepEqual(hushLog, [true, false]);
+  assert.ok(done); assert.deepEqual(hushLog.filter(x => x === true || x === false), [true, false]);
 });
