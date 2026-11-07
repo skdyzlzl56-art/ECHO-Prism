@@ -67,7 +67,7 @@ function runBattle(cfg, done) {
   const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX }), s = battle.state, BOX = s.BOX;
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
-  let floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, lastShot = 0, lastBig = 0, lastGraze = 0;
+  let floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0;
 
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
@@ -233,7 +233,9 @@ function runBattle(cfg, done) {
       g.font = "bold 13px 'Malgun Gothic'"; g.fillStyle = allyCol; g.textAlign = "center"; g.fillText(`유대 Lv.${lv}`, al.x, al.y + 30 + 3 * lv);
     }
     if (s.over !== "lose" && (s.inv <= 0 || Math.floor(s.inv * 12) % 2)) {
-      g.save(); g.translate(p.x, p.y); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
+      g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = allyCol || "#4fc3ff";   // faint trail of recent positions
+      wake.forEach((q, i) => { g.globalAlpha = (i + 1) / wake.length * .18; g.beginPath(); g.arc(q.x, q.y, 3 + 5 * (i + 1) / wake.length, 0, TAU); g.fill(); }); g.restore();
+      g.save(); g.translate(p.x, p.y); g.rotate(look.rot); g.scale(look.sx, look.sy); g.rotate(-look.rot); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
       if (s.shieldOn) { g.strokeStyle = allyCol; g.lineWidth = 3; g.shadowColor = allyCol; g.shadowBlur = 14; g.globalAlpha = .6 + .3 * Math.sin(t * 6); g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.stroke(); }
       g.restore();
     }
@@ -292,6 +294,11 @@ function runBattle(cfg, done) {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
       for (const v of battle.step(dt, input)) onEvent(v);
+      if (prevP && dt > 0) moveLook(look, (s.p.x - prevP.x) / dt, (s.p.y - prevP.y) / dt, dt);   // display only: reads the position, never writes it
+      if (prevP && (s.p.x !== prevP.x || s.p.y !== prevP.y)) wake.push({ x: prevP.x, y: prevP.y });
+      else if (wake.length) wake.shift();
+      if (wake.length > 6) wake.shift();
+      prevP = { x: s.p.x, y: s.p.y };
       flushVolley();
       if (cfg.beat && !s.over && s.t > 0 && (beatT -= dt) <= 0) { beatT = .7; sweep(85, 45, .22, "sine", .45); setTimeout(() => sweep(70, 40, .2, "sine", .3), 170); }   // all that is left of the sound: a heartbeat
       hitFlash -= dt; burstFx = Math.max(0, burstFx - dt * 1.5);
