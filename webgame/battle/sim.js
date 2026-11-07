@@ -39,7 +39,7 @@
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     for (const id of allies || [cfg.ally]) s.cool[id] = { heal: HEAL_IV[0], shield: 0 };
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
-    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, bonus = 0, started = false, hist = [], rev = null, spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false;
+    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, bonus = 0, started = false, hist = [], rev = null, spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false, dwSide = -1;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -79,6 +79,8 @@
         const c0 = C("rain", o).col, st = o.states || [{ vx: 0, vy: 0, col: c0 }, { vx: 90, vy: 0, col: `hsl(${(hue + 180) % 360},100%,70%)` }];
         add(p.x, BOX.y + 40, 0, 0, size, { col: st[0].col }); const b = s.bullets[s.bullets.length - 1]; b.tg = st; b.st = 0; b.life = o.life || 8;   // expires, so still ones cannot pile up and block shots
       }),
+      // 방향 벽: a full-height column with no gap sweeps the box sideways, alternating sides; under a dirRule only moving WITH it is safe (sp must beat the player's speed so it overtakes)
+      dirWall: (iv, sp = 260, size = 8, o) => every("dw", iv, () => { dwSide = -dwSide; for (let y = BOX.y + 6; y < BOX.y + BOX.h; y += 14) add(dwSide > 0 ? BOX.x - 10 : BOX.x + BOX.w + 10, y, dwSide > 0 ? 0 : Math.PI, sp, size, C("wall", o)); }),
       // new motions: bounce (reflects off the side walls bn times), stall (stops at t for d s, then leaves at speed sp), homing (steers toward the player for t s)
       bounce: (iv, sp = 170, size = 6, o) => every("bn", iv, () => add(e.x, e.y + 55, Math.PI / 2 + (rng() < .5 ? -.8 : .8), sp, size, C("bounce", { bn: 3, ...o }))),
       stall: (iv, sp = 130, size = 6, o) => every("st", iv, () => add(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), sp, size, C("stall", { stall: { t: .5, d: .6, sp: sp * 2 }, ...o }))),
