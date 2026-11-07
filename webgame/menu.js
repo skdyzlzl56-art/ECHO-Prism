@@ -70,7 +70,7 @@
   }
 
   // "Z키" / "A키" in story text follow the current binding
-  const fixKeys = (t, k) => t.replace("Z키", keyLabel(k.fire) + "키").replace("A키", keyLabel(k.swap) + "키");
+  const fixKeys = (t, k) => t.replaceAll("Z키", keyLabel(k.fire) + "키").replaceAll("A키", keyLabel(k.swap) + "키");
 
   const menuHtml = m => {
     const row = (t, on) => `<div style="padding:4px 18px;${on ? "background:#4fc3ff44;border:2px solid #fff;" : "border:2px solid transparent;"}">${t}</div>`;

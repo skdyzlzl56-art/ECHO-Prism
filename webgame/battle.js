@@ -317,7 +317,7 @@ function runBattle(cfg, done) {
     const dt = Math.min((now - last) / 1000, .05); last = now;
     if (MENU.open) { raf = requestAnimationFrame(frame); return; }                       // menu open: everything stops (the menu is a DOM overlay)
     $("portrait").style.visibility = s.talk ? "visible" : "hidden";                     // the enemy body is drawn on the field; the portrait only shows while someone talks
-    if (s.talk) { typer.add(dt * 25, keys[KEYS.fast], lineT().length); if (keys.skip && typer.hold(dt, lineT().length)) nextLine(); setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
+    if (s.talk) { typer.add(dt * 25, keys[KEYS.fast], lineT().length); if (keys.skip && typer.hold(dt, lineT().length)) nextLine(); if (s.talk) { setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); } }   // nextLine() on the last line clears s.talk
     else {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };

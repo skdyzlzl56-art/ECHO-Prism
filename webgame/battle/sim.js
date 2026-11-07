@@ -33,7 +33,7 @@
     const p = s.p, e = s.e, al = s.al;
     // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, invertRule, splitRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
     // finale: shots deal 0 and only the joint light (bond full, cfg.jointLight) ends the fight.
-    const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr ? pr[k] : cfg[k]; };
+    const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr && k in pr ? pr[k] : cfg[k]; };   // a key absent from the phase entry falls back to the cfg-level option
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
@@ -75,7 +75,7 @@
       // bullet that hangs above the player and flips state on every player/ally hit: o.states = [{vx, vy, col}] cycled in order (default still <-> sideways)
       toggle: (iv, size = 12, o = {}) => every("t", iv, () => {
         const c0 = C("rain", o).col, st = o.states || [{ vx: 0, vy: 0, col: c0 }, { vx: 90, vy: 0, col: `hsl(${(hue + 180) % 360},100%,70%)` }];
-        add(p.x, BOX.y + 40, 0, 0, size, { col: st[0].col }); const b = s.bullets[s.bullets.length - 1]; b.tg = st; b.st = 0;
+        add(p.x, BOX.y + 40, 0, 0, size, { col: st[0].col }); const b = s.bullets[s.bullets.length - 1]; b.tg = st; b.st = 0; b.life = o.life || 8;   // expires, so still ones cannot pile up and block shots
       }),
       // new motions: bounce (reflects off the side walls bn times), stall (stops at t for d s, then leaves at speed sp), homing (steers toward the player for t s)
       bounce: (iv, sp = 170, size = 6, o) => every("bn", iv, () => add(e.x, e.y + 55, Math.PI / 2 + (rng() < .5 ? -.8 : .8), sp, size, C("bounce", { bn: 3, ...o }))),
@@ -178,11 +178,12 @@
         if (s.gauge >= 100) burst();
       }
       for (const sh of s.shots) { sh.x += sh.vx * dt; sh.y += sh.vy * dt; }
-      for (const sh of s.shots) for (const b of s.bullets) if (b.hp > 0 && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // breakable bullet absorbs the shot
+      const hitTargets = s.bullets.some(b => b.hp > 0 || b.tg);              // most frames have none: skip the shots x bullets passes
+      if (hitTargets) for (const sh of s.shots) for (const b of s.bullets) if (b.hp > 0 && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // breakable bullet absorbs the shot
         sh.dead = true; b.hp -= sh.dmg;
         if (b.hp <= 0) { b.dead = true; emit("break", { x: b.x, y: b.y }); }
       }
-      for (const sh of s.shots) for (const b of s.bullets) if (b.tg && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // toggle bullet: a hit absorbs the shot and flips its state
+      if (hitTargets) for (const sh of s.shots) for (const b of s.bullets) if (b.tg && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // toggle bullet: a hit absorbs the shot and flips its state
         sh.dead = true; b.st = (b.st + 1) % b.tg.length; const t = b.tg[b.st]; b.vx = t.vx; b.vy = t.vy; b.col = t.col;
       }
       for (const b of s.bullets) if (b.tg && (b.x < BOX.x + b.r && b.vx < 0 || b.x > BOX.x + BOX.w - b.r && b.vx > 0)) b.vx = -b.vx;   // sway turns at the walls
@@ -204,7 +205,7 @@
 
       if (s.t > 1 && !s.talk && (e.mode === "idle" || e.mode === "warn")) cfg.phases[Math.min(s.level, cfg.phases.length - 1)](h);   // 1s grace; the enemy rests its guns while diving
       for (const b of s.bullets) {
-        b.age += dt;
+        b.age += dt; if (b.life && b.age > b.life) b.dead = true;
         if (b.gr) b.r = b.r0 * (1 + (b.gr - 1) * Math.min(1, b.age / b.split.t));
         if (b.sa) { b.y += b.vy * dt; b.x = b.bx + b.sa * Math.sin(b.sf * b.age + b.ph); }
         else {

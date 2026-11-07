@@ -498,3 +498,17 @@ test("zone and swell have their own tones", () => {
   const c = b.state.bullets[0].col;
   assert.ok(!["rain", "wall", "wave", "aim", "bounce", "stall", "homing"].some(k => { const d = createBattle({ ...quiet, phases: [h => { if (d.state.t < 1.2) h[k] ? h[k](.01, 100, 8) : 0; }] }, { rng: seeded(1) }); run(d, 1.1); return d.state.bullets[0] && d.state.bullets[0].col === c; }));
 });
+
+test("toggle bullet expires after its lifetime so state-0 ones cannot pile up", () => {
+  const b = createBattle({ ...quiet, phases: [h => h.toggle(.5, 12)] }, { rng: seeded(4) }); b.state.auto = false;
+  run(b, 40);
+  assert.ok(b.state.bullets.filter(x => x.tg).length <= 20, `toggle bullets alive: ${b.state.bullets.filter(x => x.tg).length}`);
+  assert.ok(b.state.bullets.every(x => !x.tg || x.age <= 8.1), "none outlives 8s");
+});
+
+test("phaseRules: a key omitted in the phase entry falls back to the cfg-level rule", () => {
+  const b = createBattle({ ...quiet, colorRule: "#f00", phaseRules: [{}], phases: [() => {}] }, { rng: seeded(1) }); b.state.auto = false;
+  b.state.bullets.push({ x: b.state.p.x, y: b.state.p.y, vx: 0, vy: 0, r: 6, dmg: 4, col: "#00f", age: 0, tr: [], id: 99 });
+  const ev = run(b, .1);
+  assert.ok(!ev.some(v => v.type === "playerHurt"), "wrong-colour bullet is harmless under the cfg-level colorRule");
+});

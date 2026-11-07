@@ -2,7 +2,7 @@
 // Rewind rule (되감기 규칙): cfg.rewind = 5. Every 5 s the bullets jump back to where they were 1.5 s earlier, so a pattern repeats once.
 // Flow: s4_ticks (mooks, rewind intro) -> s4_keeper (boss) -> 시계지기 joins -> s4_exit (4 allies, A-cycling in real play).
 // Party: PARTY3 (stage3/battles.js) is the three-ally config. PARTY4 adds the 시계지기: rapid, light shots, no heal/shield.
-// His bond light is "clock": the sim treats unknown lights as a plain burst (no heal, no power), so his role is volume of fire.
+// His bond light is "clock": the sim has a dedicated 'clock' light branch (winds the swap cooldown back; no heal, no power), so his role is volume of fire.
 
 SPEAKERS.keeper = { name: "시계지기", pitch: 130, spin: .8, shape: "gear", color: "#e0b86a", close: 0 };   // 멈춘 시계탑의 관리인. 같은 순간을 되풀이하는 자. 차분하고 정확한 말투
 SPEAKERS.tick = { name: "째깍이", pitch: 300, spin: 1.5, shape: "gear", color: "#c9a45a", close: 0 };          // 시계지기의 톱니에서 떨어져 나온 작은 부품 (잡몹)

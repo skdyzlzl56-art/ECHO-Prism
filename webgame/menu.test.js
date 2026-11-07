@@ -2,6 +2,10 @@ const test = require("node:test"), assert = require("node:assert");
 const { createMenu, keyLabel, fixKeys } = require("./menu.js");
 const press = (m, ...codes) => codes.map(c => m.key(c)).pop();
 
+test("fixKeys rewrites every Z키 / A키 in a line", () => {
+  assert.strictEqual(fixKeys("Z키로 켜고 Z키로 끄고 A키 A키", { fire: "KeyX", swap: "KeyQ" }), "X키로 켜고 X키로 끄고 Q키 Q키");
+});
+
 test("C opens and closes the menu; Escape on the top list closes too", () => {
   const m = createMenu();
   assert.strictEqual(m.open, false);
