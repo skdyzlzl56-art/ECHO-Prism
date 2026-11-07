@@ -159,6 +159,15 @@ test("direction rule: bullets carry the configured name for display", () => {
   assert.ok(b.state.bullets.length > 0 && b.state.bullets.every(x => x.nm === "동쪽"));
 });
 
+// 합동 유대의 빛: cfg.jointLight - the burst that fills the bond to the top becomes a joint light of all allies
+test("joint bond light: only when enabled and the bond reaches full; otherwise no event", () => {
+  const go = (jointLight, bondBase) => run(createBattle({ ...quiet, hp: 1000, ally: "lumi", allies: ["lumi", "hexa"], gauge0: 100, jointLight }, { rng: seeded(9), bondBase }), .1);
+  const ev = go(true, 3), j = ev.find(v => v.type === "jointLight");
+  assert.ok(j && j.allies.join() === "lumi,hexa");
+  assert.ok(!go(false, 3).some(v => v.type === "jointLight"), "off by default");
+  assert.ok(!go(true, 1).some(v => v.type === "jointLight"), "bond not full yet");
+});
+
 // ---- the real stage 1 configs: every phase actually fires, with the player standing still and a huge HP pool ----
 global.SPEAKERS = {}; global.BATTLES = {}; global.ACTS = {}; global.runBattle = () => {};
 require("../stage1/battles.js"); require("../stage2/battles.js");
