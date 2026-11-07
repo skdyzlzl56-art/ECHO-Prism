@@ -90,14 +90,21 @@ function runBattle(cfg, done) {
   };
   const end = () => { cleanup(); act.hidden = true; act.innerHTML = ""; stage.classList.remove("battle"); done(); };
 
-  // enemy shot sound: the bigger / faster the bullet, the longer, lower and louder (weak shots are throttled)
-  const shotSfx = (size, sp) => {
-    const pw = Math.min(1.5, Math.max(0, (size - 6) / 8 + (sp - 150) / 400)), n = performance.now();   // 0 = weak ... 1.5 = menacing
-    if (pw < .3) { if (n - lastShot < 90) return; lastShot = n; sweep(1100 + Math.random() * 300, 450, .1, "triangle", .2 * quiet); noise(.03, .12 * quiet); return; }
-    if (n - lastBig < 200) return; lastBig = n;
-    const f = 1000 - 450 * pw;
-    sweep(f, f * .4, .12 + .25 * pw, "sawtooth", (.22 + .2 * pw) * quiet);
-    noise(.08 + .12 * pw, (.3 + .15 * pw) * quiet);
+  // boss attack sounds. Shots of one frame are gathered into a volley (flushed after the step) so a ring / wall is ONE heavy thud,
+  // not 30 blips; heavy single orbs get a boom, lasers and body-slams get a rising charge before they fire.
+  let volley = { n: 0, pw: 0 };
+  const shotSfx = (size, sp) => { volley.n++; volley.pw = Math.max(volley.pw, (size - 6) / 8 + (sp - 150) / 400); };
+  const boom = (v = 1, low = 90) => { const q = quiet * v; sweep(low * 1.6, low * .4, .55, "sine", .6 * q); sweep(low * 2.4, low * .5, .35, "sawtooth", .3 * q); noise(.3, .45 * q); };
+  const charge = (dur, v = 1, f = 120) => { const q = quiet * v; sweep(f, f * 8, dur, "sawtooth", .16 * q); sweep(f / 2, f * 4, dur, "sine", .3 * q); sweep(f * 12, f * 28, dur, "square", .035 * q); };
+  const flushVolley = () => {
+    const { n, pw } = volley; volley = { n: 0, pw: 0 }; if (!n) return;
+    const t = performance.now();
+    if (n >= 6) { if (t - lastBig < 250) return; lastBig = t; boom(1, 80); sweep(70, 40, .5, "triangle", .35 * quiet); return; }    // wall / ring: one heavy thump
+    if (n >= 2) { if (t - lastBig < 150) return; lastBig = t; sweep(240, 70, .2, "sine", .45 * quiet); sweep(500, 120, .14, "sawtooth", .16 * quiet); noise(.1, .3 * quiet); return; }   // short volley
+    if (pw >= 1) { if (t - lastBig < 300) return; lastBig = t; charge(.18, .8, 300); setTimeout(() => boom(.8, 110), 150); return; }                                              // heavy orb: wind-up, then boom
+    if (pw < .3) { if (t - lastShot < 90) return; lastShot = t; sweep(1100 + Math.random() * 300, 450, .1, "triangle", .18 * quiet); noise(.03, .1 * quiet); return; }
+    if (t - lastBig < 200) return; lastBig = t;
+    sweep(900 - 300 * pw, 300, .14 + .2 * pw, "sawtooth", (.2 + .15 * pw) * quiet); noise(.08 + .1 * pw, .3 * quiet);
   };
 
   // events from the simulation -> sound and visual effects
@@ -133,12 +140,12 @@ function runBattle(cfg, done) {
         if (!v.start) { noise(.3, .5); sweep(100, 600, .5, "sawtooth", .25); retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); }
         if (v.talk) talkN = 0;
         break;
-      case "laserWarn": sweep(1800, 2400, .15, "square", .18); break;
-      case "laserFire": sweep(220, 40, .5, "sawtooth", .4); noise(.3, .45); break;
-      case "split": noise(.1, .3); sweep(500, 150, .18, "sawtooth", .2); break;
-      case "dashWarn": sweep(1800, 2400, .2, "square", .2); break;
-      case "dashStart": sweep(500, 80, .5, "sawtooth", .3); noise(.2, .35); break;
-      case "dashEnd": noise(.25, .5); retrigger(stage, "shake", 300); break;
+      case "laserWarn": charge(v.warn || 1, 1, 110); break;
+      case "laserFire": boom(1.2, 70); sweep(1500, 60, .9, "sawtooth", .3 * quiet); break;
+      case "split": noise(.18, .45 * quiet); sweep(900, 100, .3, "sawtooth", .3 * quiet); sweep(2400, 600, .12, "square", .1 * quiet); break;
+      case "dashWarn": charge(.9, 1, 90); break;
+      case "dashStart": sweep(900, 60, .6, "sawtooth", .35); noise(.35, .4); break;
+      case "dashEnd": boom(1.3, 60); retrigger(stage, "shake", 300); break;
       case "lose":
         bgm.stop(); noise(.5, .5); sweep(400, 40, 1, "sawtooth", .3);
         setTimeout(() => { act.onclick = () => { cleanup(); runBattle(cfg, done); }; }, 600);
@@ -278,6 +285,7 @@ function runBattle(cfg, done) {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
       for (const v of battle.step(dt, input)) onEvent(v);
+      flushVolley();
       if (cfg.beat && !s.over && s.t > 0 && (beatT -= dt) <= 0) { beatT = .7; sweep(85, 45, .22, "sine", .45); setTimeout(() => sweep(70, 40, .2, "sine", .3), 170); }   // all that is left of the sound: a heartbeat
       hitFlash -= dt; burstFx = Math.max(0, burstFx - dt * 1.5);
       if (banner && (banner.age += dt) > 3) banner = null;

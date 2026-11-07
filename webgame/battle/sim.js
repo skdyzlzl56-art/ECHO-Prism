@@ -167,7 +167,7 @@
       s.bullets = s.bullets.filter(b => !b.dead && b.y < BOX.y + BOX.h + 20 && b.y > BOX.y - 120 && b.x > BOX.x - 40 && b.x < BOX.x + BOX.w + 40);
       for (const l of s.lasers) {
         l.age += dt;
-        if (!l.ping) { l.ping = true; emit("laserWarn"); }
+        if (!l.ping) { l.ping = true; emit("laserWarn", { warn: l.warn, w: l.w }); }
         if (!l.boom && l.age >= l.warn) { l.boom = true; emit("laserFire"); }
         if (l.boom && l.age < l.warn + l.dur && s.inv <= 0) {
           const ddx = p.x - l.x, ddy = p.y - l.y, along = ddx * Math.cos(l.a) + ddy * Math.sin(l.a), perp = Math.abs(-ddx * Math.sin(l.a) + ddy * Math.cos(l.a));

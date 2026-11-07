@@ -121,7 +121,7 @@ function finish() { clearInterval(timer); timer = null; $("text").textContent = 
 
 // background music: audio/bgm_<name>.ogg, seamless loop. Web Audio buffer; <audio> fallback (e.g. opened via file://)
 const bgm = (() => {
-  const VOL = { intro: .18, battle: .2, s1_field: .2, s1_boss: .2 };                 // per-track volume, kept below the sound effects
+  const VOL = { intro: .18, battle: .2, s1_field: .2, s1_boss: .2, s2_field: .2, s2_boss: .2 };                 // per-track volume, kept below the sound effects
   const bufs = {}; let cur = null, name = null;
   const load = n => bufs[n] ||= fetch(`audio/bgm_${n}.ogg`).then(r => r.arrayBuffer()).then(b => ac.decodeAudioData(b));
   const stop = () => {

@@ -9,7 +9,7 @@ FX.escape = { shout: "ESCAPE", flash: 1, wait: 1600, sfx: () => { sweep(200, 140
 const STAGE2 = [
   // ---- 1. 도착 ----
   { who: "voice", text: "문 너머로 길이 이어져 있어요. 모두, 제 날개 곁에 붙어 있어요." },
-  { who: "voice", fx: "stage2", bgm: "intro", text: "......도착했어요. 여기는 두 번째 길, '소리 없는 정원'이에요." },
+  { who: "voice", fx: "stage2", bgm: "s2_field", text: "......도착했어요. 여기는 두 번째 길, '소리 없는 정원'이에요." },
   { who: "lumi", text: "어... 뭐야, 너무 조용해. 내 발소리도 안 들려." },
   { who: "hexa", text: "소리가 먹히고 있다. 문 너머에서 스며 나온 것이... 이곳까지 닿았군." },
   { who: "voice", text: "이 정원은 원래 종소리로 가득했대요. 지금은 바람 소리조차 없네요." },
@@ -20,7 +20,7 @@ const STAGE2 = [
   { act: "s2_mooks", bgm: "battle" },
 
   // ---- 2. 침묵 ----
-  { who: "hexa", bgm: "intro", text: "......끝났나. 아니, 이건 시작에 불과하다." },
+  { who: "hexa", bgm: "s2_field", text: "......끝났나. 아니, 이건 시작에 불과하다." },
   { who: "lumi", text: "쟤네, 전부 소리도 없이 덤볐어. 하나도 안 들렸다고!" },
   { who: "silence", fx: "shake", text: "......." },
   { who: "voice", text: "저건... 균열이 아니에요. 균열을 만들어 낸 뿌리, '침묵'이에요." },
@@ -28,10 +28,10 @@ const STAGE2 = [
   { who: "lumi", text: "헥사를 괴롭힌 게 쟤야? 가만 안 둬!" },
   { who: "silence", text: "......이름... 소리... 빛... 전부... 내놓아라......" },
   { who: "voice", fx: "alert", text: "함께 유대를 모아서 맞서요! 지금의 우리라면 쓰러뜨릴 수 있을지도 몰라요!" },
-  { act: "s2_silence", bgm: "s1_boss" },
+  { act: "s2_silence", bgm: "s2_boss" },
 
   // ---- 3. 쓰러뜨렸지만, 이길 수 없다 ----
-  { who: "lumi", bgm: "intro", text: "해, 해냈다! 쓰러뜨렸어! 소리가 돌아왔어!" },
+  { who: "lumi", bgm: "s2_field", text: "해, 해냈다! 쓰러뜨렸어! 소리가 돌아왔어!" },
   { who: "hexa", text: "......아니다. 문 너머의 기척이 조금도 줄지 않았다." },
   { who: "voice", text: "잠깐... 소리가... 다시 사라지고 있어요." },
   { who: "silence", fx: "revive", bgm: "off", text: "......한 번... 쓰러졌을 뿐이다. 나는... 소리가 없는 곳에, 언제나 있다." },

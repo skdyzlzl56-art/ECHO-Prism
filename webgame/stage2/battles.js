@@ -21,7 +21,7 @@ ACTS.s2_mooks = done => runBattle(BATTLES.s2_mooks, done);
 
 // ---- 2) 침묵: 페이즈가 오를수록 BGM과 탄 소리가 줄어든다 (fade). 체력을 0으로 만들 수 있다 ----
 BATTLES.s2_silence = {
-  ...PARTY, speaker: "silence", hp: 560, bgm: "s1_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90, fade: .2,
+  ...PARTY, speaker: "silence", hp: 560, bgm: "s2_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90, fade: .2,
   winText: "쓰러뜨렸다...?",
   names: ["침묵 「소거」", "침묵 「잔향 지우기」", "침묵 「이름 삼키기」", "침묵 「빛의 소멸」", "침묵 「완전한 고요」"],
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 },
