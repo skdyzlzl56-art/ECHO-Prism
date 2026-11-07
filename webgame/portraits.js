@@ -138,7 +138,19 @@ function easel(t, col) {
   c.globalAlpha = 1;
 }
 
-const SHAPES = { orb, prism, rings, bloom, shard, fairy, easel };
+// Clock keeper's gear: a toothed wheel turning in steps (a tick, then still), one hand fixed at the top.
+function gear(t, col) {
+  c.strokeStyle = c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 18; c.lineWidth = 3;
+  const a = Math.floor(ph / 500) * .26 + Math.min(1, (ph % 500) / 90) * .26;                      // ticks forward, then holds
+  c.save(); c.rotate(a); c.beginPath();
+  for (let i = 0; i < 24; i++) { const R = i % 2 ? 78 : 96, q = i * Math.PI / 12; c.lineTo(Math.cos(q) * R, Math.sin(q) * R); }
+  c.closePath(); c.stroke(); c.globalAlpha = .1; c.fill(); c.globalAlpha = 1;
+  c.beginPath(); c.arc(0, 0, 44, 0, 7); c.stroke(); c.restore();
+  c.beginPath(); c.moveTo(0, 0); c.lineTo(0, -38); c.moveTo(0, 0); c.lineTo(22 + 3 * pulse, 6); c.stroke();
+  c.beginPath(); c.arc(0, 0, 5, 0, 7); c.fill();
+}
+
+const SHAPES = { orb, prism, rings, bloom, shard, fairy, easel, gear };
 
 // Starfield background
 const bg = document.getElementById("bg").getContext("2d");
@@ -150,6 +162,7 @@ const THEMES = {
   lantern: { sky: "linear-gradient(#5a2e1b,#140a0a)", rgb: "255,196,110", vx: 0,   vy: -1 },
   silence: { sky: "linear-gradient(#1c2a33,#06090d)", rgb: "170,190,205", vx: .25, vy: .6 },          // cold, still, slow snow
   gallery: { sky: "linear-gradient(#2b2f35,#0c0d10)", rgb: "190,195,205", vx: .1, vy: .3 },            // washed-out grey, slow drifting dust
+  clocktower: { sky: "linear-gradient(#3a2d17,#0d0a06)", rgb: "230,200,130", vx: 0, vy: .15 },     // stopped brass hours, dust hanging in the air
   flee:    { sky: "linear-gradient(#3d0f1c,#0a0306)", rgb: "255,120,130", vx: -22, vy: 0, streak: 5 }, // red alarm sky, stars streak past
 };
 let theme = THEMES.night, warpMs = 0, lastBg = 0;

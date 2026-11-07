@@ -135,6 +135,7 @@ function runBattle(cfg, done) {
       case "jointLight":   // 합동 유대의 빛: every ally at once, a bigger flash and a rising chord
         burstFx = 1.6; banner = { txt: "합동 유대의 빛!", age: 0, bond: true }; retrigger($("flash"), "on", 900);
         v.allies.forEach((id, i) => setTimeout(() => sweep(300 * (1 + i * .25), 2400, 1.1, "sine", .22), i * 120)); noise(.5, .5); break;
+      case "rewind": retrigger($("flash"), "on", 250); sweep(1400, 300, .35, "sawtooth", .16); break;   // 되감기: the bullets jump back
       case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
       case "swap": allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
       case "phase":
@@ -222,6 +223,7 @@ function runBattle(cfg, done) {
       const lv = s.bondLv, al = s.al;
       if (s.allyId === "hexa") drawHexa(g, al.x, al.y, t, allyCol, .55 + .1 * lv);          // guardian: pulsing hexagons (scenes.js)
       else if (s.allyId === "glitch") drawShardAlly(g, al.x, al.y, t, allyCol, .8 + .12 * lv);   // fallen crack: jittering shard (stage3/scenes.js)
+      else if (s.allyId === "keeper") drawGearAlly(g, al.x, al.y, t, allyCol, .8 + .12 * lv);   // freed clock keeper: ticking gear (stage4/scenes.js)
       else {
         g.save(); g.translate(al.x, al.y); g.scale(1 + .15 * lv, 1 + .15 * lv); g.strokeStyle = allyCol; g.shadowColor = allyCol; g.shadowBlur = 14 + 4 * lv; g.lineWidth = 2;
         for (let k = 0; k < 6; k++) { const a = t * 1.5 + k * Math.PI / 3; g.beginPath(); g.arc(Math.cos(a) * 9, Math.sin(a) * 9, 7, 0, TAU); g.stroke(); }
