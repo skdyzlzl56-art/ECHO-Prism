@@ -74,13 +74,13 @@
   const fixKeys = (t, k) => t.replace(/(?<![A-Za-z])([ZA])(?=키|로)/g, c => keyLabel(c === "Z" ? k.fire : k.swap));
 
   const menuHtml = m => {
-    const row = (t, on) => `<div style="padding:4px 18px;${on ? "background:#4fc3ff44;border:2px solid #fff;" : "border:2px solid transparent;"}">${t}</div>`;
+    const row = (t, on) => `<div class="row${on ? " on" : ""}">${t}</div>`;
     let rows;
     if (m.page === "list") rows = m.items.map((i, k) => row(i.label, k === m.sel)).join("");
-    else if (m.page === "confirm") rows = `<div>타이틀로 돌아갈까요?</div>` + ["예", "아니오"].map((t, k) => row(t, k === m.sel)).join("");
+    else if (m.page === "confirm") rows = `<div class="ask">타이틀로 돌아갈까요?</div>` + ["예", "아니오"].map((t, k) => row(t, k === m.sel)).join("");
     else if (m.page === "volume") rows = m.vols.map((v, k) => row(`${v.label}: ◀ ${Math.round(m.vol[v.id] * 10)}/10 ▶`, k === m.sel)).join("") + row("뒤로", m.sel === m.vols.length);
     else rows = m.actions.map((a, k) => row(`${a.label}: ${m.page === "capture" && k === m.sel ? "키를 누르세요" : keyLabel(m.keys[a.id])}`, k === m.sel)).join("") + row("뒤로", m.sel === m.actions.length);
-    return `<div style="min-width:280px;text-align:center;font-size:24px;line-height:1.6"><h2 style="margin:0 0 8px">MENU</h2>${rows}<div style="font-size:16px;color:#ffd36b;min-height:22px">${m.msg}</div><div style="font-size:14px;color:#9ad0ff">↑↓ 선택 · Enter 확인 · Esc/X 뒤로 · C 닫기</div></div>`;
+    return `<div class="mn"><h2>MENU</h2>${rows}<div class="msg">${m.msg}</div><div class="help">↑↓ 선택 · Enter 확인 · Esc/X 뒤로 · C 닫기</div></div>`;
   };
 
   // Save slot (one): scene index to restart from + BOND values. Mid-battle the caller passes the battle's own line index and the BOND from before the battle.

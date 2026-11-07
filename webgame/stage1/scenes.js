@@ -75,6 +75,6 @@ ACTS.s1_party = partyCard({
   members: () => [
     { x: 220, name: "개체", role: "형태를 고른 자", c: "#9ad0ff", draw: g => { g.save(); g.translate(220, 250); drawShape(g, myShape, 34); g.restore(); } },
     { x: 480, name: "루미", role: "등불지기 · 전투 지원(추격탄·회복)", c: SPEAKERS.lumi.color, draw: (g, t) => drawBlossom(g, 480, 250, t, SPEAKERS.lumi.color, 2.6) },
-    { x: 740, name: "헥사", role: "문지기 · 새로운 동료", c: SPEAKERS.hexa.color, draw: (g, t) => drawHexa(g, 740, 250, t, SPEAKERS.hexa.color, 1.8) },
+    { x: 740, name: "헥사", role: "문지기 · 새로운 동료", fresh: true, c: SPEAKERS.hexa.color, draw: (g, t) => drawHexa(g, 740, 250, t, SPEAKERS.hexa.color, 1.8) },
   ],
 });

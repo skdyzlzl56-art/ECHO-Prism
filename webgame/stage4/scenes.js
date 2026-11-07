@@ -15,6 +15,6 @@ ACTS.s4_party = partyCard({
     { x: 290, name: "루미", role: "빠른 추격탄 · 회복", c: S.lumi.color, draw: (g, t) => drawBlossom(g, 290, 250, t, S.lumi.color, 1.9) },
     { x: 480, name: "헥사", role: "느리고 강한 사격 · 방패", c: S.hexa.color, draw: (g, t) => drawHexa(g, 480, 250, t, S.hexa.color, 1.3) },
     { x: 670, name: "글리치", role: "빠르고 강한 사격 · 유대의 빛 = 공격력 상승", c: S.glitch.color, draw: (g, t) => drawGlitch(g, 670, 250, t, 2.6) },
-    { x: 860, name: "시계지기", role: "새로운 동료 · 가볍게 많이 쏘는 사격 · 유대의 빛 = 시계의 빛", c: S.keeper.color, draw: (g, t) => drawGearAlly(g, 860, 250, t, S.keeper.color, 3.2) },
+    { x: 860, name: "시계지기", role: "새로운 동료 · 가볍게 많이 쏘는 사격 · 유대의 빛 = 시계의 빛", fresh: true, c: S.keeper.color, draw: (g, t) => drawGearAlly(g, 860, 250, t, S.keeper.color, 3.2) },
   ]; },
 });

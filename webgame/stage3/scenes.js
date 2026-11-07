@@ -100,6 +100,6 @@ ACTS.s3_party = partyCard({
     { x: 150, name: "개체", role: "형태를 고른 자", c: "#9ad0ff", draw: g => { g.save(); g.translate(150, 250); drawShape(g, myShape, 30); g.restore(); } },
     { x: 380, name: "루미", role: "빠른 추격탄 · 회복", c: S.lumi.color, draw: (g, t) => drawBlossom(g, 380, 250, t, S.lumi.color, 2.2) },
     { x: 610, name: "헥사", role: "느리고 강한 사격 · 방패", c: S.hexa.color, draw: (g, t) => drawHexa(g, 610, 250, t, S.hexa.color, 1.5) },
-    { x: 830, name: "글리치", role: "새로운 동료 · 빠르고 강한 사격 · 유대의 빛 = 공격력 상승", c: S.glitch.color, draw: (g, t) => drawGlitch(g, 830, 250, t, 3) },
+    { x: 830, name: "글리치", role: "새로운 동료 · 빠르고 강한 사격 · 유대의 빛 = 공격력 상승", fresh: true, c: S.glitch.color, draw: (g, t) => drawGlitch(g, 830, 250, t, 3) },
   ]; },
 });

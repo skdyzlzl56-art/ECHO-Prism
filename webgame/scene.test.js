@@ -2,7 +2,7 @@
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
 
 function rig() {
-  const log = [], rafs = [], listeners = new Set(), canvas = new Proxy({}, { get: (_, k) => k === "measureText" ? () => ({ width: 0 }) : (...a) => { log.push(k + ":" + a.join(",")); }, set: () => true });
+  const log = [], rafs = [], listeners = new Set(), canvas = new Proxy({}, { get: (_, k) => k === "measureText" ? () => ({ width: 0 }) : /^create/.test(k) ? () => ({ addColorStop() {} }) : (...a) => { log.push(k + ":" + a.join(",")); }, set: () => true });
   const cls = new Set(), act = { hidden: true, innerHTML: "", onclick: null };
   const ctx = vm.createContext({
     stage: { classList: { add: c => cls.add(c), remove: c => cls.delete(c) } }, act, $: () => ({ getContext: () => canvas }), performance: { now: () => 0 },

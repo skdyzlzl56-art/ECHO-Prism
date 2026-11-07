@@ -142,6 +142,14 @@ function runBattle(cfg, done) {
   const ring = (x, y, r, k, col) => { if (k == null) return; g.save(); g.lineWidth = k >= 1 ? 3 : 2; g.strokeStyle = col; g.shadowColor = col; g.shadowBlur = k >= 1 ? 10 : 0; g.globalAlpha = k >= 1 ? .55 + .35 * Math.abs(Math.sin(s.t * 5)) : .22; g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke();
     if (k > 0 && k < 1) { g.globalAlpha = .9; g.beginPath(); g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + k * TAU); g.stroke(); } g.restore(); };
 
+  // HUD bar: dark track, optional white "ghost" (what was just lost), the value, a soft highlight on top and a thin outline
+  const bar = (x, y, w, h, frac, col, ghost) => {
+    g.save(); g.fillStyle = "rgba(10,14,40,.85)"; g.fillRect(x, y, w, h);
+    if (ghost) { g.fillStyle = "#fff"; g.fillRect(x, y, w * ghost, h); }
+    g.fillStyle = col; g.fillRect(x, y, w * frac, h); g.fillStyle = "rgba(255,255,255,.28)"; g.fillRect(x, y, w * frac, Math.max(1, h * .3));
+    g.strokeStyle = "rgba(255,255,255,.55)"; g.lineWidth = 1; g.strokeRect(x + .5, y + .5, w - 1, h - 1); g.restore();
+  };
+
   function draw() {
     const { p, e, t } = s, hud = battle.hud();
     g.clearRect(0, 0, 960, 540);
@@ -248,11 +256,10 @@ function runBattle(cfg, done) {
     }
     g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(BOX.x, BOX.y, BOX.w, BOX.h);
 
-    g.fillStyle = "#333"; g.fillRect(BOX.x, 168, BOX.w, 10);
     if (hud.enemy.survive) {                                                            // escape battle: the enemy can't be hurt, so show the clock instead of its HP
-      g.fillStyle = "#7dd3ff"; g.fillRect(BOX.x, 168, BOX.w * hud.enemy.frac, 10);
+      bar(BOX.x, 168, BOX.w, 10, hud.enemy.frac, "#7dd3ff");
       g.font = "bold 16px Galmuri11,'Malgun Gothic'"; g.textAlign = "right"; g.fillStyle = "#7dd3ff"; g.fillText(`탈출까지 ${Math.ceil(hud.enemy.left)}초`, BOX.x + BOX.w, 164); g.textAlign = "left";
-    } else { g.fillStyle = "#fff"; g.fillRect(BOX.x, 168, BOX.w * hud.enemy.ghost, 10); g.fillStyle = hud.enemy.enraged ? "#ff3b5c" : "#ffd84f"; g.fillRect(BOX.x, 168, BOX.w * hud.enemy.frac, 10); }   // enemy HP bar
+    } else bar(BOX.x, 168, BOX.w, 10, hud.enemy.frac, hud.enemy.enraged ? "#ff3b5c" : "#ffd84f", hud.enemy.ghost);   // enemy HP bar
     g.font = "bold 16px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.textBaseline = "bottom"; g.fillStyle = SPEAKERS[cfg.speaker].color; g.fillText(SPEAKERS[cfg.speaker].name, BOX.x, 164);
     g.font = "bold 26px Galmuri11,'Malgun Gothic'"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
     for (const f of vfx.floats) { g.globalAlpha = 1 - f.age / .6; g.fillStyle = f.col || "#fff"; const hw = (+g.measureText(f.txt).width || 0) / 2 + 8; g.fillText(f.txt, Math.max(hw, Math.min(960 - hw, f.x)), f.y - f.age * 60); }   // long lines stay inside the canvas
@@ -260,13 +267,13 @@ function runBattle(cfg, done) {
     if (hud.combo > 2) { g.font = "bold 22px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${fmtNum(hud.combo)} HIT`, BOX.x + BOX.w + 20, 215); }
 
     g.font = "20px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${fmtNum(hud.player.hp)} / ${fmtNum(hud.player.max)}`, BOX.x, 485);
-    g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#fff"; g.fillRect(BOX.x + 130, 475, 170 * hud.player.ghost, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * hud.player.frac, 20);
+    bar(BOX.x + 130, 475, 170, 20, hud.player.frac, hud.player.frac <= .25 ? "#ff5a5a" : "#4fc3ff", hud.player.ghost);   // turns red when low
     g.font = "bold 18px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#ffd36b"; g.fillText(`Lv.${hud.lv}`, 20, 485);   // level + exp bar, bottom-left, clear of HP and the controls hint
-    g.fillStyle = "#333"; g.fillRect(80, 475, 200, 12); g.fillStyle = "#ffd36b"; g.fillRect(80, 475, 200 * hud.xp, 12);
+    bar(80, 475, 200, 12, hud.xp, "#ffd36b");
     g.font = "bold 20px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = hud.auto ? "#7dffb0" : "#889"; g.fillText(hud.auto ? "사격 ON" : "사격 OFF", BOX.x + BOX.w + 20, 250);
     if (hud.bond) {                                                                     // bond gauge: fills by grazing bullets
       g.font = "bold 15px Galmuri11,'Malgun Gothic'"; g.fillStyle = allyCol; g.fillText(`유대 Lv.${hud.bond.lv}${hud.bond.shield ? " · 방패" : ""}`, BOX.x + BOX.w + 20, 276);
-      g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * hud.bond.gauge, 8);
+      bar(BOX.x + BOX.w + 20, 288, 120, 8, hud.bond.gauge, allyCol);
       g.font = "12px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
     }
     {                                                                                   // cooldown rings: dash around the player, heal / shield / special around the companion out now; bright + thick when ready
