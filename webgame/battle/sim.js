@@ -16,11 +16,19 @@
   // companion kits when cfg.allies lets the player swap (교대): cd = shot interval x, dm = shot damage x, heal / shield = abilities.
   // A single cfg.ally keeps the old all-round companion (KIT.all).
   const KIT = { all: { cd: 1, dm: 1, heal: 1, shield: 1 }, lumi: { cd: .8, dm: 1, heal: 1, shield: 0 }, hexa: { cd: 1.6, dm: 2, heal: 0, shield: 1 } };
+  // Growth curves. Player level (display Lv.) adds HP at battle start and shot damage; stage scales enemy HP and bullet damage (index = stage - 1);
+  // ally: per bond level 0..4 shot interval, shots per volley and damage. Ally dps stays 1.5 -> 7.5, under the player's own 8.3 (growth.test.js).
+  const GROWTH = {
+    playerHp: lv => Math.floor((lv - 1) * .75), shotDmg: lv => Math.round((1 + .06 * (lv - 1)) * 10) / 10,
+    stage: { hp: [1, 1.1, 1.2, 1.3, 1.4, 1.5], atk: [1, 1, 1.1, 1.2, 1.2, 1.3] },
+    ally: { cd: [1.3, 1.05, .9, .8, .8], hits: [1, 1, 2, 2, 2], dmg: [2, 2.5, 2, 2.5, 3] },
+  };
   const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, HEAL_IV = [10, 8.5, 7, 6, 5], SWAP_CD = 1.5, REWIND_BACK = 1.5;
 
   function createBattle(cfg, opts = {}) {
     const rng = opts.rng || Math.random, HITBOX = opts.hitbox == null ? 4 : opts.hitbox, bondBase = opts.bondBase || 0;
-    const MAX_HP = cfg.playerHp || 20, E_MAX = cfg.hp, E_W = cfg.ew || 75, cuts = cfg.cuts || [.75, .5, .25], col = cfg.color || "#ff3b5c";
+    const plv = opts.lv || 1, st = Math.min(6, Math.max(1, cfg.stage || 1)) - 1, atkK = GROWTH.stage.atk[st];
+    const MAX_HP = (cfg.playerHp || 20) + GROWTH.playerHp(plv), E_MAX = cfg.invuln ? cfg.hp : Math.round(cfg.hp * GROWTH.stage.hp[st]), E_W = cfg.ew || 75, cuts = cfg.cuts || [.75, .5, .25], col = cfg.color || "#ff3b5c";
     const BOX = { ...BOX0 };   // the box is battle state: move s.BOX and everything follows
     const cx = BOX.x + BOX.w / 2, allies = cfg.allies, SHIELD_LV = allies ? 1 : 2;   // a shield-bearer swapped in guards from bond Lv.1
     const s = {
@@ -50,7 +58,7 @@
 
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
     const add = (x, y, a, sp, size = 6, o = {}) => {
-      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col, nm: rl("dirRule") && rl("dirRule").name,   // 방향 규칙: name written on the bullet
+      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: Math.round((size >= 10 ? 6 : 4) * atkK), col: o.col || col, nm: rl("dirRule") && rl("dirRule").name,   // 방향 규칙: name written on the bullet
         id: uid++, hp: o.hp, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, bn: o.bn || 0, stall: o.stall, home: o.home, gr: o.gr, r0: size, age: 0, tr: [] });
       if (!s.over) emit("enemyShot", { size, speed: sp });
     };
@@ -168,13 +176,13 @@
         if (e.mode !== "idle" && s.inv <= 0 && Math.hypot(e.x - p.x, e.y - p.y) < E_R + HITBOX + 6) hurt(6);   // touching the enemy hurts
       }
 
-      if (firing && cd <= 0) { cd = .12; s.shots.push({ x: p.x, y: p.y - 12, vx: 0, vy: -560, dmg: 1 }); emit("playerShot"); }
+      if (firing && cd <= 0) { cd = .12; s.shots.push({ x: p.x, y: p.y - 12, vx: 0, vy: -560, dmg: GROWTH.shotDmg(s.lv) }); emit("playerShot"); }
       if (cfg.ally) {                                                      // companion: strength follows the bond level
         const lv = blv();
         al.y += (p.y - al.y) * Math.min(1, dt * 3); allyCd -= dt; for (const c of Object.values(s.cool)) { c.heal = Math.max(0, c.heal - dt); c.shield = Math.max(0, c.shield - dt); }
         if (allyCd <= 0 && s.t > 1) {
-          allyCd = [1.3, 1.05, .85, .65, .5][lv] * kit().cd; const a = Math.atan2(e.y - al.y, e.x - al.x), dmg = (lv >= 3 ? 3 : 2) * kit().dm;
-          for (let i = 0; i < (lv >= 2 ? 2 : 1); i++) { const aa = a + (i ? .12 : lv >= 2 ? -.12 : 0); s.shots.push({ x: al.x, y: al.y, vx: Math.cos(aa) * 460, vy: Math.sin(aa) * 460, dmg, ally: true }); }
+          allyCd = GROWTH.ally.cd[lv] * kit().cd; const a = Math.atan2(e.y - al.y, e.x - al.x), dmg = GROWTH.ally.dmg[lv] * kit().dm, n = GROWTH.ally.hits[lv];
+          for (let i = 0; i < n; i++) { const aa = a + (i ? .12 : n > 1 ? -.12 : 0); s.shots.push({ x: al.x, y: al.y, vx: Math.cos(aa) * 460, vy: Math.sin(aa) * 460, dmg, ally: true }); }
           emit("allyShot");
         }
         const me = s.cool[s.allyId], ha = lv >= 3 ? 3 : 2;
@@ -313,6 +321,6 @@
     return { tier: f < .08 ? 0 : f < .2 ? 1 : 2, shakeMs: 150 + 350 * t, shakeAmp: .4 + 1.2 * t, stop: .02 + .14 * t, vignette: .2 + .8 * t };
   };
   const isLowHp = (hp, max) => hp > 0 && hp <= max * .25;
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook, fmtNum, hitFeel, isLowHp };
-  else { root.createBattle = createBattle; root.moveLook = moveLook; root.fmtNum = fmtNum; root.hitFeel = hitFeel; root.isLowHp = isLowHp; }
+  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, GROWTH, BOX: BOX0, moveLook, fmtNum, hitFeel, isLowHp };
+  else { root.createBattle = createBattle; root.GROWTH = GROWTH; root.moveLook = moveLook; root.fmtNum = fmtNum; root.hitFeel = hitFeel; root.isLowHp = isLowHp; }
 })(typeof window !== "undefined" ? window : globalThis);

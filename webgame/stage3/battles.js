@@ -11,7 +11,7 @@ const PARTY3_PRE = { ally: "lumi", allies: ["lumi", "hexa"] };     // before 글
 const PARTY3 = { ally: "lumi", allies: ["lumi", "hexa", "glitch"], kits: { glitch: { cd: .7, dm: 1.2, heal: 0, shield: 0 } }, lights: { lumi: "heal", hexa: "shield", glitch: "power" } };
 
 // ---- 1) 잿빛 얼룩: 보통 전투 ----
-BATTLES.s3_blots = {
+BATTLES.s3_blots = { stage: 3,
   ...PARTY3_PRE, speaker: "blot", hp: 240, bgm: "battle", color: "#8fa0b5", cuts: [.5], playerHp: 24,
   names: ["얼룩 「번지는 잿빛」", "얼룩 「떨어지는 물감」"],
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "chase", speed: 85, dash: 9 }],
@@ -24,7 +24,7 @@ BATTLES.s3_blots = {
 ACTS.s3_blots = done => runBattle(BATTLES.s3_blots, done);
 
 // ---- 2) 붉은 얼룩: 색 규칙 연습. 붉은 탄만 맞는다. 푸른 탄은 몸을 지나간다 ----
-BATTLES.s3_study = {
+BATTLES.s3_study = { stage: 3,
   ...PARTY3_PRE, speaker: "blot", hp: 260, bgm: "battle", color: "#7f9cc4", colorRule: RED, cuts: [.5], playerHp: 22,
   winText: "색을 읽었다!",
   names: ["얼룩 「붉은 한 방울」", "얼룩 「엇갈린 색」"],
@@ -41,7 +41,7 @@ BATTLES.s3_study = {
 ACTS.s3_study = done => runBattle(BATTLES.s3_study, done);
 
 // ---- 3) 화가: 페이즈마다 이름이 있다. 붉은 탄만 맞는다 (색 규칙). 5페이즈 ----
-BATTLES.s3_painter = {
+BATTLES.s3_painter = { stage: 3,
   ...PARTY3_PRE, speaker: "painter", hp: 600, bgm: "s3_boss", color: "#8aa4c8", colorRule: RED, cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90,
   winText: "색이 돌아온다!",
   names: ["화가 「밑그림 지우기」", "화가 「한 점의 붉은색」", "화가 「번지는 수채」", "화가 「마지막 덧칠」", "화가 「텅 빈 캔버스」"],

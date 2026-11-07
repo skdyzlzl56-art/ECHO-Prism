@@ -6,7 +6,7 @@
 const DIR6 = { name: "기억" };
 
 // ---- 1) 메아리 조각: 보통 전투 ----
-BATTLES.s6_echoes = {
+BATTLES.s6_echoes = { stage: 6,
   ...PARTY4, speaker: "fragment", hp: 280, bgm: "battle", color: "#c9b8ff", cuts: [.5], playerHp: 24,
   names: ["균열 「돌아온 소리」", "균열 「겹쳐진 소리」"],
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "chase", speed: 85, dash: 9 }],
@@ -19,7 +19,7 @@ BATTLES.s6_echoes = {
 ACTS.s6_echoes = done => runBattle(BATTLES.s6_echoes, done);
 
 // ---- 2) 세 갈래 시험: 색 → 되감기 → 방향. 침묵 전의 총연습 ----
-BATTLES.s6_trial = {
+BATTLES.s6_trial = { stage: 6,
   ...PARTY4, speaker: "fragment", hp: 330, bgm: "battle", color: "#b8a8ff", cuts: [.67, .34], playerHp: 24,
   phaseRules: [{ colorRule: RED }, { rewind: 5 }, { dirRule: DIR6 }],
   winText: "세 갈래를 읽었다!",
@@ -39,7 +39,7 @@ BATTLES.s6_trial = {
 ACTS.s6_trial = done => runBattle(BATTLES.s6_trial, done);
 
 // ---- 3) 침묵: 5페이즈. 색 → 되감기 → 방향 → 색+되감기 → 마지막은 합동 유대의 빛 ----
-BATTLES.s6_silence = {
+BATTLES.s6_silence = { stage: 6,
   ...PARTY4, speaker: "silence", hp: 700, bgm: "s6_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 32, ew: 90, jointLight: true,
   phaseRules: [{ colorRule: RED }, { rewind: 5 }, { dirRule: DIR6 }, { colorRule: RED, rewind: 5 }, { finale: true }],
   winText: "침묵이 돌아간다!",
