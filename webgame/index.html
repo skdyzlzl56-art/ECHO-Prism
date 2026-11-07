@@ -28,6 +28,18 @@
   #start h1{font-size:72px;letter-spacing:10px;margin:0 0 20px;text-shadow:0 0 24px #4fc3ff}
   #start p{animation:b 1.4s infinite}
   #bg{position:absolute;inset:0;width:100%;height:100%}
+  #act{position:absolute;inset:0;z-index:5;cursor:default}
+  #act[hidden]{display:none}
+  .pk{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0b1026dd;color:#fff;text-align:center}
+  .pk h2{margin:0 0 4px;font-size:30px;letter-spacing:4px}
+  .pk h3{margin:0;font-size:28px;color:#4fc3ff}
+  .pk p{margin:4px 0 12px;font-size:20px;min-height:30px;max-width:640px}
+  #cards{display:flex;gap:10px;margin-bottom:14px}
+  .card{border:3px solid #456;border-radius:8px;padding:4px;cursor:pointer;background:#0006}
+  .card.on{border-color:#fff;box-shadow:0 0 14px #4fc3ff;background:#4fc3ff33}
+  #ok{font:inherit;font-size:22px;padding:4px 36px;background:#2a5b8c;color:#fff;border:3px solid #fff;cursor:pointer}
+  .pick #box,.pick #portrait,.battle #box{display:none}
+  .battle #portrait{bottom:auto;top:10px;width:150px;height:150px}
 </style>
 </head>
 <body>
@@ -37,6 +49,7 @@
   <div id="box"><div id="name"></div><span id="text"></span><span id="next" hidden>▼</span></div>
   <div id="flash"></div>
   <div id="shout"></div>
+  <div id="act" hidden></div>
   <div id="start"><div><h1>ECHO PRISM</h1><p>클릭하여 시작</p></div></div>
 </div>
 <script src="script.js"></script>
@@ -104,18 +117,26 @@ function tick() {
 
 function finish() { clearInterval(timer); timer = null; $("text").textContent = full; $("next").hidden = false; }
 
-function advance() {
-  if (!ac) { ac = new AudioContext(); $("start").remove(); }
-  if (busy) return;                      // effect playing, no input
-  if (timer) return finish();            // skip typing
+let acting = false;
+function next() {
   if (idx >= SCRIPT.length - 1) {        // end of script
     idx = SCRIPT.length; $("text").textContent = "TO BE CONTINUED..."; $("name").textContent = ""; $("next").hidden = true; return;
   }
-  show(++idx);
+  const l = SCRIPT[++idx];
+  if (l.act) { acting = true; ACTS[l.act](() => { acting = false; next(); }); }   // scene in game.js
+  else show(idx);
+}
+
+function advance() {
+  if (!ac) { ac = new AudioContext(); $("start").remove(); }
+  if (busy || acting) return;            // effect or scene playing, no dialogue input
+  if (timer) return finish();            // skip typing
+  next();
 }
 
 $("stage").onclick = advance;
 addEventListener("keydown", e => { if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); advance(); } });
 </script>
+<script src="game.js"></script>
 </body>
 </html>

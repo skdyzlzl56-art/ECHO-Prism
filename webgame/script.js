@@ -1,55 +1,42 @@
-// Shape = personality. Round/soft/spinning = feminine, angular/sharp = masculine/aggressive.
+// Shape = personality. Round/soft = warm, angular/sharp = cold/aggressive.
 // pitch: blip Hz (high = light, low = heavy), spin: motion speed multiplier
 const SPEAKERS = {
-  voice:  { name: "???",    pitch: 380, spin: 0.8, shape: "orb",    color: "#9ad0ff" }, // 부드럽고 신비로운 목소리
-  prism:  { name: "프리즘", pitch: 260, spin: 1.0, shape: "prism",  color: "#4fc3ff" }, // 냉철하고 논리적인 남성
-  warden: { name: "감시자", pitch: 150, spin: 0.55, shape: "rings", color: "#ffb347" }, // 묵직하고 과묵한 중년 남성
-  lia:    { name: "리아",   pitch: 600, spin: 1.3, shape: "bloom",  color: "#ff9ad5" }, // 밝고 따뜻한 소녀
-  glitch: { name: "글리치", pitch: 90,  spin: 1.0, shape: "shard",  color: "#ff3b5c" }, // 날카롭고 폭력적인 균열
+  voice:  { name: "???",    pitch: 380, spin: 0.8, shape: "orb",   color: "#9ad0ff" }, // 부드럽고 신비로운 목소리
+  glitch: { name: "글리치", pitch: 90,  spin: 1.0, shape: "shard", color: "#ff3b5c" }, // 날카롭고 폭력적인 균열
 };
 
+// Player shapes (개체의 도형). path(c, r) only builds the outline; caller fills/strokes.
+const TAU = Math.PI * 2;
+const poly = (c, n, r, rot = -Math.PI / 2) => { for (let i = 0; i < n; i++) c.lineTo(Math.cos(rot + i * TAU / n) * r, Math.sin(rot + i * TAU / n) * r); c.closePath(); };
+const PLAYER_SHAPES = [
+  { id: "circle",   name: "원",     desc: "모난 곳 없는 둥그스러움. 무엇과도 부딪히지 않고 굴러간다.", path: (c, r) => c.arc(0, 0, r, 0, TAU) },
+  { id: "triangle", name: "삼각형", desc: "가장 먼저 뻗는 꼭짓점. 앞으로 나아가려는 날카로운 의지.", path: (c, r) => poly(c, 3, r * 1.2) },
+  { id: "square",   name: "사각형", desc: "네 모서리가 맞물린 단단함. 무너지지 않는 토대.",           path: (c, r) => poly(c, 4, r * 1.25, Math.PI / 4) },
+  { id: "diamond",  name: "마름모", desc: "기울어진 채로도 서 있는 법을 아는, 균형의 형태.",           path: (c, r) => poly(c, 4, r * 1.3) },
+  { id: "hexagon",  name: "육각형", desc: "벌집처럼 서로를 잇는 모양. 함께하려는 마음.",               path: (c, r) => poly(c, 6, r) },
+  { id: "star",     name: "별",     desc: "닿을 수 없어도 빛나는 것. 동경, 그리고 소망.",             path: (c, r) => { for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, d = i % 2 ? r * .45 : r * 1.2; c.lineTo(Math.cos(a) * d, Math.sin(a) * d); } c.closePath(); } },
+  { id: "heart",    name: "하트",   desc: "사랑, 심장, 혹은... 의지.",                                 path: (c, r) => { c.moveTo(0, r * .9); c.bezierCurveTo(-r * 1.5, r * .1, -r, -r, 0, -r * .4); c.bezierCurveTo(r, -r, r * 1.5, r * .1, 0, r * .9); c.closePath(); } },
+];
+
+// act lines are not dialogue: they hand control to ACTS[act] (game.js) and resume when it calls done()
 const SCRIPT = [
   // 1막 - 눈을 뜨다
   { who: "voice",  text: "......들리나요? 아직 꺼지지 않았군요." },
-  { who: "voice",  text: "괜찮아요. 천천히... 빛을 따라 눈을 떠 보세요." },
   { who: "voice",  text: "여기는 모든 기억이 빛으로 남는 곳, 에코 프리즘." },
-  { who: "prism",  text: "의식 신호 확인. 신규 개체 한 명 각성." },
-  { who: "prism",  text: "나는 프리즘. 이 세계의 기록을 관리한다. 먼저 묻겠다. 너의 이름은?" },
-  { who: "voice",  text: "...기억나지 않나요? 괜찮아요. 이곳에 오면 다들 처음엔 그래요." },
-  { who: "prism",  text: "비효율적이군. 기억 없는 개체는 생존 확률이 낮다." },
+  { who: "voice",  text: "당신은 막 깨어났어요. 이름도, 얼굴도 흩어져 버렸지만..." },
+  { who: "voice",  text: "형태만큼은 다시 고를 수 있답니다. 마음이 이끄는 모양을 골라 보세요." },
+  { act: "pick" },
 
-  // 2막 - 감시자
-  { who: "warden", text: "...프리즘. 또 새 얼굴이냐." },
-  { who: "warden", text: "난 감시자다. 이 구역의 균열을 막는 게 내 일이지." },
-  { who: "warden", text: "겁먹지 마라. 내 곁에 있으면 최소한 지워지진 않는다." },
-  { who: "prism",  text: "감시자, 감정적인 발언은 자제해라. 불필요한 안심은 판단을 흐린다." },
-  { who: "warden", text: "넌 늘 그 모양이지. 숫자만 보다 사람을 놓친다." },
+  // 2막 - 균열
+  { who: "voice",  text: "...좋아요. 그게 지금의 당신이에요. 아주 잘 어울려요." },
+  { who: "voice",  text: "잠깐... 이 기척은..." },
+  { who: "voice",  fx: "alert", text: "균열이에요! 방향키나 WASD로 움직여서 피하세요!" },
+  { who: "glitch", fx: "shake", text: "기억... 냄새가 난다... 신선한 기억!" },
+  { who: "glitch", text: "내놔. 그 형태 그대로... 전부 지워주마!" },
+  { act: "battle" },
 
-  // 3막 - 균열
-  { who: "prism",  fx: "alert",  text: "경고! 균열 접근! 거리 40, 급속 접근 중!" },
-  { who: "glitch", fx: "shake",  text: "기억... 냄새가 난다... 신선한 기억!" },
-  { who: "glitch", text: "내놔. 전부 내놔. 이름도, 얼굴도, 추억도... 전부 지워주마!" },
-  { who: "warden", fx: "impact", text: "뒤로 물러서라! 이놈은 내가 막는다!" },
-  { who: "glitch", fx: "shake",  text: "크하하! 늙은 감시자 따위가 언제까지 버틸 것 같아?!" },
-  { who: "warden", text: "크윽... 방어막이... 오래 못 버틴다..." },
-
-  // 4막 - 리아
-  { who: "lia",    fx: "impact", text: "거기까지예요!" },
-  { who: "lia",    text: "빛이여, 모여라... 흩어진 기억의 조각들이여!" },
-  { who: "glitch", text: "크아악! 이 따뜻한 빛은... 싫어... 싫어!!" },
-  { who: "lia",    text: "후우... 이제 괜찮아요. 다치신 데는 없으세요?" },
-  { who: "lia",    text: "저는 리아! 흩어진 기억의 조각을 모으는 일을 하고 있어요." },
-  { who: "prism",  text: "무모한 행동이다. 단독으로 균열에 맞서는 건 확률상 자살에 가깝다." },
-  { who: "lia",    text: "그래도 모른 척할 순 없잖아요. 누군가의 소중한 기억인걸요." },
-  { who: "warden", text: "...허허. 겁 없는 건 여전하구나, 꼬마." },
-  { who: "lia",    text: "자, 이거 받으세요. 방금 모은 당신의 기억 한 조각이에요." },
-  { who: "voice",  text: "푸른 하늘... 누군가의 손... 그리고 약속 하나가 떠올랐다." },
-
-  // 5막 - 진실
-  { who: "glitch", text: "잊지 마라... 나도... 한때는 누군가의 기억이었다..." },
-  { who: "lia",    text: "...그 아이도 외로웠던 거예요. 잊혀진 기억이 균열이 된 거죠." },
-  { who: "prism",  text: "이론상 가능하다. 그렇다면 균열의 근원은 세계 중심, 프리즘 코어에 있다." },
-  { who: "warden", text: "가는 길은 험할 거다. 그래도 가겠나?" },
-  { who: "lia",    text: "같이 가요! 우리가 함께라면, 분명 모두의 기억을 되찾을 수 있어요." },
-  { who: "voice",  fx: "title",  text: "잃어버린 이름을 찾는 여정이, 지금 시작됩니다." },
+  // 3막 - 끝과 시작
+  { who: "glitch", text: "크윽... 이 따뜻한 빛은... 싫어..." },
+  { who: "voice",  text: "해냈어요! 하지만 균열은 이 세계 곳곳에 남아 있어요." },
+  { who: "voice",  fx: "title", text: "잃어버린 이름을 찾는 여정이, 지금 시작됩니다." },
 ];
