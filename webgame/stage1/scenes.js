@@ -148,13 +148,13 @@ ACTS.s1_explore = done => {
     drawBlossom(g, lu.x, lu.y, t, SPEAKERS.lumi.color);
     drawFairy(g, fa.x, fa.y, t, SPEAKERS.voice.color);
     if (inv <= 0 || Math.floor(inv * 12) % 2) { g.save(); g.translate(p.x, p.y); drawShape(g, myShape, 13); g.restore(); }
-    g.font = "bold 22px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "top";
+    g.font = "bold 22px Pretendard,'Malgun Gothic'"; g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "top";
     g.fillText(`등불 ${lit} / 3`, 30, 24);
-    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText(open ? "이동: 방향키" : "이동: 방향키 · 꺼진 등불 곁에 서 있으면 불이 붙어요 · 균열과 낙뢰를 피하세요!", 30, 56);
+    g.font = "16px Pretendard,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText(open ? "이동: 방향키" : "이동: 방향키 · 꺼진 등불 곁에 서 있으면 불이 붙어요 · 균열과 낙뢰를 피하세요!", 30, 56);
     if (msg) {
       g.globalAlpha = Math.max(0, Math.min(1, (5.5 - msg.age) * 2, msg.age * 4 + .2));
       g.fillStyle = "#0b1026"; g.fillRect(60, 84, 840, 110); g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(60, 84, 840, 110);   // above the floor (FL.y = 210) so it never hides lamps or hazards
-      g.font = "22px 'Malgun Gothic'"; g.fillStyle = "#ffe9a8"; wrap(msg.s, 36).slice(0, 3).forEach((s, i) => g.fillText(s, 84, 100 + i * 32));
+      g.font = "22px Pretendard,'Malgun Gothic'"; g.fillStyle = "#ffe9a8"; wrap(msg.s, 36).slice(0, 3).forEach((s, i) => g.fillText(s, 84, 100 + i * 32));
       g.globalAlpha = 1;
     }
   }
@@ -181,13 +181,13 @@ ACTS.s1_party = done => {
     const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
     g.fillStyle = "#070b1c"; g.fillRect(0, 0, 960, 540);
     g.globalAlpha = Math.min(1, t); g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = "bold 40px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류!", 480, 90);
+    g.font = "bold 40px Pretendard,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류!", 480, 90);
     who.forEach((m, i) => {
       g.globalAlpha = Math.max(0, Math.min(1, t - .3 - i * .35)); m.draw(t);
-      g.font = "bold 28px 'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
-      g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#cfe"; g.fillText(m.role, m.x, 380);
+      g.font = "bold 28px Pretendard,'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
+      g.font = "16px Pretendard,'Malgun Gothic'"; g.fillStyle = "#cfe"; g.fillText(m.role, m.x, 380);
     });
-    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText("클릭, SPACE 또는 Z로 계속", 480, 480);
+    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px Pretendard,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText("클릭, SPACE 또는 Z로 계속", 480, 480);
     g.globalAlpha = 1; raf = requestAnimationFrame(step);
   }
   act.onclick = go; addEventListener("keydown", key); raf = requestAnimationFrame(step);

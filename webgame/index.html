@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ECHO PRISM</title>
 <style>
-  html,body{margin:0;height:100%;background:#0b1026;font-family:"Malgun Gothic",sans-serif;user-select:none}
+  @font-face{font-family:Pretendard;src:url(fonts/PretendardVariable.woff2) format("woff2-variations");font-weight:45 920;font-display:swap}   /* body text (orioncactus/pretendard, OFL) */
+  @font-face{font-family:Galmuri11;src:url(fonts/Galmuri11.woff2) format("woff2");font-weight:400;font-display:swap}   /* UI: battle HUD, name tag, prompts (quiple/galmuri, OFL) */
+  @font-face{font-family:Galmuri11;src:url(fonts/Galmuri11-Bold.woff2) format("woff2");font-weight:700;font-display:swap}
+  html,body{margin:0;height:100%;background:#0b1026;font-family:Pretendard,"Malgun Gothic",sans-serif;user-select:none}
   #stage{position:relative;max-width:960px;height:100vh;max-height:540px;margin:auto;top:50%;transform:translateY(-50%);
     background:linear-gradient(#1b2a5a,#0b1026);overflow:hidden;cursor:pointer}
   #portrait{position:absolute;left:50%;bottom:150px;width:300px;height:300px;transform:translateX(-50%)}
@@ -14,7 +17,7 @@
   #box::before{content:"";position:absolute;left:0;top:-2px;width:140px;height:2px;background:linear-gradient(90deg,var(--c),#fff);animation:edge 5s ease-in-out infinite alternate}
   @keyframes edge{to{left:calc(100% - 140px)}}
   @media (prefers-reduced-motion:reduce){#box::before{animation:none}}
-  #name{position:absolute;left:36px;top:-17px;background:#050818;border-bottom:3px solid var(--c);padding:1px 14px 3px;font-size:20px;font-weight:700;letter-spacing:1px;color:var(--c);text-shadow:0 0 10px var(--c)}
+  #name{font-family:Galmuri11,"Malgun Gothic",sans-serif;position:absolute;left:36px;top:-17px;background:#050818;border-bottom:3px solid var(--c);padding:1px 14px 3px;font-size:20px;font-weight:700;letter-spacing:1px;color:var(--c);text-shadow:0 0 10px var(--c)}
   #name:empty{display:none}
   #next{position:absolute;right:20px;bottom:10px;font-size:18px;animation:b 1s infinite}
   @keyframes b{50%{opacity:0}}

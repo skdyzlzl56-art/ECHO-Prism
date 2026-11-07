@@ -28,13 +28,13 @@ ACTS.s4_party = done => {
     const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
     g.fillStyle = "#070b1c"; g.fillRect(0, 0, 960, 540);
     g.globalAlpha = Math.min(1, t); g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = "bold 40px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류! 총 4명", 480, 90);
+    g.font = "bold 40px Pretendard,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류! 총 4명", 480, 90);
     who.forEach((m, i) => {
       g.globalAlpha = Math.max(0, Math.min(1, t - .3 - i * .3)); m.draw(t);
-      g.font = "bold 24px 'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
-      g.font = "14px 'Malgun Gothic'"; g.fillStyle = "#cfe"; wrap(m.role, 11).forEach((s, k) => g.fillText(s, m.x, 380 + k * 20));
+      g.font = "bold 24px Pretendard,'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
+      g.font = "14px Pretendard,'Malgun Gothic'"; g.fillStyle = "#cfe"; wrap(m.role, 11).forEach((s, k) => g.fillText(s, m.x, 380 + k * 20));
     });
-    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText(fixKeys("A키로 루미 → 헥사 → 글리치 → 시계지기 순환 · 클릭, SPACE 또는 Z로 계속", MENU.keys), 480, 490);
+    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px Pretendard,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText(fixKeys("A키로 루미 → 헥사 → 글리치 → 시계지기 순환 · 클릭, SPACE 또는 Z로 계속", MENU.keys), 480, 490);
     g.globalAlpha = 1; raf = requestAnimationFrame(step);
   }
   act.onclick = go; addEventListener("keydown", key); raf = requestAnimationFrame(step);
