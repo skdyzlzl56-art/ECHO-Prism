@@ -55,3 +55,23 @@ test("quit needs a confirmation; declining returns to the list", () => {
   press(m, "Enter"); m.key("ArrowLeft");
   assert.strictEqual(press(m, "Enter"), "quit");
 });
+
+test("volume page: bgm and sfx adjust separately in 10% steps, clamp at 0 and 1, and persist through the store", () => {
+  const data = {}, store = { get: k => data[k], set: (k, v) => { data[k] = v; } };
+  const m = createMenu(undefined, store);
+  assert.deepStrictEqual(m.vol, { bgm: 1, sfx: 1 });
+  m.toggle(); m.sel = m.items.findIndex(i => i.id === "volume");
+  press(m, "Enter"); assert.strictEqual(m.page, "volume");
+  press(m, "ArrowLeft", "ArrowLeft"); assert.strictEqual(m.vol.bgm, 0.8);
+  press(m, "ArrowDown", "ArrowRight"); assert.strictEqual(m.vol.sfx, 1, "clamped at max");
+  for (let i = 0; i < 12; i++) press(m, "ArrowLeft"); assert.strictEqual(m.vol.sfx, 0, "0 = fully off");
+  assert.strictEqual(m.vol.bgm, 0.8, "bgm untouched");
+  const again = createMenu(undefined, store);
+  assert.deepStrictEqual(again.vol, { bgm: 0.8, sfx: 0 }, "survives a reload");
+  press(m, "Escape"); assert.strictEqual(m.page, "list");
+});
+
+test("a broken or missing stored volume falls back to full", () => {
+  const m = createMenu(undefined, { get: () => "junk", set() {} });
+  assert.deepStrictEqual(m.vol, { bgm: 1, sfx: 1 });
+});

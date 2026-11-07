@@ -10,14 +10,17 @@
     { id: "dash", label: "대시", ctx: "battle", def: "KeyX" },
     { id: "fast", label: "대화 빨리 출력", ctx: "talk", def: "KeyX" },
   ];
-  const ITEMS = [{ id: "keys", label: "키 설정" }, { id: "quit", label: "종료" }, { id: "close", label: "닫기" }];
+  const ITEMS = [{ id: "keys", label: "키 설정" }, { id: "volume", label: "볼륨" }, { id: "quit", label: "종료" }, { id: "close", label: "닫기" }];
   // movement, the menu itself and the dialogue-advance keys cannot be bound
   const RESERVED = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyS", "KeyD", "KeyC", "Space", "Enter", "Escape"]);
   const keyLabel = c => c.replace(/^Key|^Digit/, "").replace("Numpad", "N");
 
-  function createMenu(dk = { advance: ["Space", "Enter", "KeyZ"], fast: "KeyX" }) {   // dk = dialogue.js KEYS: the "fast" binding is written through to it
+  const VOLS = [{ id: "bgm", label: "배경음" }, { id: "sfx", label: "효과음" }];
+  const NOSTORE = { get: () => null, set() {} };
+  function createMenu(dk = { advance: ["Space", "Enter", "KeyZ"], fast: "KeyX" }, store = NOSTORE) {   // dk = dialogue.js KEYS: the "fast" binding is written through to it; store = { get(k), set(k, v) } for the volume
     const keys = Object.fromEntries(ACTIONS.map(a => [a.id, a.def])); keys.fast = dk.fast;
-    const m = { open: false, page: "list", sel: 0, msg: "", items: ITEMS, keys, actions: ACTIONS };
+    const vol = Object.fromEntries(VOLS.map(v => { const n = parseFloat(store.get("vol_" + v.id)); return [v.id, n >= 0 && n <= 1 ? n : 1]; }));   // 0..1 in tenths; index.html applies it to the sound
+    const m = { open: false, page: "list", sel: 0, msg: "", items: ITEMS, keys, actions: ACTIONS, vol, vols: VOLS };
     const close = () => { m.open = false; m.page = "list"; m.msg = ""; };
     m.toggle = () => { if (m.open) close(); else { m.open = true; m.page = "list"; m.sel = 0; m.msg = ""; } return m.open; };
     m.rebind = (id, code) => {
@@ -41,6 +44,15 @@
         if (code === "Escape") return go("list", m.items.findIndex(i => i.id === "quit"));
         if (code.startsWith("Arrow")) m.sel = 1 - m.sel;
         else if (ok) { if (m.sel === 0) return "quit"; go("list", m.items.findIndex(i => i.id === "quit")); }
+      } else if (m.page === "volume") {
+        const back = () => go("list", m.items.findIndex(i => i.id === "volume"));
+        if (code === "Escape") return back();
+        if (d) wrap(VOLS.length + 1, d);
+        else if (ok && m.sel === VOLS.length) back();
+        else if (m.sel < VOLS.length && (code === "ArrowLeft" || code === "ArrowRight")) {
+          const id = VOLS[m.sel].id; vol[id] = Math.min(1, Math.max(0, Math.round(vol[id] * 10 + (code === "ArrowRight" ? 1 : -1)) / 10));
+          store.set("vol_" + id, String(vol[id]));
+        }
       } else if (m.page === "keys") {
         if (code === "Escape") return go("list");
         if (d) wrap(ACTIONS.length + 1, d);
@@ -50,7 +62,7 @@
         if (d) wrap(m.items.length, d);
         else if (ok) {
           const id = m.items[m.sel].id;
-          if (id === "keys") go("keys"); else if (id === "quit") go("confirm", 1); else close();
+          if (id === "keys") go("keys"); else if (id === "volume") go("volume"); else if (id === "quit") go("confirm", 1); else close();
         }
       }
     };
@@ -65,11 +77,12 @@
     let rows;
     if (m.page === "list") rows = m.items.map((i, k) => row(i.label, k === m.sel)).join("");
     else if (m.page === "confirm") rows = `<div>타이틀로 돌아갈까요?</div>` + ["예", "아니오"].map((t, k) => row(t, k === m.sel)).join("");
+    else if (m.page === "volume") rows = m.vols.map((v, k) => row(`${v.label}: ◀ ${Math.round(m.vol[v.id] * 10)}/10 ▶`, k === m.sel)).join("") + row("뒤로", m.sel === m.vols.length);
     else rows = m.actions.map((a, k) => row(`${a.label}: ${m.page === "capture" && k === m.sel ? "키를 누르세요" : keyLabel(m.keys[a.id])}`, k === m.sel)).join("") + row("뒤로", m.sel === m.actions.length);
     return `<div style="min-width:280px;text-align:center;font-size:24px;line-height:1.6"><h2 style="margin:0 0 8px">MENU</h2>${rows}<div style="font-size:16px;color:#ffd36b;min-height:22px">${m.msg}</div><div style="font-size:14px;color:#9ad0ff">↑↓ 선택 · Enter 확인 · Esc 뒤로 · C 닫기</div></div>`;
   };
 
   const api = { createMenu, keyLabel, fixKeys, menuHtml };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
-  else { Object.assign(root, api); root.MENU = createMenu(root.KEYS); }   // dialogue.js loads first
+  else { Object.assign(root, api); root.MENU = createMenu(root.KEYS, { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } }); }   // dialogue.js loads first
 })(typeof globalThis !== "undefined" ? globalThis : this);
