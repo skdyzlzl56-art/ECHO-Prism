@@ -42,7 +42,7 @@ ACTS.s3_study = done => runBattle(BATTLES.s3_study, done);
 
 // ---- 3) 화가: 페이즈마다 이름이 있다. 붉은 탄만 맞는다 (색 규칙). 5페이즈 ----
 BATTLES.s3_painter = {
-  ...PARTY3_PRE, speaker: "painter", hp: 600, bgm: "s2_boss", color: "#8aa4c8", colorRule: RED, cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90,
+  ...PARTY3_PRE, speaker: "painter", hp: 600, bgm: "s3_boss", color: "#8aa4c8", colorRule: RED, cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90,
   winText: "색이 돌아온다!",
   names: ["화가 「밑그림 지우기」", "화가 「한 점의 붉은색」", "화가 「번지는 수채」", "화가 「마지막 덧칠」", "화가 「텅 빈 캔버스」"],
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 },
