@@ -259,3 +259,25 @@ test("finale without jointLight: a full-bond burst still ends it (no soft-lock)"
   b.state.eHp = 30; run(b, 1); b.state.gauge = 100; run(b, .1);
   assert.strictEqual(b.state.over, "win");
 });
+
+test("breaking a phase gives 20 exp; a full bar levels up and carries the excess", () => {
+  const cfg = { ...quiet, hp: 100, cuts: [.75, .5], names: ["a", "b", "c"], phases: [() => {}, () => {}, () => {}] };
+  const b = createBattle(cfg, { rng: seeded(4), lv: 1, xp: 90 });
+  b.state.auto = false; run(b, .2);
+  assert.deepStrictEqual([b.state.lv, b.state.xp], [1, 90]);
+  b.state.eHp = 70; run(b, .1);
+  assert.deepStrictEqual([b.state.lv, b.state.xp], [2, 10]);
+  b.state.eHp = 45; run(b, .1);
+  assert.deepStrictEqual([b.state.lv, b.state.xp], [2, 30]);
+});
+
+test("exp is a start value: a retry built from it loses the battle's gains, a next battle built from the end state keeps them", () => {
+  const cfg = { ...quiet, hp: 100, cuts: [.5], names: ["a", "b"], phases: [() => {}, () => {}] };
+  const b = createBattle(cfg, { rng: seeded(5), lv: 1, xp: 50 });
+  b.state.auto = false; run(b, .2); b.state.eHp = 40; run(b, .1);
+  assert.strictEqual(b.state.xp, 70);
+  const retry = createBattle(cfg, { rng: seeded(5), lv: 1, xp: 50 });
+  assert.strictEqual(retry.state.xp, 50);
+  const next = createBattle(cfg, { rng: seeded(5), lv: b.state.lv, xp: b.state.xp });
+  assert.deepStrictEqual([next.state.lv, next.state.xp], [1, 70]);
+});

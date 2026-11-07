@@ -22,7 +22,7 @@
 // The level reached is kept (BOND.base) when a battle is won; a lost battle is retried from the level it started with.
 
 const BATTLES = {};
-const BOND = { base: 0 };
+const BOND = { base: 0, lv: 1, xp: 0 };   // lv/xp: level and exp, kept on a win; a loss retries from the values the battle started with
 
 // ---- 첫 전투: 글리치 ----
 BATTLES.glitch = {
@@ -64,7 +64,7 @@ function drawEnemyBody(g, key, x, y, t, warn) {
 function runBattle(cfg, done) {
   stage.classList.add("battle"); act.hidden = false; setPortrait(SPEAKERS[cfg.speaker]);
   act.innerHTML = `<canvas id="ar" width="960" height="540"></canvas>`;
-  const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX }), s = battle.state, BOX = s.BOX;
+  const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX, lv: BOND.lv, xp: BOND.xp }), s = battle.state, BOX = s.BOX;
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
   let floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, lastShot = 0, lastBig = 0, lastGraze = 0;
@@ -155,6 +155,7 @@ function runBattle(cfg, done) {
         setTimeout(() => { act.onclick = () => { cleanup(); runBattle(cfg, done); }; }, 600);
         break;
       case "win":
+        BOND.lv = s.lv; BOND.xp = s.xp;
         if (cfg.ally) BOND.base = Math.max(BOND.base, s.bondLv);                         // the bond carries over to the next battle / stage
         bgm.stop(); noise(.6, .7); sweep(80, 1600, .9, "sawtooth", .3); sweep(200, 40, .6, "sine", .6);
         retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); setTimeout(end, 1600);
@@ -252,6 +253,8 @@ function runBattle(cfg, done) {
 
     g.font = "20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${Math.max(s.hp, 0)} / ${s.maxHp}`, BOX.x, 485);
     g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(s.hp, 0) / s.maxHp, 20);
+    g.font = "bold 18px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#ffd36b"; g.fillText(`Lv.${s.lv}`, 20, 485);   // level + exp bar, bottom-left, clear of HP and the controls hint
+    g.fillStyle = "#333"; g.fillRect(80, 475, 200, 12); g.fillStyle = "#ffd36b"; g.fillRect(80, 475, 200 * s.xp / 100, 12);
     g.font = "bold 20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = s.auto ? "#7dffb0" : "#889"; g.fillText(s.auto ? "사격 ON" : "사격 OFF", BOX.x + BOX.w + 20, 250);
     if (s.hasAlly) {                                                                    // bond gauge: fills by grazing bullets
       g.font = "bold 15px 'Malgun Gothic'"; g.fillStyle = allyCol; g.fillText(`유대 Lv.${s.bondLv}${s.shieldOn ? " · 방패" : ""}`, BOX.x + BOX.w + 20, 276);
