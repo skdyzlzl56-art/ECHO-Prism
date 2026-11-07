@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ECHO PRISM</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b1026;font-family:"Malgun Gothic",sans-serif;user-select:none}
+  #stage{position:relative;max-width:960px;height:100vh;max-height:540px;margin:auto;top:50%;transform:translateY(-50%);
+    background:linear-gradient(#1b2a5a,#0b1026);overflow:hidden;cursor:pointer}
+  #portrait{position:absolute;left:50%;bottom:150px;width:300px;height:300px;transform:translateX(-50%)}
+  #box{position:absolute;left:0;right:0;bottom:0;height:140px;background:rgba(0,0,30,.88);border-top:4px solid #fff;
+    padding:28px 32px 0;color:#fff;font-size:24px;line-height:1.5;box-sizing:border-box}
+  #name{position:absolute;left:24px;top:-18px;background:#2a5b8c;border:3px solid #fff;padding:2px 18px;font-size:20px}
+  #name:empty{display:none}
+  #next{position:absolute;right:20px;bottom:10px;font-size:18px;animation:b 1s infinite}
+  @keyframes b{50%{opacity:0}}
+  #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+  #flash.on{animation:fl .35s ease-out}
+  @keyframes fl{0%{opacity:.35}100%{opacity:0}}
+  #shout{position:absolute;left:0;right:0;top:35%;text-align:center;font-size:96px;font-weight:900;color:#fff;
+    -webkit-text-stroke:3px #c00;text-shadow:0 0 12px #f00;letter-spacing:4px;pointer-events:none;display:none}
+  #shout.on{display:block;animation:pop .7s ease-out}
+  @keyframes pop{0%{transform:scale(2.5);opacity:0}15%{transform:scale(1);opacity:1}100%{transform:scale(1.05);opacity:1}}
+  #stage.shake{animation:sh .5s linear}
+  @keyframes sh{0%,100%{transform:translateY(-50%)}20%{transform:translate(-14px,-50%)}40%{transform:translate(14px,-46%)}60%{transform:translate(-10px,-54%)}80%{transform:translate(10px,-50%)}}
+  #start{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;background:#000a;color:#fff;font-size:24px}
+  #start h1{font-size:72px;letter-spacing:10px;margin:0 0 20px;text-shadow:0 0 24px #4fc3ff}
+  #start p{animation:b 1.4s infinite}
+  #bg{position:absolute;inset:0;width:100%;height:100%}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="bg" width="960" height="540"></canvas>
+  <canvas id="portrait"></canvas>
+  <div id="box"><div id="name"></div><span id="text"></span><span id="next" hidden>▼</span></div>
+  <div id="flash"></div>
+  <div id="shout"></div>
+  <div id="start"><div><h1>ECHO PRISM</h1><p>클릭하여 시작</p></div></div>
+</div>
+<script src="script.js"></script>
+<script src="portraits.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const CHAR_MS = 45;
+let ac, idx = -1, busy = false, timer, full = "", pos = 0, speaker;
+
+function blip(freq) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = "square"; o.frequency.value = freq * (1 + (Math.random() - .5) * .06);
+  g.gain.setValueAtTime(.08, ac.currentTime);
+  g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + .06);
+  o.connect(g).connect(ac.destination);
+  o.start(); o.stop(ac.currentTime + .06);
+}
+
+// sound effects: sweep = pitch slide, noise = burst (thud/crash)
+function sweep(f0, f1, dur, type = "sawtooth", vol = .25) {
+  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
+  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
+  o.connect(g).connect(ac.destination); o.start(); o.stop(t + dur);
+}
+function noise(dur, vol = .4) {
+  const n = ac.sampleRate * dur, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = b; g.gain.value = vol;
+  s.connect(g).connect(ac.destination); s.start();
+}
+
+// fx table: shout text, flash, shake, sound, wait (ms) before typing starts
+const FX = {
+  alert:     { shout: "경고!", flash: 1, shake: 1, wait: 800, sfx: () => { noise(.15); sweep(900, 300, .5); } },
+  title:     { shout: "ECHO PRISM", flash: 1, wait: 1600, sfx: () => { sweep(200, 800, 1.2, "sine", .3); sweep(300, 1200, 1.2, "triangle", .2); } },
+  shake:     { shake: 1, wait: 500, sfx: () => { noise(.35, .5); sweep(120, 40, .4, "sine", .5); } },
+  impact:    { flash: 1, wait: 400, sfx: () => { noise(.08, .6); sweep(200, 60, .2, "sine", .6); setTimeout(() => { noise(.08, .6); sweep(200, 60, .2, "sine", .6); }, 180); } },
+};
+const retrigger = (el, cls, ms) => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(() => el.classList.remove(cls), ms); };
+
+function play(fx) {
+  fx.sfx(); kickPortrait();
+  if (fx.flash) retrigger($("flash"), "on", 600);
+  if (fx.shake) retrigger($("stage"), "shake", 500);
+  if (fx.shout) { $("shout").textContent = fx.shout; retrigger($("shout"), "on", fx.wait); }
+}
+
+function show(i) {
+  const line = SCRIPT[i]; speaker = SPEAKERS[line.who];
+  $("name").textContent = speaker.name;
+  setPortrait(speaker);
+  full = line.text; pos = 0; $("text").textContent = ""; $("next").hidden = true;
+  const fx = FX[line.fx];
+  if (fx) { busy = true; play(fx); setTimeout(() => { busy = false; timer = setInterval(tick, CHAR_MS); }, fx.wait); }
+  else timer = setInterval(tick, CHAR_MS);
+}
+
+function tick() {
+  const ch = full[pos++];
+  $("text").textContent = full.slice(0, pos);
+  if (ch.trim() && !/[.,!?…]/.test(ch)) { blip(speaker.pitch); pulsePortrait(); } // sound + pulse only on spoken chars
+  if (pos >= full.length) finish();
+}
+
+function finish() { clearInterval(timer); timer = null; $("text").textContent = full; $("next").hidden = false; }
+
+function advance() {
+  if (!ac) { ac = new AudioContext(); $("start").remove(); }
+  if (busy) return;                      // effect playing, no input
+  if (timer) return finish();            // skip typing
+  if (idx >= SCRIPT.length - 1) {        // end of script
+    idx = SCRIPT.length; $("text").textContent = "TO BE CONTINUED..."; $("name").textContent = ""; $("next").hidden = true; return;
+  }
+  show(++idx);
+}
+
+$("stage").onclick = advance;
+addEventListener("keydown", e => { if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); advance(); } });
+</script>
+</body>
+</html>
