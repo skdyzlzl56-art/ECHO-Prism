@@ -40,7 +40,7 @@ ACTS.s6_trial = done => runBattle(BATTLES.s6_trial, done);
 
 // ---- 3) 침묵: 5페이즈. 색 → 되감기 → 방향 → 색+되감기 → 마지막은 합동 유대의 빛 ----
 BATTLES.s6_silence = {
-  ...PARTY4, speaker: "silence", hp: 700, bgm: "s1_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 32, ew: 90, jointLight: true,
+  ...PARTY4, speaker: "silence", hp: 700, bgm: "s6_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 32, ew: 90, jointLight: true,
   phaseRules: [{ colorRule: RED }, { rewind: 5 }, { dirRule: DIR6 }, { colorRule: RED, rewind: 5 }, { finale: true }],
   winText: "침묵이 돌아간다!",
   names: ["침묵 「붉게 번지는 소리」", "침묵 「되돌아오는 소리」", "침묵 「이름을 찾는 소리」", "침묵 「겹쳐 우는 소리」", "침묵 「처음의 기억」"],

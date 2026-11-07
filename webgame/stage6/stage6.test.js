@@ -68,3 +68,9 @@ test("stage 6 boss: every phase fires bullets under its own rule, and the finale
   b.state.gauge = 100; const ev = b.step(1 / 60, {});
   assert.ok(ev.some(v => v.type === "jointLight")); assert.strictEqual(b.state.over, "win");
 });
+
+test("stage 6 has its own music: core field and final boss use s6_field / s6_boss, not stage 1 tracks", () => {
+  assert.strictEqual(D.BATTLES.s6_silence.bgm, "s6_boss");
+  for (const l of D.STAGE6) if (l.bgm) assert.ok(!/^s1_/.test(l.bgm), `${l.bgm}: ${l.text || l.act}`);
+  assert.ok(D.STAGE6.some(l => l.bgm === "s6_field") && D.STAGE6.some(l => l.act === "s6_silence" && l.bgm === "s6_boss"));
+});
