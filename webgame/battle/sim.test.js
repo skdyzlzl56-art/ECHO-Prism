@@ -342,4 +342,16 @@ test("breakable bullet: player shots wear it down and break it; unbroken it stil
   const c = createBattle(cfg, { rng: seeded(4) }); c.state.auto = false; run(c, 1.6);
   const k = c.state.bullets.find(x => x.hp); k.x = c.state.p.x; k.y = c.state.p.y; k.vy = 0;
   run(c, .05); assert.ok(c.state.hp < 100);
+
+test("the box is battle state: moving it moves the player's limits and the bullet cull", () => {
+  const b = still({}); const B = b.state.BOX;
+  B.x += 200; B.y += 50;                                                  // test input: shift the box right and down
+  run(b, 3, { dx: 1, dy: 1 });
+  assert.ok(b.state.p.x <= B.x + B.w && b.state.p.x > BOX.x + BOX.w, "player follows the moved right wall");
+  assert.ok(b.state.p.y <= B.y + B.h && b.state.p.y > BOX.y + BOX.h, "player follows the moved bottom wall");
+  run(b, 3, { dx: -1, dy: -1 });
+  assert.ok(Math.abs(b.state.p.x - (B.x + 4)) < 30 && b.state.p.x >= B.x, "player stops at the moved left wall");
+  b.state.bullets.push(drop(BOX.x + 20, BOX.y + 10, 0)); run(b, .05);   // inside the old box, left of the new one
+  assert.strictEqual(b.state.bullets.length, 0, "bullet outside the moved box is culled");
+  assert.strictEqual(BOX.x, 330, "the shared default box is untouched");
 });
