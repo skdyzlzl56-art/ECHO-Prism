@@ -1,0 +1,57 @@
+const test = require("node:test"), assert = require("node:assert");
+const { createMenu, keyLabel, fixKeys } = require("./menu.js");
+const press = (m, ...codes) => codes.map(c => m.key(c)).pop();
+
+test("C opens and closes the menu; Escape on the top list closes too", () => {
+  const m = createMenu();
+  assert.strictEqual(m.open, false);
+  m.toggle(); assert.strictEqual(m.open, true);
+  m.key("KeyC"); assert.strictEqual(m.open, false);
+  m.toggle(); m.key("Escape"); assert.strictEqual(m.open, false);
+});
+
+test("menu is a list with key settings and quit (items can be appended later)", () => {
+  const m = createMenu();
+  assert.ok(m.items.some(i => i.id === "keys") && m.items.some(i => i.id === "quit"));
+});
+
+test("rebinding applies at once; a key already used in the same context is refused", () => {
+  const m = createMenu();
+  assert.strictEqual(m.rebind("swap", "KeyQ"), true);
+  assert.strictEqual(m.keys.swap, "KeyQ");
+  assert.strictEqual(m.rebind("fire", "KeyQ"), false, "Q is swap now");
+  assert.strictEqual(m.keys.fire, "KeyZ");
+  assert.strictEqual(m.rebind("dash", "ArrowLeft"), false, "movement keys are reserved");
+  assert.strictEqual(m.rebind("dash", "KeyC"), false, "C belongs to the menu");
+  assert.strictEqual(m.rebind("fast", "KeyZ"), false, "Z advances dialogue");
+});
+
+test("dash and fast typing may share X (different situations)", () => {
+  const m = createMenu();
+  assert.strictEqual(m.keys.dash, "KeyX"); assert.strictEqual(m.keys.fast, "KeyX");
+});
+
+test("changing a key through the menu screens works, and the hint text follows", () => {
+  const m = createMenu();
+  m.toggle();
+  press(m, "Enter");                       // 키 설정
+  press(m, "ArrowDown", "Enter");          // 교대 -> capture
+  press(m, "KeyQ");
+  assert.strictEqual(m.keys.swap, "KeyQ");
+  assert.strictEqual(keyLabel(m.keys.swap), "Q");
+  assert.strictEqual(fixKeys("A키로 교대", m.keys), "Q키로 교대");
+  assert.strictEqual(fixKeys("Z키로 끄고", m.keys), "Z키로 끄고");
+});
+
+test("quit needs a confirmation; declining returns to the list", () => {
+  const m = createMenu();
+  m.toggle();
+  const quit = m.items.findIndex(i => i.id === "quit");
+  for (let i = 0; i < quit; i++) m.key("ArrowDown");
+  assert.strictEqual(press(m, "Enter"), undefined, "first press only asks");
+  assert.strictEqual(m.page, "confirm");
+  assert.strictEqual(press(m, "Enter"), undefined, "default answer is No");
+  assert.strictEqual(m.page, "list");
+  press(m, "Enter"); m.key("ArrowLeft");
+  assert.strictEqual(press(m, "Enter"), "quit");
+});

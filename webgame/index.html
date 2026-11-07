@@ -29,7 +29,7 @@
   #start p{animation:b 1.4s infinite}
   #bg{position:absolute;inset:0;width:100%;height:100%}
   #act{position:absolute;inset:0;z-index:5;cursor:default}
-  #act[hidden]{display:none}
+  #act[hidden],#menu[hidden]{display:none}
   .pk{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0b1026dd;color:#fff;text-align:center}
   .pk h2{margin:0 0 4px;font-size:30px;letter-spacing:4px}
   .pk h3{margin:0;font-size:28px;color:#4fc3ff}
@@ -50,11 +50,13 @@
   <div id="flash"></div>
   <div id="shout"></div>
   <div id="act" hidden></div>
+  <div id="menu" hidden style="position:absolute;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:rgba(0,0,20,.85);color:#fff;cursor:default"></div>
   <div id="start"><div><h1>ECHO PRISM</h1><p>클릭하여 시작</p></div></div>
 </div>
 <script src="script.js"></script>
 <script src="portraits.js"></script>
 <script src="dialogue.js"></script>
+<script src="menu.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const CHAR_MS = 45;
@@ -105,7 +107,7 @@ function show(i) {
   if (line.rename) speaker.name = line.rename;   // reveal a speaker's real name from this line on
   $("name").textContent = speaker.name;
   setPortrait(speaker);
-  full = line.text; typer.reset(); $("text").textContent = ""; $("next").hidden = true;
+  full = fixKeys(line.text, MENU.keys); typer.reset(); $("text").textContent = ""; $("next").hidden = true;
   const fx = FX[line.fx];
   if (fx) { busy = true; play(fx); setTimeout(() => { busy = false; timer = setInterval(tick, CHAR_MS); }, fx.wait); }
   else timer = setInterval(tick, CHAR_MS);
@@ -113,6 +115,7 @@ function show(i) {
 
 let xHeld = false;                  // hold X: type faster (does not advance the line)
 function tick() {
+  if (MENU.open) return;
   typer.add(1, xHeld, full.length); const pos = typer.pos, ch = full[pos - 1];
   $("text").textContent = full.slice(0, pos);
   if (ch.trim() && !/[.,!?…]/.test(ch)) { blip(speaker.pitch); pulsePortrait(); } // sound + pulse only on spoken chars
@@ -159,7 +162,7 @@ function next() {
 
 function advance() {
   if (!ac) { ac = new AudioContext(); $("start").remove(); }
-  if (busy || acting) return;            // effect or scene playing, no dialogue input
+  if (MENU.open || busy || acting) return;            // effect or scene playing, no dialogue input
   if (!typer.press(full.length)) return finish();   // first press completes the typing
   next();
 }
@@ -173,12 +176,19 @@ addEventListener("keydown", e => { if (e.key === KEYS.skip) ctrl = true; });
 addEventListener("keyup", e => { if (e.key === KEYS.skip) ctrl = false; });
 addEventListener("blur", () => { ctrl = false; });
 setInterval(() => {
-  if (!ctrl || !ac || busy || acting || idx >= SCRIPT.length) return;
+  if (MENU.open || !ctrl || !ac || busy || acting || idx >= SCRIPT.length) return;
   if (typer.hold(.09, full.length)) next(); else if (timer) finish();
 }, 90);
 
 $("stage").onclick = advance;
 addEventListener("keydown", e => { if (e.code === "Space" || e.code === "Enter" || e.code === "KeyZ") { e.preventDefault(); advance(); } });
+// C opens / closes the menu in dialogue and battle (not during other scenes or effects). Captured first so nothing underneath sees the key.
+addEventListener("keydown", e => {
+  if (!MENU.open) { if (e.code !== "KeyC" || e.repeat || !ac || busy || (acting && !stage.classList.contains("battle"))) return; MENU.toggle(); }
+  else if (MENU.key(e.code) === "quit") { location.reload(); return; }                 // a fresh load shows the title
+  e.preventDefault(); e.stopImmediatePropagation();
+  $("menu").hidden = !MENU.open; $("menu").innerHTML = MENU.open ? menuHtml(MENU) : "";
+}, true);
 </script>
 <script src="game.js"></script>
 <script src="battle/sim.js"></script>

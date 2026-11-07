@@ -72,18 +72,19 @@ function runBattle(cfg, done) {
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
   const advTalk = () => {                                               // first press finishes the typing, the next goes to the next line
-    if (typer.press(s.talk.lines[s.talk.i].t.length)) nextLine();
+    if (typer.press(lineT().length)) nextLine();
   };
   const nextLine = () => { battle.advance(); typer.reset(); if (!s.talk) setPortrait(SPEAKERS[cfg.speaker]); };
-  const press = () => s.talk ? advTalk() : toggle();
+  const lineT = () => fixKeys(s.talk.lines[s.talk.i].t, MENU.keys);                 // dialogue text with the current key names
+  const press = () => MENU.open ? 0 : s.talk ? advTalk() : toggle();
   const kd = ev => {
     keys[ev.code] = true; if (ev.key === KEYS.skip) keys.skip = true;
     if (ev.code.startsWith("Arrow") || ev.code === "Space") ev.preventDefault();
     if (ev.repeat) return;
     if (s.talk) { if (KEYS.advance.includes(ev.code)) advTalk(); }
-    else if (ev.code === "KeyZ") toggle();
-    else if (ev.code === "KeyA") battle.swap();                                  // 교대
-    else if (ev.code === "KeyX") battle.dash();                                  // 대시
+    else if (ev.code === MENU.keys.fire) toggle();
+    else if (ev.code === MENU.keys.swap) battle.swap();                                  // 교대
+    else if (ev.code === MENU.keys.dash) battle.dash();                                  // 대시
   };
   const ku = ev => { keys[ev.code] = false; if (ev.key === KEYS.skip) keys.skip = false; };
   const cleanup = () => {
@@ -269,7 +270,7 @@ function runBattle(cfg, done) {
       g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * s.gauge / 100, 8);
       g.font = "12px 'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
     }
-    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText("이동: 방향키 · 사격 ON/OFF: Z 또는 클릭" + " · 대시: X" + (cfg.allies ? " · 교대: A" : ""), BOX.x + BOX.w, 515);
+    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText(`이동: 방향키 · 사격 ON/OFF: ${keyLabel(MENU.keys.fire)} 또는 클릭 · 대시: ${keyLabel(MENU.keys.dash)}` + (cfg.allies ? ` · 교대: ${keyLabel(MENU.keys.swap)}` : "") + " · 메뉴: C", BOX.x + BOX.w, 515);
     if (banner) {                                                                       // phase (spell) name / bond announcement
       const k = banner.age, a = Math.min(1, k * 4, (3 - k) * 2), sx = BOX.x + BOX.w + 20 + (1 - Math.min(1, k * 4)) * 30;
       g.globalAlpha = Math.max(0, a); g.textAlign = "left"; g.textBaseline = "middle";
@@ -279,7 +280,7 @@ function runBattle(cfg, done) {
       g.globalAlpha = 1;
     }
     if (s.talk) {
-      const L = s.talk.lines[s.talk.i], sp = SPEAKERS[L.who];
+      const L = { ...s.talk.lines[s.talk.i], t: lineT() }, sp = SPEAKERS[L.who];
       g.fillStyle = "rgba(0,0,0,.7)"; g.fillRect(0, 0, 960, 540);
       g.fillStyle = "#0b1026"; g.fillRect(60, 400, 840, 120); g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(60, 400, 840, 120);
       g.textAlign = "left"; g.textBaseline = "top"; g.font = "bold 24px 'Malgun Gothic'"; g.fillStyle = sp.color; g.fillText(sp.name, 84, 414);
@@ -298,8 +299,9 @@ function runBattle(cfg, done) {
 
   function frame(now) {
     const dt = Math.min((now - last) / 1000, .05); last = now;
+    if (MENU.open) { raf = requestAnimationFrame(frame); return; }                       // menu open: everything stops (the menu is a DOM overlay)
     $("portrait").style.visibility = s.talk ? "visible" : "hidden";                     // the enemy body is drawn on the field; the portrait only shows while someone talks
-    if (s.talk) { typer.add(dt * 25, keys[KEYS.fast], s.talk.lines[s.talk.i].t.length); if (keys.skip && typer.hold(dt, s.talk.lines[s.talk.i].t.length)) nextLine(); setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
+    if (s.talk) { typer.add(dt * 25, keys[KEYS.fast], lineT().length); if (keys.skip && typer.hold(dt, lineT().length)) nextLine(); setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
     else {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };

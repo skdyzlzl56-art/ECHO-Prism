@@ -7,7 +7,7 @@ const bgms = new Set(fs.readdirSync(path.join(__dirname, "audio")).map(f => f.re
 
 test("swap key is A, not X; no 'X키' text left in the game", () => {
   const b = rd("battle.js");
-  assert.match(b, /ev\.code === "KeyA"\) battle\.swap\(\)/);
+  assert.match(b, /ev\.code === MENU\.keys\.swap\) battle\.swap\(\)/);
   assert.doesNotMatch(b, /keys\.KeyA/, "A must not also move left");
   for (const f of [...files, "battle.js", "stage4/scenes.js"]) assert.doesNotMatch(rd(f), /X키|교대: X/, f);
 });
@@ -54,6 +54,6 @@ test("index.html loads every stage script and every loaded file exists", () => {
 
 test("X dashes in battle and the hint says so", () => {
   const b = rd("battle.js");
-  assert.match(b, /ev\.code === "KeyX"\) battle\.dash\(\)/);
-  assert.match(b, /대시: X/);
+  assert.match(b, /ev\.code === MENU\.keys\.dash\) battle\.dash\(\)/);
+  assert.ok(b.includes("대시: ${keyLabel(MENU.keys.dash)}"));
 });

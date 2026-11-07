@@ -1,0 +1,75 @@
+// C-key menu: state and rules only (no DOM / clock), so it runs in the browser (globals MENU, fixKeys, keyLabel, menuHtml) and in Node (require).
+// The view lives in index.html: it pauses story/battle while MENU.open and calls MENU.key(code) for every key press.
+// Menu entries are the ITEMS list: add { id, label } and handle the id in activate() to extend it.
+(function (root) {
+  "use strict";
+  // ctx: a key may be used by only one action per context (battle vs dialogue); dash and fast typing share X by default.
+  const ACTIONS = [
+    { id: "fire", label: "사격 ON/OFF", ctx: "battle", def: "KeyZ" },
+    { id: "swap", label: "교대", ctx: "battle", def: "KeyA" },
+    { id: "dash", label: "대시", ctx: "battle", def: "KeyX" },
+    { id: "fast", label: "대화 빨리 출력", ctx: "talk", def: "KeyX" },
+  ];
+  const ITEMS = [{ id: "keys", label: "키 설정" }, { id: "quit", label: "종료" }, { id: "close", label: "닫기" }];
+  // movement, the menu itself and the dialogue-advance keys cannot be bound
+  const RESERVED = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyS", "KeyD", "KeyC", "Space", "Enter", "Escape"]);
+  const keyLabel = c => c.replace(/^Key|^Digit/, "").replace("Numpad", "N");
+
+  function createMenu(dk = { advance: ["Space", "Enter", "KeyZ"], fast: "KeyX" }) {   // dk = dialogue.js KEYS: the "fast" binding is written through to it
+    const keys = Object.fromEntries(ACTIONS.map(a => [a.id, a.def])); keys.fast = dk.fast;
+    const m = { open: false, page: "list", sel: 0, msg: "", items: ITEMS, keys, actions: ACTIONS };
+    const close = () => { m.open = false; m.page = "list"; m.msg = ""; };
+    m.toggle = () => { if (m.open) close(); else { m.open = true; m.page = "list"; m.sel = 0; m.msg = ""; } return m.open; };
+    m.rebind = (id, code) => {
+      const a = ACTIONS.find(x => x.id === id);
+      if (RESERVED.has(code) || (a.ctx === "talk" && dk.advance.includes(code))) return false;   // those advance dialogue
+      if (ACTIONS.some(o => o.id !== id && o.ctx === a.ctx && keys[o.id] === code)) return false;
+      keys[id] = code; if (id === "fast") dk.fast = code; return true;
+    };
+    const go = (page, sel = 0) => { m.page = page; m.sel = sel; m.msg = ""; };
+    const wrap = (n, d) => m.sel = (m.sel + d + n) % n;
+    // returns "quit" once the player confirms leaving; the caller goes back to the title
+    m.key = code => {
+      if (!m.open) return;
+      if (code === "KeyC") return close();
+      const ok = code === "Enter" || code === "Space" || code === "KeyZ", d = code === "ArrowDown" ? 1 : code === "ArrowUp" ? -1 : 0;
+      if (m.page === "capture") {
+        if (code === "Escape") return go("keys", m.sel);
+        const id = ACTIONS[m.sel].id;
+        if (m.rebind(id, code)) go("keys", m.sel); else m.msg = "그 키는 쓸 수 없어요";
+      } else if (m.page === "confirm") {
+        if (code === "Escape") return go("list", m.items.findIndex(i => i.id === "quit"));
+        if (code.startsWith("Arrow")) m.sel = 1 - m.sel;
+        else if (ok) { if (m.sel === 0) return "quit"; go("list", m.items.findIndex(i => i.id === "quit")); }
+      } else if (m.page === "keys") {
+        if (code === "Escape") return go("list");
+        if (d) wrap(ACTIONS.length + 1, d);
+        else if (ok) { if (m.sel === ACTIONS.length) go("list"); else m.page = "capture"; }
+      } else {
+        if (code === "Escape") return close();
+        if (d) wrap(m.items.length, d);
+        else if (ok) {
+          const id = m.items[m.sel].id;
+          if (id === "keys") go("keys"); else if (id === "quit") go("confirm", 1); else close();
+        }
+      }
+    };
+    return m;
+  }
+
+  // "Z키" / "A키" in story text follow the current binding
+  const fixKeys = (t, k) => t.replace("Z키", keyLabel(k.fire) + "키").replace("A키", keyLabel(k.swap) + "키");
+
+  const menuHtml = m => {
+    const row = (t, on) => `<div style="padding:4px 18px;${on ? "background:#4fc3ff44;border:2px solid #fff;" : "border:2px solid transparent;"}">${t}</div>`;
+    let rows;
+    if (m.page === "list") rows = m.items.map((i, k) => row(i.label, k === m.sel)).join("");
+    else if (m.page === "confirm") rows = `<div>타이틀로 돌아갈까요?</div>` + ["예", "아니오"].map((t, k) => row(t, k === m.sel)).join("");
+    else rows = m.actions.map((a, k) => row(`${a.label}: ${m.page === "capture" && k === m.sel ? "키를 누르세요" : keyLabel(m.keys[a.id])}`, k === m.sel)).join("") + row("뒤로", m.sel === m.actions.length);
+    return `<div style="min-width:280px;text-align:center;font-size:24px;line-height:1.6"><h2 style="margin:0 0 8px">MENU</h2>${rows}<div style="font-size:16px;color:#ffd36b;min-height:22px">${m.msg}</div><div style="font-size:14px;color:#9ad0ff">↑↓ 선택 · Enter 확인 · Esc 뒤로 · C 닫기</div></div>`;
+  };
+
+  const api = { createMenu, keyLabel, fixKeys, menuHtml };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else { Object.assign(root, api); root.MENU = createMenu(root.KEYS); }   // dialogue.js loads first
+})(typeof globalThis !== "undefined" ? globalThis : this);
