@@ -297,7 +297,15 @@ function runBattle(cfg, done) {
       g.fillStyle = "#f33"; g.globalAlpha = s.split.active ? .45 : .15 + .15 * Math.abs(Math.sin(t * 10)); g.fillRect(ux, BOX.y, hw, BOX.h);
       g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 3; g.setLineDash([8, 6]); g.beginPath(); g.moveTo(BOX.x + hw, BOX.y); g.lineTo(BOX.x + hw, BOX.y + BOX.h); g.stroke(); g.restore();
     }
-    if (s.invertWarn || s.inverted) { g.save(); g.font = "bold 22px sans-serif"; g.textAlign = "center"; g.fillStyle = s.inverted ? "#f6f" : "#ff0"; g.globalAlpha = .6 + .4 * Math.abs(Math.sin(t * 12)); g.fillText(s.inverted ? "조작 반전!" : "조작 반전 경고", BOX.x + BOX.w / 2, BOX.y - 24); g.restore(); }
+    if (s.invertWarn || s.inverted) {                                                     // 조작 반전: a side panel left of the box with a draining bar (bigger than the old label, which sat on the enemy HP bar), plus a pulsing frame
+      const on = s.inverted, c = on ? "#f6f" : "#ff0", pu = .6 + .4 * Math.abs(Math.sin(t * (on ? 8 : 14))), px = 40, py = BOX.y + 40, pw = BOX.x - 70, fr = Math.max(0, Math.min(1, s.invertLeft / (s.invertMax || 1)));
+      g.save(); g.fillStyle = "rgba(10,5,30,.88)"; g.fillRect(px, py, pw, 130); g.strokeStyle = c; g.lineWidth = 4; g.globalAlpha = pu; g.strokeRect(px, py, pw, 130); g.globalAlpha = 1;
+      g.textAlign = "center"; g.fillStyle = c; g.font = "bold 30px Galmuri11,'Malgun Gothic'"; g.fillText(on ? "조작 반전!" : "조작 반전 경고", px + pw / 2, py + 40);
+      g.font = "bold 40px Galmuri11,'Malgun Gothic'"; g.fillText(on ? "← → ⇄" : "⇄", px + pw / 2, py + 84);   // arrows mirrored
+      g.fillStyle = "#333"; g.fillRect(px + 14, py + 100, pw - 28, 16); g.fillStyle = c; g.fillRect(px + 14, py + 100, (pw - 28) * fr, 16);   // time left: until it starts (warning) / until it ends
+      g.font = "14px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText(`${on ? "끝날 때까지" : "시작까지"} ${Math.max(0, s.invertLeft).toFixed(1)}초`, px + pw / 2, py + 125);
+      g.strokeStyle = c; g.lineWidth = 6; g.globalAlpha = pu * .8; g.strokeRect(BOX.x - 3, BOX.y - 3, BOX.w + 6, BOX.h + 6); g.restore();
+    }
     g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(BOX.x, BOX.y, BOX.w, BOX.h);
 
     g.fillStyle = "#333"; g.fillRect(BOX.x, 168, BOX.w, 10);

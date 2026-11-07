@@ -163,7 +163,7 @@
     function update(dt, input) {
       // 조작 반전 규칙 / 판 분할 규칙: cycles of `period` s; the last `warn` s of each cycle is the warning, the first `dur` s the effect
       const ir = rl("invertRule"), sr = rl("splitRule"), cyc = r => { const c = s.t % r.period; return c >= r.period - r.warn ? "warn" : c < r.dur && s.t >= r.period ? "on" : null; };
-      if (ir) { const ph = cyc(ir); if (ph === "warn" && !s.invertWarn) emit("invertWarn"); s.invertWarn = ph === "warn"; s.inverted = ph === "on"; } else s.invertWarn = s.inverted = false;
+      if (ir) { const ph = cyc(ir); if (ph === "warn" && !s.invertWarn) emit("invertWarn"); s.invertWarn = ph === "warn"; s.inverted = ph === "on"; const c = s.t % ir.period; s.invertLeft = ph === "warn" ? ir.period - c : ph === "on" ? ir.dur - c : 0; s.invertMax = ph === "warn" ? ir.warn : ir.dur; } else { s.invertWarn = s.inverted = false; s.invertLeft = 0; }
       if (sr) {
         const ph = cyc(sr);
         if (ph === "warn" && !(s.split && !s.split.active)) { s.split = { safe: rng() < .5 ? -1 : 1, active: false }; emit("splitWarn", { safe: s.split.safe }); }
