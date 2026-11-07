@@ -35,6 +35,7 @@
     m.key = code => {
       if (!m.open) return;
       if (code === "KeyC") return close();
+      if (code === "KeyX" && m.page !== "capture") code = "Escape";   // X = back, like Esc (not while binding a key: X is bindable)
       const ok = code === "Enter" || code === "Space" || code === "KeyZ", d = code === "ArrowDown" ? 1 : code === "ArrowUp" ? -1 : 0;
       if (m.page === "capture") {
         if (code === "Escape") return go("keys", m.sel);
@@ -79,7 +80,7 @@
     else if (m.page === "confirm") rows = `<div>타이틀로 돌아갈까요?</div>` + ["예", "아니오"].map((t, k) => row(t, k === m.sel)).join("");
     else if (m.page === "volume") rows = m.vols.map((v, k) => row(`${v.label}: ◀ ${Math.round(m.vol[v.id] * 10)}/10 ▶`, k === m.sel)).join("") + row("뒤로", m.sel === m.vols.length);
     else rows = m.actions.map((a, k) => row(`${a.label}: ${m.page === "capture" && k === m.sel ? "키를 누르세요" : keyLabel(m.keys[a.id])}`, k === m.sel)).join("") + row("뒤로", m.sel === m.actions.length);
-    return `<div style="min-width:280px;text-align:center;font-size:24px;line-height:1.6"><h2 style="margin:0 0 8px">MENU</h2>${rows}<div style="font-size:16px;color:#ffd36b;min-height:22px">${m.msg}</div><div style="font-size:14px;color:#9ad0ff">↑↓ 선택 · Enter 확인 · Esc 뒤로 · C 닫기</div></div>`;
+    return `<div style="min-width:280px;text-align:center;font-size:24px;line-height:1.6"><h2 style="margin:0 0 8px">MENU</h2>${rows}<div style="font-size:16px;color:#ffd36b;min-height:22px">${m.msg}</div><div style="font-size:14px;color:#9ad0ff">↑↓ 선택 · Enter 확인 · Esc/X 뒤로 · C 닫기</div></div>`;
   };
 
   // Save slot (one): scene index to restart from + BOND values. Mid-battle the caller passes the battle's own line index and the BOND from before the battle.

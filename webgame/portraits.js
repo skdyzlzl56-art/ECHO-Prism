@@ -192,13 +192,57 @@ function drawBg(t) {
   }
 }
 
+// Title screen = the story's opening. Lira (the world itself) drifts alone; the empty seat is where the unnamed one will stand, its outline cycling
+// through the shapes they can choose. Memories are lights that glow when she passes; the seat splits light into a prism (the echo of a first cry);
+// now and then a crack (균열) tears through the sky and fades. Click: the seat flares and swallows the screen (cast.goAt). Stage CSS (.title) stretches this canvas over the stage.
+const ss0 = x => x * x * (3 - 2 * x);
+const trail = [], PRISM = ["255,90,120", "255,170,70", "255,235,110", "110,230,150", "90,190,255", "180,130,255"];
+const memories = Array.from({ length: 40 }, () => ({ x: Math.random() * 960, y: Math.random() * 540, v: .1 + Math.random() * .35, r: 2 + Math.random() * 3.5, col: PRISM[Math.random() * 6 | 0], p: Math.random() * 7 }));
+function titleScene(t) {
+    const SEAT = [480, 410], p = (t % 15000) / 15000;
+  const w = ss0(p < .6 ? 0 : p < .72 ? (p - .6) / .12 : p < .9 ? 1 : 1 - (p - .9) / .1);              // 0 = wandering, 1 = keeping watch over the seat
+  const wx = 480 + 320 * Math.sin(t / 3300), wy = 150 + 70 * Math.sin(t / 2100 + 1);
+  const x = wx + (SEAT[0] + 70 * Math.cos(t / 900) - wx) * w, y = wy + (SEAT[1] - 70 + 22 * Math.sin(t / 900) - wy) * w;
+  c.save(); c.globalCompositeOperation = "lighter";
+  for (const m of memories) {                                                                         // memories: lights that rise, and glow where Lira passes
+    m.y -= m.v; m.x += Math.sin(t / 1500 + m.p) * .2; if (m.y < -10) { m.y = 550; m.x = Math.random() * 960; }
+    const near = Math.max(0, 1 - Math.hypot(m.x - x, m.y - y) / 130), r = m.r * (1 + 2 * near), g = c.createRadialGradient(m.x, m.y, 0, m.x, m.y, r * 3);
+    g.addColorStop(0, `rgba(${m.col},${.35 + .6 * near})`); g.addColorStop(1, `rgba(${m.col},0)`);
+    c.fillStyle = g; c.beginPath(); c.arc(m.x, m.y, r * 3, 0, 7); c.fill();
+  }
+  c.restore();
+  const n = Math.floor(t / 9000), k = (t % 9000) / 900;                                                // a crack tears through the sky, flickers, fades
+  if (n > 0 && k < 1) {
+    let px = 120 + rnd(n) * 720, py = 0; c.save(); c.strokeStyle = `rgba(255,70,110,${(1 - k) * (Math.sin(t / 40) > -.3 ? 1 : .25)})`; c.lineWidth = 2; c.shadowColor = "#f36"; c.shadowBlur = 12; c.beginPath(); c.moveTo(px, py);
+    for (let i = 1; i < 9 * Math.min(1, k * 4); i++) { px += (rnd(n * 9 + i) - .5) * 90; py += 24 + rnd(n * 7 + i) * 36; c.lineTo(px, py); }
+    c.stroke(); c.restore();
+  }
+  for (let i = 0; i < 3; i++) {                                                                       // echo rings from the empty seat
+    const q = ((t / 3200) + i / 3) % 1;
+    c.strokeStyle = `rgba(255,255,255,${(1 - q) * (.25 + .3 * w)})`; c.lineWidth = 2; c.beginPath(); c.ellipse(SEAT[0], SEAT[1], 30 + 150 * q, 8 + 40 * q, 0, 0, 7); c.stroke();
+  }
+  c.save(); c.translate(SEAT[0], SEAT[1]); c.setLineDash([6, 8]); c.lineDashOffset = -t / 80; c.lineWidth = 3; c.shadowColor = "#fff"; c.shadowBlur = 10 + 20 * w;   // the empty seat: outline of the shapes one can become
+  const si = Math.floor(t / 2200), f = ss0(Math.min(1, Math.max(0, ((t % 2200) - 1700) / 500)));
+  [[si, 1 - f], [si + 1, f]].forEach(([i, a]) => { c.strokeStyle = `rgba(255,255,255,${a * (.45 + .4 * w)})`; c.beginPath(); PLAYER_SHAPES[i % PLAYER_SHAPES.length].path(c, 34); c.closePath(); c.stroke(); });
+  c.restore();
+  trail.push([x, y]); if (trail.length > 36) trail.shift();
+  trail.forEach(([tx, ty], i) => { c.fillStyle = `rgba(255,255,255,${i / trail.length * .4})`; c.beginPath(); c.arc(tx, ty, 1 + i / 9, 0, 7); c.fill(); });
+  c.save(); c.translate(x, y); c.scale(.7, .7); SHAPES.fairy(t, cast[0].color); c.restore();
+  if (cast.goAt) {                                                                                    // the click: the seat flares
+    const q = Math.min(1, (performance.now() - cast.goAt) / 800), g = c.createRadialGradient(SEAT[0], SEAT[1], 0, SEAT[0], SEAT[1], 40 + 900 * q * q);
+    g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(.5, `rgba(255,255,255,${.6 * q})`); g.addColorStop(1, "rgba(255,255,255,0)");
+    c.fillStyle = g; c.fillRect(0, 0, 960, 540);
+  }
+}
+
 function frame(t) {
   drawBg(t);
   talk = Math.max(talk * .97, pulse);
   ph += Math.min(t - last, 50) * (1 + 3 * talk) * (cur ? cur.spin : 1); last = t;   // idle = 1x, talking up to 4x
-  const W = cast ? 960 : SZ; if (cv.width !== W) cv.width = W;
-  c.clearRect(0, 0, W, SZ);
-  if (cast) {                                                  // conversation: closer characters stand further left, the active speaker is big and bright
+  const W = cast ? 960 : SZ, H = cast && cast.title ? 540 : SZ; if (cv.width !== W) cv.width = W; if (cv.height !== H) cv.height = H;
+  c.clearRect(0, 0, W, H);
+  if (cast && cast.title) titleScene(t);
+  else if (cast) {                                                  // conversation: closer characters stand further left, the active speaker is big and bright
     const sorted = [...cast].sort((a, b) => b.close - a.close);
     sorted.forEach((sp, i) => {
       const on = sp === cur, x = (i + .5) * W / sorted.length, sv = [talk, pulse, kick];

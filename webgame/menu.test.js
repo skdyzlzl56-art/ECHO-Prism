@@ -107,3 +107,11 @@ test("a broken or missing stored volume falls back to full", () => {
   const m = createMenu(undefined, { get: () => "junk", set() {} });
   assert.deepStrictEqual(m.vol, { bgm: 1, sfx: 1 });
 });
+
+test("X goes back like Esc, except while binding a key", () => {
+  const { createMenu } = require("./menu.js");
+  const m = createMenu(); m.toggle(); m.key("Enter"); assert.strictEqual(m.page, "keys");
+  m.key("KeyX"); assert.strictEqual(m.page, "list");
+  m.key("Enter"); m.key("Enter"); assert.strictEqual(m.page, "capture");
+  m.key("KeyX"); assert.strictEqual(m.page, "capture", "X is a key to bind here (taken by dash), not Back");
+});
