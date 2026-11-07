@@ -13,7 +13,7 @@ BATTLES.s2_mooks = {
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "chase", speed: 85, dash: 9 }],
   phases: [
     h => { h.rain(.45, 120); h.aim(1.4, 150); },
-    h => { h.wave(1.8, 85); h.fan(1.6, 7, .28, 115); h.side(.9, 140); },
+    h => { h.wave(1.8, 85); h.fan(1.6, 7, .28, 115); h.side(.9, 140); h.homing(2); },
   ],
   talks: { 1: [{ who: "hexa", t: "소리가 없는 만큼, 눈으로 봐라. 탄은 거짓말을 하지 않는다." }, { who: "lumi", t: "알았어! 내가 앞을 비출게!" }] },
 };
@@ -22,16 +22,17 @@ ACTS.s2_mooks = done => runBattle(BATTLES.s2_mooks, done);
 // ---- 2) 침묵: 페이즈가 오를수록 BGM과 탄 소리가 줄어든다 (fade). 체력을 0으로 만들 수 있다 ----
 BATTLES.s2_silence = {
   ...PARTY, speaker: "silence", hp: 560, bgm: "s2_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90, fade: .2,
+  phaseRules: [{}, {}, { splitRule: { period: 12, warn: 2, dur: 4 } }, { invertRule: { period: 12, warn: 2, dur: 4 } }, {}],   // 3: 판 분할, 4: 입력 반전
   winText: "쓰러뜨렸다...?",
   names: ["침묵 「소거」", "침묵 「잔향 지우기」", "침묵 「이름 삼키기」", "침묵 「빛의 소멸」", "침묵 「완전한 고요」"],
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 },
           { x: "sway", amp: 90, spd: 1.3, dash: 6.5 }, { x: "chase", speed: 110, dash: 5.5 }],
   phases: [
     h => { h.ring(1.9, 13, 90, 7); h.rain(.8, 110); },                                                              // 1: 소거
-    h => { h.aim(1.5, 130, 12, { split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.wave(1.9, 85); },                  // 2: 잔향 지우기
-    h => { h.spiral(.12, 3, .45, 105, 7, { w: .2 }); h.side(.8, 140, 7); h.laser(4, false); },                      // 3: 이름 삼키기
+    h => { h.aim(1.5, 130, 12, { split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.wave(1.9, 85); h.stall(1.5); },                  // 2: 잔향 지우기
+    h => { h.spiral(.12, 3, .45, 105, 7, { w: .2 }); h.side(.8, 140, 7); h.laser(4, false); },                      // 3: 이름 삼키기 (판 분할)
     h => { h.laser(2.5, true); h.fan(1.5, 5, .35, 110, 12); h.aim(.7, 220, 5, { col: "#fff" }); },                  // 4: 빛의 소멸
-    h => { h.spiral(.1, 4, .35, 112, 7); h.ring(1.5, 17, 100, 8, { w: .35 }); h.wall(3, 95); h.aim(1.8, 130, 14, { split: { t: 1, n: 12, sp: 95, size: 6 } }); },   // 5: 완전한 고요
+    h => { h.spiral(.1, 4, .35, 112, 7); h.ring(1.5, 17, 100, 8, { w: .35 }); h.wall(3, 95); h.zone(3.5); h.aim(1.8, 130, 14, { split: { t: 1, n: 12, sp: 95, size: 6 } }); },   // 5: 완전한 고요
   ],
   talks: {
     1: [{ who: "silence", t: "......소리부터... 지운다." }, { who: "voice", t: "음악이 작아지고 있어요! 눈과 손끝에 집중해요!" }],

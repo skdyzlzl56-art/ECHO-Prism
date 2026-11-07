@@ -25,7 +25,7 @@ test("battle bgm files and speakers exist; script bgm/speakers exist", () => {
 });
 
 test("battle configs are structurally valid", () => {
-  const RULES = ["colorRule", "rewind", "dirRule", "finale"];
+  const RULES = ["colorRule", "rewind", "dirRule", "boxRule", "invertRule", "splitRule", "finale"];
   for (const [k, b] of Object.entries(D.BATTLES)) {
     if (b.cuts && b.phases) assert.strictEqual(b.phases.length, b.cuts.length + 1, `${k}: phases must be cuts+1`);
     for (const pr of b.phaseRules || []) {
@@ -35,6 +35,13 @@ test("battle configs are structurally valid", () => {
     if (b.phaseRules) assert.ok(b.phaseRules.length <= b.phases.length, `${k}: more phaseRules than phases`);
     if (b.dirRule) assert.ok(b.dirRule.name, `${k}: dirRule needs name`);
   }
+});
+
+test("every new bullet helper and rule is placed in some battle config", () => {
+  const src = Object.values(D.BATTLES).flatMap(b => b.phases || []).map(f => f.toString()).join(" ");
+  for (const h of ["breakable", "toggle", "bounce", "stall", "homing", "zone", "swell"]) assert.match(src, new RegExp("h\\." + h + "\\("), `h.${h} unused`);
+  const rules = new Set(Object.values(D.BATTLES).flatMap(b => [b, ...(b.phaseRules || [])]).flatMap(o => Object.keys(o)));
+  for (const r of ["boxRule", "invertRule", "splitRule"]) assert.ok(rules.has(r), `${r} unused`);
 });
 
 test("GAME OVER draws a dark backdrop (lose only) before the text", () => {
