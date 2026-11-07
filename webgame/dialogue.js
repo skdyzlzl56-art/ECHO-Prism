@@ -33,6 +33,19 @@
     return rows.map(r => { const out = r.slice(0, Math.max(0, shown)); shown -= r.length; return out; });
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { KEYS, talkRate, createTyper, talkRows };
-  else { root.KEYS = KEYS; root.talkRate = talkRate; root.createTyper = createTyper; root.talkRows = talkRows; }
+  // The whole in-battle talk box: typing, press-to-advance, skip-hold and what to draw. The sim owns the lines (talk() -> {lines, i} | null, advance() -> next line,
+  // closes after the last); text(line) -> the string shown (key names filled in). press() / tick() return true when the box just closed.
+  function createTalkBox({ talk, advance, text }) {
+    const typer = createTyper(), line = () => { const t = talk(); return t && t.lines[t.i]; };
+    const next = () => { advance(); typer.reset(); return !talk(); };
+    return {
+      reset: typer.reset,
+      press() { const L = line(); return L && typer.press(text(L).length) ? next() : false; },          // first press finishes the typing, the next goes on
+      tick(dt, fast, skip) { const L = line(); if (!L) return false; const len = text(L).length; typer.add(dt * 25, fast, len); return skip && typer.hold(dt, len) ? next() : false; },
+      view(measure, maxW) { const L = line(); if (!L) return null; const t = text(L); return { who: L.who, rows: talkRows(measure, t, maxW, typer.pos), done: typer.pos >= t.length }; },
+    };
+  }
+
+  if (typeof module !== "undefined" && module.exports) module.exports = { KEYS, talkRate, createTyper, talkRows, createTalkBox };
+  else { root.KEYS = KEYS; root.talkRate = talkRate; root.createTyper = createTyper; root.talkRows = talkRows; root.createTalkBox = createTalkBox; }
 })(typeof window !== "undefined" ? window : globalThis);

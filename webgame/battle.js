@@ -85,15 +85,12 @@ function runBattle(cfg, done) {
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   if (cfg.silent) hush(true);
   const snd = createBattleSound({ sweep, noise, bus: cfg.silent ? sfxBus : null, hurtTier: dmg => hitFeel(dmg, s.maxHp).tier, fade: cfg.fade, beat: cfg.beat });   // battle/sound.js: every sound of the fight
-  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0, lead: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, stopT = 0, vigT = 0;
+  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0, lead: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, stopT = 0, vigT = 0;
 
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
-  const advTalk = () => {                                               // first press finishes the typing, the next goes to the next line
-    if (typer.press(lineT().length)) nextLine();
-  };
-  const nextLine = () => { battle.advance(); typer.reset(); if (!s.talk) setPortrait(SPEAKERS[cfg.speaker]); };
-  const lineT = () => fixKeys(s.talk.lines[s.talk.i].t, MENU.keys);                 // dialogue text with the current key names
+  const box = createTalkBox({ talk: () => s.talk, advance: () => battle.advance(), text: L => fixKeys(L.t, MENU.keys) });   // typing, advance, skip-hold, wrapping
+  const advTalk = () => { if (box.press()) setPortrait(SPEAKERS[cfg.speaker]); };
   const press = () => MENU.open ? 0 : s.talk ? advTalk() : toggle();
   const kd = ev => {
     keys[ev.code] = true; if (ev.key === KEYS.skip) keys.skip = true;
@@ -149,7 +146,7 @@ function runBattle(cfg, done) {
         if (cfg.fade) bgm.vol(snd.quiet);   // each phase swallows more of the sound
         if (v.name) banner = { txt: v.name, age: 0, level: v.level };
         if (!v.start) { retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); }
-        if (v.talk) typer.reset();
+        if (v.talk) box.reset();
         break;
       case "blast": retrigger(stage, "shake", 250); say("폭발!", v.x, v.y, "#ff5a5a"); for (let i = 0; i < 10; i++) { const a = Math.random() * TAU, sp = 100 + Math.random() * 180; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
       case "break": for (let i = 0; i < 8; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 160; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
@@ -313,14 +310,14 @@ function runBattle(cfg, done) {
       g.globalAlpha = 1;
     }
     if (s.talk) {
-      const L = { ...s.talk.lines[s.talk.i], t: lineT() }, sp = SPEAKERS[L.who];
+      const T = box.view(w => g.measureText(w).width, 740), sp = SPEAKERS[T.who];
       g.fillStyle = "rgba(0,0,0,.7)"; g.fillRect(0, 0, 960, 540);
       g.fillStyle = "#0b1026"; g.fillRect(60, 400, 840, 120); g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(60, 400, 840, 120);
       g.textAlign = "left"; g.textBaseline = "top"; g.font = "bold 24px Galmuri11,'Malgun Gothic'"; g.fillStyle = sp.color; g.fillText(sp.name, 84, 414);
       g.font = "24px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff";                    // the whole line is wrapped to the box (measured, so any font fits); the typewriter reveals it in place
       let ly = 446;
-      for (const row of talkRows(w => g.measureText(w).width, L.t, 740, typer.pos)) { g.fillText(row, 84, ly); ly += 34; }
-      if (typer.pos >= L.t.length) { g.textAlign = "right"; g.fillText("▼", 880, 480); }
+      for (const row of T.rows) { g.fillText(row, 84, ly); ly += 34; }
+      if (T.done) { g.textAlign = "right"; g.fillText("▼", 880, 480); }
       g.textBaseline = "middle";
     }
     if (s.over) {
@@ -336,7 +333,7 @@ function runBattle(cfg, done) {
     const dt = Math.min((now - last) / 1000, .05); last = now; fdt = dt;
     if (MENU.open) { raf = requestAnimationFrame(frame); return; }                       // menu open: everything stops (the menu is a DOM overlay)
     $("portrait").style.visibility = s.talk ? "visible" : "hidden";                     // the enemy body is drawn on the field; the portrait only shows while someone talks
-    if (s.talk) { typer.add(dt * 25, keys[KEYS.fast], lineT().length); if (keys.skip && typer.hold(dt, lineT().length)) nextLine(); if (s.talk) { setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); } }   // nextLine() on the last line clears s.talk
+    if (s.talk) { if (box.tick(dt, keys[KEYS.fast], keys.skip)) setPortrait(SPEAKERS[cfg.speaker]); if (s.talk) { setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); } }   // nextLine() on the last line clears s.talk
     else {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };

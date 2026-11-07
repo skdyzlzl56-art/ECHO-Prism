@@ -29,3 +29,19 @@ test("talkRows: wraps by measured width, keeps every character, reveals by pos",
   assert.deepEqual(talkRows(w, "aaaa bbbb cccc", 100, 12), ["aaaa bbbb ", "cc"]);       // typewriter position spans rows
   assert.deepEqual(talkRows(w, "aaaa bbbb cccc", 100, 3), ["aaa", ""]);                 // later rows stay in place, empty
 });
+
+test("createTalkBox: press finishes typing then advances; closing is reported; skip-hold walks the lines", () => {
+  const { createTalkBox } = require("./dialogue.js");
+  const mk = () => { const st = { lines: [{ who: "a", t: "hello" }, { who: "b", t: "bye" }], i: 0 }; let talk = st;
+    const box = createTalkBox({ talk: () => talk, advance: () => { if (++st.i >= st.lines.length) talk = null; }, text: L => L.t.toUpperCase() });
+    return { box, st, open: () => !!talk }; };
+  const m = mk(); m.box.tick(.04, false, false);                                 // 1 char typed
+  assert.equal(m.box.view(s => s.length, 99).rows[0], "H"); assert.equal(m.box.view(s => s.length, 99).done, false);
+  assert.equal(m.box.press(), false); assert.equal(m.box.view(s => s.length, 99).done, true);   // first press: whole line
+  assert.equal(m.box.press(), false); assert.equal(m.st.i, 1); assert.equal(m.box.view(s => s.length, 99).who, "b");
+  assert.equal(m.box.view(s => s.length, 99).rows[0], "", "typing restarts on the new line");
+  m.box.press(); assert.equal(m.box.press(), true); assert.equal(m.open(), false);   // last line done: closed
+  assert.equal(m.box.view(s => s.length, 99), null); assert.equal(m.box.tick(1, false, true), false);
+  const k = mk(); let closed = false; for (let i = 0; i < 80 && !closed; i++) closed = k.box.tick(.1, false, true);   // holding skip eventually closes it
+  assert.ok(closed);
+});
