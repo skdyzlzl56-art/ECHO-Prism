@@ -150,7 +150,41 @@ function gear(t, col) {
   c.beginPath(); c.arc(0, 0, 5, 0, 7); c.fill();
 }
 
-const SHAPES = { orb, prism, rings, bloom, shard, fairy, easel, gear };
+// Loose page (쪽지): a torn sheet drifting and tilting, ruled lines, a dog-eared corner, a few bits of text falling off it.
+function page(t, col) {
+  c.strokeStyle = c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 18; c.lineWidth = 3;
+  c.save(); c.translate(0, 6 * Math.sin(ph / 600)); c.rotate(Math.sin(ph / 900) * .25 + .1);
+  c.beginPath(); c.moveTo(-55, -75); c.lineTo(35, -75); c.lineTo(55, -55); c.lineTo(55, 40); c.lineTo(40, 48); c.lineTo(25, 40); c.lineTo(10, 50); c.lineTo(-10, 42); c.lineTo(-30, 52); c.lineTo(-55, 44); c.closePath(); c.stroke();
+  c.globalAlpha = .1; c.fill(); c.globalAlpha = 1; c.beginPath(); c.moveTo(35, -75); c.lineTo(35, -55); c.lineTo(55, -55); c.stroke();
+  for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(-40, -50 + i * 20); c.lineTo(-40 + (i % 2 ? 60 : 80 + 6 * pulse), -50 + i * 20); c.stroke(); }
+  c.restore();
+  for (let i = 0; i < 6; i++) { const p = (ph / 1800 + i / 6) % 1; c.globalAlpha = (1 - p) * .7; c.fillRect(-60 + i * 22 + 8 * Math.sin(i * 5 + ph / 400), 50 + 70 * p, 8, 2); }
+  c.globalAlpha = 1;
+}
+
+// Librarian's book (사서): an open book, its pages turning one after another, a ribbon marker hanging from the spine.
+function book(t, col) {
+  c.strokeStyle = c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 18; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(0, -60); c.lineTo(0, 70); c.moveTo(0, -60); c.quadraticCurveTo(-60, -80, -105, -50); c.lineTo(-105, 50); c.quadraticCurveTo(-60, 30, 0, 70);
+  c.moveTo(0, -60); c.quadraticCurveTo(60, -80, 105, -50); c.lineTo(105, 50); c.quadraticCurveTo(60, 30, 0, 70); c.stroke();
+  c.globalAlpha = .1; c.fill(); c.globalAlpha = 1;
+  const f = (ph / 1600) % 1, w = Math.cos(f * Math.PI);                                        // a page swings from right to left
+  c.beginPath(); c.moveTo(0, -60); c.quadraticCurveTo(w * 55, -85 + 20 * Math.sin(f * Math.PI), w * 100, -50); c.lineTo(w * 100, 50); c.quadraticCurveTo(w * 55, 30, 0, 70); c.stroke();
+  c.beginPath(); c.moveTo(0, 70); c.lineTo(-6, 100 + 4 * pulse); c.lineTo(0, 94); c.lineTo(6, 100 + 4 * pulse); c.closePath(); c.fill();
+}
+
+// Echo (에코): a voice travelling as a sine wave; each copy fainter and further out, like a call coming back from the walls.
+function wave(t, col) {
+  c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 18; c.lineWidth = 3;
+  for (let k = 0; k < 4; k++) {
+    c.globalAlpha = 1 - k * .25; c.beginPath();
+    for (let x = -110; x <= 110; x += 6) { const y = Math.sin(x / 22 - ph / 250 + k * .9) * (34 + 14 * pulse) * (1 - Math.abs(x) / 150) * (1 - k * .18); x === -110 ? c.moveTo(x, y + k * 26 - 40) : c.lineTo(x, y + k * 26 - 40); }
+    c.stroke();
+  }
+  c.globalAlpha = 1; c.fillStyle = col; c.beginPath(); c.arc(-110, -40, 5, 0, 7); c.fill();
+}
+
+const SHAPES = { orb, prism, rings, bloom, shard, fairy, easel, gear, page, book, wave };
 
 // Starfield background
 const bg = document.getElementById("bg").getContext("2d"), stageEl = document.getElementById("stage");

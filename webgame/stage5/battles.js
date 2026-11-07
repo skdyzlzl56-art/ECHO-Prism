@@ -2,8 +2,8 @@
 // Direction rule (방향 규칙): cfg.dirRule = { name }. Bullets carry that name; moving the way a named bullet moves is safe, standing still or going against it hurts.
 // Flow: s5_pages (mooks, plain) -> s5_index (direction rule, gentle) -> s5_librarian (boss, direction rule). Party stays PARTY4 (nobody joins here).
 
-SPEAKERS.librarian = { name: "사서", pitch: 170, spin: .7, shape: "rings", color: "#a9b8e0", close: 0 };   // 이름 없는 도서관의 주인. 이름을 지키려고 모두 가둔 자. 낮고 정중한 존댓말
-SPEAKERS.scrap = { name: "쪽지", pitch: 330, spin: 1.4, shape: "orb", color: "#d8d0b8", close: 0 };       // 책에서 떨어져 나온 낱장 (잡몹). "이름"만 되뇐다
+SPEAKERS.librarian = { name: "사서", pitch: 170, spin: .7, shape: "book", color: "#a9b8e0", close: 0 };   // 이름 없는 도서관의 주인. 이름을 지키려고 모두 가둔 자. 낮고 정중한 존댓말
+SPEAKERS.scrap = { name: "쪽지", pitch: 330, spin: 1.4, shape: "page", color: "#d8d0b8", close: 0 };       // 책에서 떨어져 나온 낱장 (잡몹). "이름"만 되뇐다
 
 // ---- 1) 쪽지 무리: 보통 전투 ----
 BATTLES.s5_pages = { stage: 5,

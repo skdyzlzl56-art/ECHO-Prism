@@ -7,7 +7,7 @@ FX.stage6 = { shout: "STAGE 6", flash: 1, warp: "core", shake: 1, wait: 2400, sf
 FX.joint = { shout: "TOGETHER", flash: 1, wait: 1800, sfx: () => { sweep(300, 2400, 1.4, "sine", .25); sweep(150, 1200, 1.4, "triangle", .2); } };
 FX.echo = { shout: "ECHO", flash: 1, wait: 2200, sfx: () => { sweep(400, 1600, 1.6, "sine", .3); sweep(800, 200, 1.6, "sine", .15); } };
 
-SPEAKERS.self = { name: "개체", pitch: 440, spin: .8, shape: "prism", color: "#9ad0ff", close: 3 };   // 주인공. 지금까지 말이 없었고, 마지막에 한 줄만 말한다
+SPEAKERS.self = { name: "개체", pitch: 440, spin: .8, shape: "wave", color: "#9ad0ff", close: 3 };   // 주인공. 지금까지 말이 없었고, 마지막에 한 줄만 말한다
 
 const STAGE6 = [
   // ---- 1. 도착 ----
