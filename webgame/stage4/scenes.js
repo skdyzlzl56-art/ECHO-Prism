@@ -15,7 +15,7 @@ ACTS.s4_party = done => {
     { x: 100, name: "개체", role: "형태를 고른 자", c: "#9ad0ff", draw: () => { g.save(); g.translate(100, 250); drawShape(g, myShape, 26); g.restore(); } },
     { x: 290, name: "루미", role: "빠른 추격탄 · 회복", c: S.lumi.color, draw: t => drawBlossom(g, 290, 250, t, S.lumi.color, 1.9) },
     { x: 480, name: "헥사", role: "느리고 강한 사격 · 방패", c: S.hexa.color, draw: t => drawHexa(g, 480, 250, t, S.hexa.color, 1.3) },
-    { x: 670, name: "글리치", role: "빠르고 강한 사격 · 유대의 빛 = 공격력 상승", c: S.glitch.color, draw: t => drawShardAlly(g, 670, 250, t, S.glitch.color, 2.6) },
+    { x: 670, name: "글리치", role: "빠르고 강한 사격 · 유대의 빛 = 공격력 상승", c: S.glitch.color, draw: t => drawGlitch(g, 670, 250, t, 2.6) },
     { x: 860, name: "시계지기", role: "새로운 동료 · 가볍게 많이 쏘는 사격 · 유대의 빛 = 시계의 빛", c: S.keeper.color, draw: t => drawGearAlly(g, 860, 250, t, S.keeper.color, 3.2) },
   ];
   let t = 0, last = performance.now(), raf, fin = false;

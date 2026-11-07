@@ -258,6 +258,7 @@ try {
     const r = replayState(SCRIPT, sv.idx + (direct ? 1 : 0));
     Object.assign(BOND, sv.bond); idx = direct ? sv.idx : Math.min(sv.idx, SCRIPT.length - 1) - 1;
     for (const w in r.renames) SPEAKERS[w].name = r.renames[w];
+    for (const w in r.forms) applyForm(w, r.forms[w]);
     if (r.theme) setTheme(r.theme);
     myShape = PLAYER_SHAPES.find(s => s.id === load()) || myShape;
     resumeBgm = r.bgm;

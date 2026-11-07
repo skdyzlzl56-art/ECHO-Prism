@@ -90,6 +90,34 @@ function drawShardAlly(g, x, y, t, col, k = 1) {                                
   g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill(); g.restore();
 }
 
+function drawGlitch(g, x, y, t, k) {                                                    // current look: jagged shard, or (after s3_morph) soft blossom
+  if (SPEAKERS.glitch.shape === "shard") drawShardAlly(g, x, y, t, SPEAKERS.glitch.color, k); else drawBlossom(g, x, y, t, SPEAKERS.glitch.color, k * .75);
+}
+
+// ---- 변신: 글리치의 각진 파편이 부서졌다가 따뜻한 새 모습으로 다시 모인다 (about 4s, auto-advances) ----
+ACTS.s3_morph = done => {
+  stage.classList.add("pick"); act.hidden = false;
+  act.innerHTML = `<canvas id="mf" width="960" height="540"></canvas>`;
+  const g = $("mf").getContext("2d"), NEW = FORMS.glitch.calm.color, OLD = SPEAKERS.glitch.color;
+  let t = 0, last = performance.now(), raf, swapped = false;
+  function step(now) {
+    const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
+    g.globalAlpha = 1; g.fillStyle = "#070b1c"; g.fillRect(0, 0, 960, 540); g.textAlign = "center"; g.textBaseline = "middle";
+    if (t < 1.6) { g.globalAlpha = 1 - t / 1.6 * .3; drawShardAlly(g, 480, 250, t * (1 + t * 4), OLD, 3 + t * 2); }                  // old shard spins up and jitters
+    else if (t < 2.4) {                                                                 // flash: sparks fly out
+      g.globalAlpha = 1 - (t - 1.6) / .8; g.strokeStyle = "#fff"; g.lineWidth = 3;
+      for (let k = 0; k < 14; k++) { const a = k * TAU / 14, r = 20 + (t - 1.6) * 420; g.beginPath(); g.moveTo(480 + Math.cos(a) * r, 250 + Math.sin(a) * r); g.lineTo(480 + Math.cos(a) * (r + 30), 250 + Math.sin(a) * (r + 30)); g.stroke(); }
+    } else {
+      if (!swapped) { swapped = true; applyForm("glitch", "calm"); }
+      g.globalAlpha = Math.min(1, t - 2.4); drawBlossom(g, 480, 250, t, NEW, 3);
+      g.font = "bold 30px 'Malgun Gothic'"; g.fillStyle = NEW; g.fillText("글리치", 480, 345);
+    }
+    if (t > 4.2) { cancelAnimationFrame(raf); act.hidden = true; act.innerHTML = ""; stage.classList.remove("pick"); done(); return; }
+    raf = requestAnimationFrame(step);
+  }
+  raf = requestAnimationFrame(step);
+};
+
 // ---- 동료 카드: 글리치 합류 ----
 ACTS.s3_party = done => {
   stage.classList.add("pick"); act.hidden = false;
@@ -98,7 +126,7 @@ ACTS.s3_party = done => {
     { x: 150, name: "개체", role: "형태를 고른 자", c: "#9ad0ff", draw: () => { g.save(); g.translate(150, 250); drawShape(g, myShape, 30); g.restore(); } },
     { x: 380, name: "루미", role: "빠른 추격탄 · 회복", c: S.lumi.color, draw: t => drawBlossom(g, 380, 250, t, S.lumi.color, 2.2) },
     { x: 610, name: "헥사", role: "느리고 강한 사격 · 방패", c: S.hexa.color, draw: t => drawHexa(g, 610, 250, t, S.hexa.color, 1.5) },
-    { x: 830, name: "글리치", role: "새로운 동료 · 빠르고 강한 사격 · 유대의 빛 = 공격력 상승", c: S.glitch.color, draw: t => drawShardAlly(g, 830, 250, t, S.glitch.color, 3) },
+    { x: 830, name: "글리치", role: "새로운 동료 · 빠르고 강한 사격 · 유대의 빛 = 공격력 상승", c: S.glitch.color, draw: t => drawGlitch(g, 830, 250, t, 3) },
   ];
   let t = 0, last = performance.now(), raf, fin = false;
   const go = () => {

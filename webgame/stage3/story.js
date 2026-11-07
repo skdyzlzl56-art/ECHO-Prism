@@ -139,6 +139,7 @@ const STAGE3 = [
   { who: "glitch", fx: "impact", text: "......흥. 맘대로 해라." },
   { who: "voice", text: "동료 '글리치'가 함께합니다! 이제 A키로 루미, 헥사, 글리치를 번갈아 부를 수 있어요." },
   { who: "voice", text: "글리치는 빠르게, 강하게 쏘지만 치료도 방패도 없어요. 대신 유대의 빛이 터지면 공격력이 올라가요." },
+  { act: "s3_morph", form: { who: "glitch", to: "calm" } },
   { act: "s3_party" },
 
   // ---- 7. 클리어 ----
