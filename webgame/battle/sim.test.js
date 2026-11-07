@@ -342,6 +342,7 @@ test("breakable bullet: player shots wear it down and break it; unbroken it stil
   const c = createBattle(cfg, { rng: seeded(4) }); c.state.auto = false; run(c, 1.6);
   const k = c.state.bullets.find(x => x.hp); k.x = c.state.p.x; k.y = c.state.p.y; k.vy = 0;
   run(c, .05); assert.ok(c.state.hp < 100);
+});
 
 test("the box is battle state: moving it moves the player's limits and the bullet cull", () => {
   const b = still({}); const B = b.state.BOX;
