@@ -30,7 +30,7 @@ const SCRIPT = [
   // 2막 - 균열
   { who: "voice",  text: "...좋아요. 그게 지금의 당신이에요. 아주 잘 어울려요." },
   { who: "voice",  text: "잠깐... 이 기척은..." },
-  { who: "voice",  fx: "alert", text: "균열이에요! 방향키나 WASD로 움직여서 피하세요!" },
+  { who: "voice",  fx: "alert", text: "균열이에요! 방향키나 WASD로 피하고, 스페이스로 맞서 싸워요!" },
   { who: "glitch", fx: "shake", text: "기억... 냄새가 난다... 신선한 기억!" },
   { who: "glitch", text: "내놔. 그 형태 그대로... 전부 지워주마!" },
   { act: "battle" },
