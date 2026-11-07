@@ -28,7 +28,7 @@ BATTLES.s6_trial = { stage: 6,
   phases: [
     h => { h.rain(.35, 120); h.aim(1.8, 140, 8, { col: RED }); },
     h => { h.rain(.5, 110); h.aim(1.6, 140); h.wave(2, 85); },
-    h => { h.rain(.6, 105); h.side(1.1, 120); h.fan(2, 5, .3, 100); },
+    h => { h.rain(.6, 105); h.side(1.1, 120); h.fan(2, 5, .3, 100); h.dirWall(7); },
   ],
   talks: {
     1: [{ who: "voice", t: "붉은 탄만 맞아요! 미술관에서 배운 그대로예요!" }],
@@ -48,7 +48,7 @@ BATTLES.s6_silence = { stage: 6,
   phases: [
     h => { h.ring(1.9, 13, 90, 7, { col: RED }); h.rain(.7, 110); },                                                            // 1: 색 규칙. 붉은 고리만 위험
     h => { h.ring(2, 13, 85, 7); h.aim(1.4, 130, 10, { split: { t: 1.1, n: 8, sp: 90, size: 6 } }); },                          // 2: 되감기 규칙. 분열탄이 두 번 온다
-    h => { h.spiral(.13, 3, .45, 100, 7, { w: .2 }); h.side(.9, 125); h.laser(4, false); },                                    // 3: 방향 규칙. 나선이 도는 쪽으로
+    h => { h.spiral(.13, 3, .45, 100, 7, { w: .2 }); h.side(.9, 125); h.laser(4, false); h.dirWall(7); },                    // 3: 방향 규칙. 나선이 도는 쪽으로
     h => { h.spiral(.12, 3, .4, 105, 7, { col: RED }); h.wall(3.2, 90, 6, { col: RED }); h.aim(1.6, 130, 12, { col: RED, split: { t: 1, n: 10, sp: 90, size: 6 } }); h.rain(.6, 100); },   // 4: 붉은 탄 + 되감기
     h => { h.rain(.55, 95); h.aim(1.6, 110, 8); h.ring(2.4, 13, 80, 7); },                                                      // 5: 규칙 없음. 스치며 유대를 채워 합동의 빛을 터뜨린다
   ],

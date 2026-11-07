@@ -128,11 +128,11 @@ const drop = (x, y, vy) => ({ ...bul({ x, y }, 0, "#f00"), vy });
 test("rewind: bullets return to their earlier position at the period; without the option nothing rewinds", () => {
   const b = still({ rewind: 3 }), o = still({});
   for (const x of [b, o]) x.state.bullets.push(drop(BOX.x + 20, BOX.y + 10, 50));
-  const ev = []; let at = null;
-  for (let t = 0; t < 3.2; t += 1 / 60) { ev.push(...b.step(1 / 60)); if (Math.abs(t - 1.5) < 1 / 120) at = b.state.bullets[0].y; }
+  const ev = [];
+  for (let t = 0; t < 3.2; t += 1 / 60) { ev.push(...b.step(1 / 60)); }
   assert.strictEqual(ev.filter(v => v.type === "rewind").length, 1);
-  const y = b.state.bullets[0].y;                                         // 0.2s of travel after jumping back to the 1.5s position
-  assert.ok(Math.abs(y - (at + 50 * .2)) < 4, `y ${y} vs ${at}`);
+  const y = b.state.bullets[0].y;                                         // 0.2s into the reverse flight: 0.2s back from the 3s position (see rewindFlight.test.js)
+  assert.ok(Math.abs(y - (BOX.y + 10 + 50 * 2.8)) < 4, `y ${y}`);
   const ev2 = run(o, 3.2); assert.ok(!ev2.some(v => v.type === "rewind") && o.state.bullets[0].y > BOX.y + 10 + 50 * 3);
 });
 
