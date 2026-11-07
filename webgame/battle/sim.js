@@ -16,14 +16,14 @@
   // companion kits when cfg.allies lets the player swap (교대): cd = shot interval x, dm = shot damage x, heal / shield = abilities.
   // A single cfg.ally keeps the old all-round companion (KIT.all).
   const KIT = { all: { cd: 1, dm: 1, heal: 1, shield: 1 }, lumi: { cd: .8, dm: 1, heal: 1, shield: 0 }, hexa: { cd: 1.6, dm: 2, heal: 0, shield: 1 } };
-  const DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, SWAP_CD = 1.5, REWIND_BACK = 1.5;
+  const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, SWAP_CD = 1.5, REWIND_BACK = 1.5;
 
   function createBattle(cfg, opts = {}) {
     const rng = opts.rng || Math.random, HITBOX = opts.hitbox == null ? 4 : opts.hitbox, bondBase = opts.bondBase || 0;
     const MAX_HP = cfg.playerHp || 20, E_MAX = cfg.hp, E_W = cfg.ew || 75, cuts = cfg.cuts || [.75, .5, .25], col = cfg.color || "#ff3b5c";
     const cx = BOX.x + BOX.w / 2, allies = cfg.allies, SHIELD_LV = allies ? 1 : 2;   // a shield-bearer swapped in guards from bond Lv.1
     const s = {
-      BOX, t: 0, hp: MAX_HP, maxHp: MAX_HP, eHp: E_MAX, eMax: E_MAX, level: 0, phaseName: "", over: null, auto: true, inv: 0, combo: 0,
+      BOX, t: 0, hp: MAX_HP, maxHp: MAX_HP, eHp: E_MAX, eMax: E_MAX, level: 0, lv: opts.lv || 1, xp: opts.xp || 0, phaseName: "", over: null, auto: true, inv: 0, combo: 0,
       p: { x: cx, y: BOX.y + BOX.h * .75 }, e: { x: EX, y: 85, mode: "idle", tt: 0, dashT: 0, lx: EX },     // enemy mode: idle | warn | dive | back
       al: cfg.ally ? { x: BOX.x - 38, y: BOX.y + BOX.h * .75 } : null,
       bullets: [], lasers: [], shots: [], gauge: cfg.gauge0 || 0, bondLv: 0, shieldOn: false, talk: null, hasAlly: !!cfg.ally,
@@ -154,7 +154,8 @@
 
       const r = s.eHp / E_MAX, lv2 = cuts.filter(c => r <= c).length;      // each phase has its own pattern
       if (lv2 > s.level) {
-        s.level = lv2; s.bullets = []; s.lasers = []; tm = {}; hist = []; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; e.mode = "idle"; e.y = 85; e.dashT = 0;
+        s.level = lv2; s.xp += XP_PHASE; if (s.xp >= XP_LV) { s.xp -= XP_LV; s.lv++; }   // exp per phase broken; level is display only
+        s.bullets = []; s.lasers = []; tm = {}; hist = []; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; e.mode = "idle"; e.y = 85; e.dashT = 0;
         const lines = cfg.talks && cfg.talks[lv2];
         emit("phase", { level: lv2, name: (cfg.names && cfg.names[lv2]) || "", talk: !!lines });
         if (lines) s.talk = { lines, i: 0 };
@@ -220,6 +221,14 @@
     };
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX };
-  else root.createBattle = createBattle;
+  // Display only (never read by the rules): squash & stretch of the player sprite. v = velocity in px/s; look = {sx, sy, rot} is eased in place.
+  function moveLook(look, vx, vy, dt) {
+    const r = Math.min(1, Math.hypot(vx, vy) / 210), k = 1 - Math.exp(-dt * 14);
+    if (r > .05) look.rot = Math.atan2(vy, vx);
+    look.sx += (1 + .35 * r - look.sx) * k; look.sy += (1 - .25 * r - look.sy) * k;
+    return look;
+  }
+
+  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX, moveLook };
+  else { root.createBattle = createBattle; root.moveLook = moveLook; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -22,7 +22,7 @@
 // The level reached is kept (BOND.base) when a battle is won; a lost battle is retried from the level it started with.
 
 const BATTLES = {};
-const BOND = { base: 0 };
+const BOND = { base: 0, lv: 1, xp: 0 };   // lv/xp: level and exp, kept on a win; a loss retries from the values the battle started with
 
 // ---- 첫 전투: 글리치 ----
 BATTLES.glitch = {
@@ -64,10 +64,10 @@ function drawEnemyBody(g, key, x, y, t, warn) {
 function runBattle(cfg, done) {
   stage.classList.add("battle"); act.hidden = false; setPortrait(SPEAKERS[cfg.speaker]);
   act.innerHTML = `<canvas id="ar" width="960" height="540"></canvas>`;
-  const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX }), s = battle.state, BOX = s.BOX;
+  const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX, lv: BOND.lv, xp: BOND.xp }), s = battle.state, BOX = s.BOX;
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
-  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, lastShot = 0, lastBig = 0, lastGraze = 0;
+  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0;
 
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
@@ -157,6 +157,7 @@ function runBattle(cfg, done) {
         setTimeout(() => { act.onclick = () => { cleanup(); runBattle(cfg, done); }; }, 600);
         break;
       case "win":
+        BOND.lv = s.lv; BOND.xp = s.xp;
         if (cfg.ally) BOND.base = Math.max(BOND.base, s.bondLv);                         // the bond carries over to the next battle / stage
         bgm.stop(); noise(.6, .7); sweep(80, 1600, .9, "sawtooth", .3); sweep(200, 40, .6, "sine", .6);
         retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); setTimeout(end, 1600);
@@ -238,7 +239,9 @@ function runBattle(cfg, done) {
     for (const q of trail) { g.save(); g.globalAlpha = q.a; g.translate(q.x, q.y); g.strokeStyle = "#9ad0ff"; drawShape(g, myShape, 11); g.restore(); q.a -= .04; }
     trail = trail.filter(q => q.a > 0);
     if (s.over !== "lose" && (s.inv <= 0 || s.dashT > 0 || Math.floor(s.inv * 12) % 2)) {
-      g.save(); g.translate(p.x, p.y); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
+      g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = allyCol || "#4fc3ff";   // faint trail of recent positions
+      wake.forEach((q, i) => { g.globalAlpha = (i + 1) / wake.length * .18; g.beginPath(); g.arc(q.x, q.y, 3 + 5 * (i + 1) / wake.length, 0, TAU); g.fill(); }); g.restore();
+      g.save(); g.translate(p.x, p.y); g.rotate(look.rot); g.scale(look.sx, look.sy); g.rotate(-look.rot); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
       if (s.shieldOn) { g.strokeStyle = allyCol; g.lineWidth = 3; g.shadowColor = allyCol; g.shadowBlur = 14; g.globalAlpha = .6 + .3 * Math.sin(t * 6); g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.stroke(); }
       g.restore();
     }
@@ -257,6 +260,8 @@ function runBattle(cfg, done) {
 
     g.font = "20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${Math.max(s.hp, 0)} / ${s.maxHp}`, BOX.x, 485);
     g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(s.hp, 0) / s.maxHp, 20);
+    g.font = "bold 18px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#ffd36b"; g.fillText(`Lv.${s.lv}`, 20, 485);   // level + exp bar, bottom-left, clear of HP and the controls hint
+    g.fillStyle = "#333"; g.fillRect(80, 475, 200, 12); g.fillStyle = "#ffd36b"; g.fillRect(80, 475, 200 * s.xp / 100, 12);
     g.font = "bold 20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = s.auto ? "#7dffb0" : "#889"; g.fillText(s.auto ? "사격 ON" : "사격 OFF", BOX.x + BOX.w + 20, 250);
     if (s.hasAlly) {                                                                    // bond gauge: fills by grazing bullets
       g.font = "bold 15px 'Malgun Gothic'"; g.fillStyle = allyCol; g.fillText(`유대 Lv.${s.bondLv}${s.shieldOn ? " · 방패" : ""}`, BOX.x + BOX.w + 20, 276);
@@ -298,6 +303,11 @@ function runBattle(cfg, done) {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
       for (const v of battle.step(dt, input)) onEvent(v);
+      if (prevP && dt > 0) moveLook(look, (s.p.x - prevP.x) / dt, (s.p.y - prevP.y) / dt, dt);   // display only: reads the position, never writes it
+      if (prevP && (s.p.x !== prevP.x || s.p.y !== prevP.y)) wake.push({ x: prevP.x, y: prevP.y });
+      else if (wake.length) wake.shift();
+      if (wake.length > 6) wake.shift();
+      prevP = { x: s.p.x, y: s.p.y };
       flushVolley();
       if (cfg.beat && !s.over && s.t > 0 && (beatT -= dt) <= 0) { beatT = .7; sweep(85, 45, .22, "sine", .45); setTimeout(() => sweep(70, 40, .2, "sine", .3), 170); }   // all that is left of the sound: a heartbeat
       hitFlash -= dt; burstFx = Math.max(0, burstFx - dt * 1.5);

@@ -277,11 +277,43 @@ test("dash (X): moves ~120px in the input direction, stays in the box, needs inp
 test("dash grants invulnerability to bullets and the enemy body; hits resume afterwards", () => {
   const b = createBattle({ ...quiet }, { rng: seeded(9) }); const s = b.state; s.auto = false; run(b, 1.1);
   b.step(1 / 60, { dx: 1 }); s.p.x = 480; s.p.y = 400; assert.ok(b.dash());
-  s.bullets.push({ id: 1, x: s.p.x + 40, y: s.p.y, vx: 0, vy: 0, size: 8, dmg: 5, age: 1 });
+  s.bullets.push({ id: 1, x: s.p.x + 40, y: s.p.y, vx: 0, vy: 0, r: 8, tr: [], dmg: 5, age: 1 });
   s.e.mode = "dive"; s.e.x = s.p.x; s.e.y = s.p.y;
   const hp = s.hp; run(b, .15, { dx: 1 });
   assert.strictEqual(s.hp, hp, "no damage while dashing");
   s.e.mode = "idle"; s.e.y = 85; s.bullets.length = 0; run(b, .5);
-  s.bullets.push({ id: 2, x: s.p.x, y: s.p.y, vx: 0, vy: 0, size: 8, dmg: 5, age: 1 });
+  s.bullets.push({ id: 2, x: s.p.x, y: s.p.y, vx: 0, vy: 0, r: 8, tr: [], dmg: 5, age: 1 });
   run(b, .05); assert.ok(s.hp < hp, "hit lands after dash ends");
+});
+
+test("breaking a phase gives 20 exp; a full bar levels up and carries the excess", () => {
+  const cfg = { ...quiet, hp: 100, cuts: [.75, .5], names: ["a", "b", "c"], phases: [() => {}, () => {}, () => {}] };
+  const b = createBattle(cfg, { rng: seeded(4), lv: 1, xp: 90 });
+  b.state.auto = false; run(b, .2);
+  assert.deepStrictEqual([b.state.lv, b.state.xp], [1, 90]);
+  b.state.eHp = 70; run(b, .1);
+  assert.deepStrictEqual([b.state.lv, b.state.xp], [2, 10]);
+  b.state.eHp = 45; run(b, .1);
+  assert.deepStrictEqual([b.state.lv, b.state.xp], [2, 30]);
+});
+
+test("exp is a start value: a retry built from it loses the battle's gains, a next battle built from the end state keeps them", () => {
+  const cfg = { ...quiet, hp: 100, cuts: [.5], names: ["a", "b"], phases: [() => {}, () => {}] };
+  const b = createBattle(cfg, { rng: seeded(5), lv: 1, xp: 50 });
+  b.state.auto = false; run(b, .2); b.state.eHp = 40; run(b, .1);
+  assert.strictEqual(b.state.xp, 70);
+  const retry = createBattle(cfg, { rng: seeded(5), lv: 1, xp: 50 });
+  assert.strictEqual(retry.state.xp, 50);
+  const next = createBattle(cfg, { rng: seeded(5), lv: b.state.lv, xp: b.state.xp });
+  assert.deepStrictEqual([next.state.lv, next.state.xp], [1, 70]);
+});
+
+test("move motion stretches along travel and eases back to normal when stopped", () => {
+  const { moveLook } = require("./sim.js");
+  const look = { sx: 1, sy: 1, rot: 0 };
+  for (let i = 0; i < 30; i++) moveLook(look, 210, 0, 1 / 60);
+  assert.ok(look.sx > 1.2 && look.sy < .9, `stretched ${look.sx} ${look.sy}`);
+  assert.ok(Math.abs(look.rot) < 1e-9, "stretch axis follows travel direction");
+  for (let i = 0; i < 90; i++) moveLook(look, 0, 0, 1 / 60);
+  assert.ok(Math.abs(look.sx - 1) < .01 && Math.abs(look.sy - 1) < .01, `restored ${look.sx} ${look.sy}`);
 });
