@@ -62,6 +62,12 @@ function drawEnemyBody(g, key, x, y, t, warn) {
     g.fillStyle = col + "22"; g.beginPath(); g.rect(-20, -26, 40, 32); g.fill(); g.stroke();
     g.beginPath(); g.moveTo(-14, 6); g.lineTo(-24, 28); g.moveTo(14, 6); g.lineTo(24, 28); g.moveTo(0, 6); g.lineTo(0, 24); g.stroke();
     g.globalAlpha = .6 + .3 * Math.sin(t * 3); g.beginPath(); g.moveTo(-14, -10); g.quadraticCurveTo(0, -22, 14, -6); g.stroke(); g.globalAlpha = 1;
+  } else if (sp.shape === "page") {                                                     // scrap: a torn sheet tumbling, ruled lines on it
+    g.rotate(Math.sin(t * 2) * .5); g.fillStyle = col + "33"; g.beginPath(); g.moveTo(-16, -22); g.lineTo(10, -22); g.lineTo(18, -14); g.lineTo(18, 20); g.lineTo(6, 24); g.lineTo(-6, 18); g.lineTo(-18, 24); g.closePath(); g.fill(); g.stroke();
+    g.beginPath(); for (let i = 0; i < 3; i++) { g.moveTo(-10, -10 + i * 9); g.lineTo(i % 2 ? 4 : 10, -10 + i * 9); } g.stroke();
+  } else if (sp.shape === "book") {                                                     // librarian: an open book, one page swinging over
+    g.fillStyle = col + "22"; g.beginPath(); g.moveTo(0, -18); g.quadraticCurveTo(-18, -26, -34, -16); g.lineTo(-34, 16); g.quadraticCurveTo(-18, 8, 0, 22); g.quadraticCurveTo(18, 8, 34, 16); g.lineTo(34, -16); g.quadraticCurveTo(18, -26, 0, -18); g.fill(); g.stroke();
+    const w = Math.cos((t / 1.6 % 1) * Math.PI); g.beginPath(); g.moveTo(0, -18); g.quadraticCurveTo(w * 18, -26, w * 34, -16); g.lineTo(w * 34, 16); g.stroke();
   } else {                                                                              // shard: the glitch's own jagged crystal (and fragment / blot)
     g.rotate(t * .8); g.fillStyle = col + "55"; g.beginPath();
     [26, 10, 22, 8, 28, 11, 20, 9, 24].forEach((R, j) => g.lineTo(Math.cos(j * TAU / 9) * R, Math.sin(j * TAU / 9) * R));
