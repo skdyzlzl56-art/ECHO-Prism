@@ -4,7 +4,7 @@
 
 **Blocked by:** 07, 06
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 저장 후 새로고침하고 불러오면 같은 장면에서 시작한다
 - [ ] 유대 레벨과 레벨·경험치가 복원된다

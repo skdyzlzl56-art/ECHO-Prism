@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 패배 시 글자 뒤에 배경 판이 보인다
 - [ ] 승리 화면은 바뀌지 않는다

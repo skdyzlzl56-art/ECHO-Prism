@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 (X 키를 먼저 비워야 함)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 대시 중 탄/레이저/적 몸통에 맞지 않는다 (sim 테스트)
 - [ ] 이동 방향으로 이동하고 판 경계를 넘지 않는다 (sim 테스트)

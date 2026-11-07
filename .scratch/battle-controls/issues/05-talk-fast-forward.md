@@ -4,7 +4,7 @@
 
 **Blocked by:** 03 (X 키 역할 정리 후)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 대화 중 X를 누르면 타이핑 속도가 크게 빨라진다
 - [ ] X만으로는 대사가 다음으로 넘어가지 않는다

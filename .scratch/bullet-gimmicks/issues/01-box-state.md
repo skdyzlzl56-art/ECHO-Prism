@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 판 위치/크기를 상태로 바꿔도 기존 모든 전투 동작이 같다
 - [ ] 판을 옮기는 테스트용 입력으로 이동 제한과 그리기가 따라간다 (sim 테스트)

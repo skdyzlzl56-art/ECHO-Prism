@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 세 형태가 각각 기대한 궤적으로 움직인다 (sim 테스트)
 - [ ] 형태마다 구분되는 색조

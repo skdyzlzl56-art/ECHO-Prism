@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 판이 주기적으로 움직이고 플레이어가 끌려간다 (sim 테스트)
 - [ ] 벽에 끼면 피해를 입는다 (sim 테스트)

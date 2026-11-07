@@ -4,7 +4,7 @@
 
 **Blocked by:** 07
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 배경음과 효과음 볼륨을 각각 조절할 수 있다
 - [ ] 조절 즉시 현재 재생 중인 소리에 반영된다

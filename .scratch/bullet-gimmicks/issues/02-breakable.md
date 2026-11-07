@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 플레이어/동료 탄에 맞으면 체력이 깎이고 0이면 사라진다 (sim 테스트)
 - [ ] 부서지는 탄은 겉모습으로 구분된다

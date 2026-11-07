@@ -4,7 +4,7 @@
 
 **Blocked by:** 02, 03, 04, 05, 06, 07
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 새 탄 4종 이상, 기믹 3종이 실제 전투에 쓰인다
 - [ ] 각 스테이지 테스트와 cross.test 통과

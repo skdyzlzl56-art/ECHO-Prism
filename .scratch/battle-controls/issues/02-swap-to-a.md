@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] A로 교대되고 X로는 교대되지 않는다
 - [ ] 안내 문구와 대사에 "X키"가 남아 있지 않다

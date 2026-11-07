@@ -4,7 +4,7 @@
 
 **Blocked by:** 04 (탄 색조/형태 등록 방식 공유)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 장판은 경고 중엔 안전, 활성 후에만 피해, 시간이 지나면 사라진다 (sim 테스트)
 - [ ] 커지는 탄이 시간 후 터진다 (sim 테스트)

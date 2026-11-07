@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 06 (옵션 정리 방식 공유)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 반전 중 입력이 반대로 적용되고 경고가 먼저 나온다 (sim 테스트)
 - [ ] 분할 시 안전하지 않은 쪽에서 피해를 입는다 (sim 테스트)

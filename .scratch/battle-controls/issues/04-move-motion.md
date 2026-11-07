@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 이동 중 모션이 보이고 멈추면 자연스럽게 복귀한다
 - [ ] 피격 판정과 이동 속도는 그대로다

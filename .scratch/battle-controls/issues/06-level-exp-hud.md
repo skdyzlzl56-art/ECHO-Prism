@@ -6,7 +6,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 화면 아래쪽에 `Lv.N`과 경험치 바가 보인다
 - [ ] 페이즈 돌파 시 경험치가 오르고 레벨 업 때 레벨이 오른다 (sim 테스트)

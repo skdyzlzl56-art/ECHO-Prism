@@ -4,7 +4,7 @@
 
 **Blocked by:** 02 (탄이 맞는 상호작용)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 맞을 때마다 상태가 순환한다 (sim 테스트)
 - [ ] 좌우 이동/정지 상태가 실제로 위치에 반영된다 (sim 테스트)
