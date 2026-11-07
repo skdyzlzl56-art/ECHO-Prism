@@ -296,6 +296,12 @@ function runBattle(cfg, done) {
       g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * s.gauge / 100, 8);
       g.font = "12px 'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
     }
+    {                                                                                   // cooldowns: dash, and (companion out now) heal / shield; "준비" when ready
+      const c = s.cool && s.cool[s.allyId], cdTxt = (n, v) => `${n} ${v > 0 ? v.toFixed(1) + "s" : "준비"}`;
+      g.font = "13px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#cfe";
+      g.fillText(cdTxt("대시", s.dashCd), BOX.x + BOX.w + 20, 340);
+      if (s.hasAlly && c) { g.fillText(cdTxt("회복", c.heal), BOX.x + BOX.w + 20, 358); g.fillText(s.shieldOn ? "방패 준비" : cdTxt("방패", c.shield), BOX.x + BOX.w + 20, 376); }
+    }
     g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText(`이동: 방향키 · 사격 ON/OFF: ${keyLabel(MENU.keys.fire)} 또는 클릭 · 대시: ${keyLabel(MENU.keys.dash)}` + (cfg.allies ? ` · 교대: ${keyLabel(MENU.keys.swap)}` : "") + " · 메뉴: C", BOX.x + BOX.w, 515);
     if (banner) {                                                                       // phase (spell) name / bond announcement
       const k = banner.age, a = Math.min(1, k * 4, (3 - k) * 2), sx = BOX.x + BOX.w + 20 + (1 - Math.min(1, k * 4)) * 30;
