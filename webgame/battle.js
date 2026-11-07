@@ -279,6 +279,7 @@ function runBattle(cfg, done) {
       g.textBaseline = "middle";
     }
     if (s.over) {
+      if (s.over === "lose") { g.fillStyle = "rgba(0,0,0,.65)"; g.fillRect(0, 270, 960, 150); }
       g.textAlign = "center"; g.font = "bold 56px 'Malgun Gothic'"; g.fillStyle = s.over === "win" ? "#9ad0ff" : "#ff3b5c";
       g.fillText(s.over === "win" ? (cfg.winText || "격파!") : "GAME OVER", 480, 320);
       if (s.over === "lose" && act.onclick) { g.font = "22px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("클릭하여 재도전", 480, 375); }
