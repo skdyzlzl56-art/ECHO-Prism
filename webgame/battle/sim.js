@@ -307,6 +307,12 @@
   // every number drawn on screen goes through this: 3 significant figures (>= 100 stays whole), no 3.5999999
   const fmtNum = x => Math.abs(x) < 1e-3 ? "0" : Math.abs(x) >= 100 ? String(Math.round(x)) : String(+x.toPrecision(3));
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook, fmtNum };
-  else { root.createBattle = createBattle; root.moveLook = moveLook; root.fmtNum = fmtNum; }
+  // damage -> hit feedback: tier 0/1/2 (weak/medium/strong) by the share of max hp lost, strengths rise smoothly up to a 40% hit
+  const hitFeel = (dmg, max) => {
+    const f = max > 0 ? dmg / max : 1, t = Math.min(1, f / .4);
+    return { tier: f < .08 ? 0 : f < .2 ? 1 : 2, shakeMs: 150 + 350 * t, shakeAmp: .4 + 1.2 * t, stop: .02 + .14 * t, vignette: .2 + .8 * t };
+  };
+  const isLowHp = (hp, max) => hp > 0 && hp <= max * .25;
+  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook, fmtNum, hitFeel, isLowHp };
+  else { root.createBattle = createBattle; root.moveLook = moveLook; root.fmtNum = fmtNum; root.hitFeel = hitFeel; root.isLowHp = isLowHp; }
 })(typeof window !== "undefined" ? window : globalThis);
