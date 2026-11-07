@@ -269,7 +269,7 @@ function runBattle(cfg, done) {
     if (cfg.survive) {                                                                  // escape battle: the enemy can't be hurt, so show the clock instead of its HP
       g.fillStyle = "#7dd3ff"; g.fillRect(BOX.x, 168, BOX.w * (1 - s.surviveLeft / cfg.survive), 10);
       g.font = "bold 16px 'Malgun Gothic'"; g.textAlign = "right"; g.fillStyle = "#7dd3ff"; g.fillText(`탈출까지 ${Math.ceil(s.surviveLeft)}초`, BOX.x + BOX.w, 164); g.textAlign = "left";
-    } else { g.fillStyle = s.level > 1 ? "#ff3b5c" : "#ffd84f"; g.fillRect(BOX.x, 168, BOX.w * Math.max(s.eHp, 0) / s.eMax, 10); }   // enemy HP bar
+    } else { g.fillStyle = "#fff"; g.fillRect(BOX.x, 168, BOX.w * Math.max(s.eGhost, 0) / s.eMax, 10); g.fillStyle = s.level > 1 ? "#ff3b5c" : "#ffd84f"; g.fillRect(BOX.x, 168, BOX.w * Math.max(s.eHp, 0) / s.eMax, 10); }   // enemy HP bar
     g.font = "bold 16px 'Malgun Gothic'"; g.textAlign = "left"; g.textBaseline = "bottom"; g.fillStyle = SPEAKERS[cfg.speaker].color; g.fillText(SPEAKERS[cfg.speaker].name, BOX.x, 164);
     g.font = "bold 26px 'Malgun Gothic'"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
     for (const f of floats) { g.globalAlpha = 1 - f.age / .6; g.fillStyle = f.col || "#fff"; g.fillText(f.txt, f.x, f.y - f.age * 60); }
@@ -277,7 +277,7 @@ function runBattle(cfg, done) {
     if (s.combo > 2) { g.font = "bold 22px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${s.combo} HIT`, BOX.x + BOX.w + 20, 215); }
 
     g.font = "20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${Math.max(s.hp, 0)} / ${s.maxHp}`, BOX.x, 485);
-    g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(s.hp, 0) / s.maxHp, 20);
+    g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#fff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(s.pGhost, 0) / s.maxHp, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(s.hp, 0) / s.maxHp, 20);
     g.font = "bold 18px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#ffd36b"; g.fillText(`Lv.${s.lv}`, 20, 485);   // level + exp bar, bottom-left, clear of HP and the controls hint
     g.fillStyle = "#333"; g.fillRect(80, 475, 200, 12); g.fillStyle = "#ffd36b"; g.fillRect(80, 475, 200 * s.xp / 100, 12);
     g.font = "bold 20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = s.auto ? "#7dffb0" : "#889"; g.fillText(s.auto ? "사격 ON" : "사격 OFF", BOX.x + BOX.w + 20, 250);
