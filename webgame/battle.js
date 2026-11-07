@@ -210,6 +210,7 @@ function runBattle(cfg, done) {
       g.globalAlpha = .35; g.beginPath(); g.arc(b.x, b.y, b.r * 1.9, 0, TAU); g.fill();
       g.globalAlpha = 1; g.shadowColor = b.col; g.shadowBlur = b.r > 8 ? 18 : 10; g.beginPath(); g.arc(b.x, b.y, b.r, 0, TAU); g.fill();
       g.shadowBlur = 0; g.fillStyle = "#fff"; g.beginPath(); g.arc(b.x, b.y, b.r * .45, 0, TAU); g.fill();
+      if (b.nm) { g.save(); g.globalAlpha = 1; g.font = "11px 'Malgun Gothic'"; g.textAlign = "center"; g.fillStyle = "#fff"; g.fillText(b.nm, b.x, b.y - b.r - 4); g.restore(); }   // 방향 규칙: name written on the bullet
     }
     if (burstFx > 0) {                                                                  // 유대의 빛: a ring of light sweeping out from the player
       g.globalAlpha = burstFx * .8; g.strokeStyle = allyCol; g.lineWidth = 6; g.shadowColor = allyCol; g.shadowBlur = 20;
