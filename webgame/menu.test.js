@@ -6,6 +6,10 @@ test("fixKeys rewrites every Z키 / A키 in a line", () => {
   assert.strictEqual(fixKeys("Z키로 켜고 Z키로 끄고 A키 A키", { fire: "KeyX", swap: "KeyQ" }), "X키로 켜고 X키로 끄고 Q키 Q키");
 });
 
+test("fixKeys does not rewrite an already-substituted key (fire rebound to A)", () => {
+  assert.strictEqual(fixKeys("Z키 A키", { fire: "KeyA", swap: "KeyQ" }), "A키 Q키");
+});
+
 test("C opens and closes the menu; Escape on the top list closes too", () => {
   const m = createMenu();
   assert.strictEqual(m.open, false);

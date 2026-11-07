@@ -138,7 +138,7 @@ function tick() {
   if (MENU.open) return;
   typer.add(1, xHeld, full.length); const pos = typer.pos, ch = full[pos - 1];
   $("text").textContent = full.slice(0, pos);
-  if (ch.trim() && !/[.,!?…]/.test(ch)) { blip(speaker.pitch); pulsePortrait(); } // sound + pulse only on spoken chars
+  if (ch && ch.trim() &&!/[.,!?…]/.test(ch)) { blip(speaker.pitch); pulsePortrait(); } // sound + pulse only on spoken chars
   if (pos >= full.length) finish();
 }
 

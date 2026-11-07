@@ -117,6 +117,8 @@
       }),
     };
 
+    const hit = d => hurt(Math.round(d * atkK));   // non-bullet damage (zone, laser, touch, split, box) scales with the stage like bullets do
+    const wipe = () => { hist = []; rev = null; };   // the field was cleared / rewritten: a rewind must not bring the old bullets back
     function hurt(d) {
       if (s.shieldOn) { s.shieldOn = false; s.cool[s.allyId].shield = [0, 22, 18, 14, 10][blv()]; s.inv = .6; emit("shieldBlock"); return; }
       s.hp -= d; s.inv = 1; emit("playerHurt", { dmg: d });
@@ -125,7 +127,7 @@
     // 유대의 빛: clears the field, hurts the enemy, heals, and the bond (ally strength) rises one level
     function burst() {
       s.gauge = 0; const was = blv(); bonus++;
-      const lt = light(), dmg = cfg.invuln ? 0 : Math.round((8 + 4 * blv()) * (lt === "power" ? 1.5 : 1)); s.bullets = []; s.lasers = []; if (!lt || lt === "heal")   s.hp = Math.min(MAX_HP, s.hp + 3);
+      const lt = light(), dmg = cfg.invuln ? 0 : Math.round((8 + 4 * blv()) * (lt === "power" ? 1.5 : 1)); s.bullets = []; wipe(); s.lasers = []; if (!lt || lt === "heal")   s.hp = Math.min(MAX_HP, s.hp + 3);
       if (lt === "clock") s.swapCd = 0;                                   // 시계의 빛: the swap cooldown is wound back
       const full = blv() >= BOND_MAX, fin = rl("finale"), joint = cfg.jointLight && full;
       s.eHp = fin ? (full ? 0 : Math.max(1, s.eHp - dmg)) : s.eHp - dmg;   // finale: only a full-bond burst can finish (with or without cfg.jointLight)
@@ -150,9 +152,9 @@
         if (ph === "warn" && !(s.split && !s.split.active)) { s.split = { safe: rng() < .5 ? -1 : 1, active: false }; emit("splitWarn", { safe: s.split.safe }); }
         else if (ph === "on" && s.split && !s.split.active) { s.split.active = true; emit("boxSplit", { safe: s.split.safe }); }
         else if (!ph) s.split = null;
-        if (s.split && s.split.active && s.inv <= 0 && (p.x < BOX.x + BOX.w / 2 ? -1 : 1) !== s.split.safe) hurt(sr.dmg || 4);
+        if (s.split && s.split.active && s.inv <= 0 && (p.x < BOX.x + BOX.w / 2 ? -1 : 1) !== s.split.safe) hit(sr.dmg || 4);
       } else s.split = null;
-      const ox = p.x, oy = p.y, firing = s.auto, spd = firing ? 150 : 210, sg = s.inverted ? -1 : 1, dx = sg * (input.dx || 0), dy = sg * (input.dy || 0), n = Math.hypot(dx, dy) || 1, m = 10;
+      let ox = p.x, oy = p.y; const firing = s.auto, spd = firing ? 150 : 210, sg = s.inverted ? -1 : 1, dx = sg * (input.dx || 0), dy = sg * (input.dy || 0), n = Math.hypot(dx, dy) || 1, m = 10;
       s.lastIn = dx || dy ? { dx: dx / n, dy: dy / n } : null; s.dashCd -= dt;
       const dashing = s.dashT > 0, vx = dashing ? s.dashDir.dx * DASH_D / DASH_T : dx / n * spd, vy = dashing ? s.dashDir.dy * DASH_D / DASH_T : dy / n * spd;
       if (dashing) { s.dashT -= dt; s.inv = Math.max(s.inv, .02); }                  // 대시: untouchable while it lasts
@@ -160,9 +162,10 @@
       if (br) {
         const nx = BOX0.x + br.amp * Math.sin(TAU * s.t / br.period), carried = p.x + nx - BOX.x, wall = Math.min(BOX0.x + BOX0.w - m, Math.max(BOX0.x + m, carried));
         BOX.x = nx; p.x = wall;
-        if (wall !== carried && s.inv <= 0) hurt(br.dmg || 4);
+        if (wall !== carried && s.inv <= 0) hit(br.dmg || 4);
         slid = true;
       } else if (slid) { BOX.x = BOX0.x; slid = false; }   // the rule ended with the phase: the box settles home
+      ox = p.x;   // dirRule compares the player's own displacement: the box carry above does not count
       p.x = Math.min(BOX.x + BOX.w - m, Math.max(BOX.x + m, p.x + vx * dt));
       p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + vy * dt));
       s.t += dt; s.inv -= dt; s.swapCd -= dt; cd -= dt; comboT -= dt; dtc = dt; if (comboT <= 0) s.combo = 0;
@@ -190,7 +193,7 @@
           e.x += (tx - e.x) / d * Math.min(v, d); e.y += (ty - e.y) / d * Math.min(v, d);
           if (d < 8) { e.mode = "back"; emit("dashEnd"); }
         }
-        if (e.mode !== "idle" && s.inv <= 0 && Math.hypot(e.x - p.x, e.y - p.y) < E_R + HITBOX + 6) hurt(6);   // touching the enemy hurts
+        if (e.mode !== "idle" && s.inv <= 0 && Math.hypot(e.x - p.x, e.y - p.y) < E_R + HITBOX + 6) hit(6);   // touching the enemy hurts
       }
 
       if (firing && cd <= 0) { cd = .12; s.shots.push({ x: p.x, y: p.y - 12, vx: 0, vy: -560, dmg: GROWTH.shotDmg(s.lv) }); emit("playerShot"); }
@@ -208,8 +211,8 @@
           const g = SIG[s.allyId], pw = g.power[lv]; me.sig = SIG_CD[lv];
           if (g.kind === "ward") s.inv = Math.max(s.inv, pw);
           else if (g.kind === "blast") s.eHp = cfg.invuln ? s.eHp : rl("finale") ? Math.max(1, s.eHp - pw) : s.eHp - pw;
-          else if (g.kind === "reflect") for (const b of s.bullets) { if (Math.hypot(b.x - p.x, b.y - p.y) <= pw) { b.vx = -b.vx; b.vy = -b.vy; b.acc = 0; b.w = 0; b.home = null; } }
-          else s.bullets = s.bullets.filter(b => Math.hypot(b.x - p.x, b.y - p.y) > pw);
+          else if (g.kind === "reflect") for (const b of s.bullets) { if (Math.hypot(b.x - p.x, b.y - p.y) <= pw) { b.vx = -b.vx; b.vy = -b.vy; b.acc = 0; b.w = 0; b.home = null; } wipe(); }
+          else { s.bullets = s.bullets.filter(b => Math.hypot(b.x - p.x, b.y - p.y) > pw); wipe(); }
           emit("signature", { ally: s.allyId, kind: g.kind, power: pw });
         }
         // shield: blocks one hit, then regrows after shieldT seconds (the timer only runs while a shield-bearer is out)
@@ -225,7 +228,7 @@
       const hitTargets = s.bullets.some(b => b.hp > 0 || b.tg);              // most frames have none: skip the shots x bullets passes
       if (hitTargets) for (const sh of s.shots) for (const b of s.bullets) if (b.hp > 0 && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // breakable bullet absorbs the shot
         sh.dead = true; b.hp -= sh.dmg;
-        if (b.hp <= 0) { b.dead = true; emit("break", { x: b.x, y: b.y }); }
+        if (b.hp <= 0) { b.dead = true; spent.add(b.id); emit("break", { x: b.x, y: b.y }); }
       }
       if (hitTargets) for (const sh of s.shots) for (const b of s.bullets) if (b.tg && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // toggle bullet: a hit absorbs the shot and flips its state
         sh.dead = true; b.st = (b.st + 1) % b.tg.length; const t = b.tg[b.st]; b.vx = t.vx; b.vy = t.vy; b.col = t.col;
@@ -290,12 +293,12 @@
         if (!l.boom && l.age >= l.warn) { l.boom = true; emit("laserFire"); }
         if (l.boom && l.age < l.warn + l.dur && s.inv <= 0) {
           const ddx = p.x - l.x, ddy = p.y - l.y, along = ddx * Math.cos(l.a) + ddy * Math.sin(l.a), perp = Math.abs(-ddx * Math.sin(l.a) + ddy * Math.cos(l.a));
-          if (along > 0 && perp < l.w / 2 + HITBOX) hurt(5);
+          if (along > 0 && perp < l.w / 2 + HITBOX) hit(5);
         }
       }
       for (const z of s.zones) {
         z.age += dt;
-        if (z.age >= z.warn && z.age < z.warn + z.dur && s.inv <= 0 && Math.hypot(p.x - z.x, p.y - z.y) < z.r + HITBOX) hurt(4);
+        if (z.age >= z.warn && z.age < z.warn + z.dur && s.inv <= 0 && Math.hypot(p.x - z.x, p.y - z.y) < z.r + HITBOX) hit(4);
       }
       s.zones = s.zones.filter(z => z.age < z.warn + z.dur);
       s.lasers = s.lasers.filter(l => l.age < l.warn + l.dur + .15);

@@ -85,7 +85,7 @@ function runBattle(cfg, done) {
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   if (cfg.silent) hush(true);
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
-  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
+  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
 
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
@@ -276,7 +276,7 @@ function runBattle(cfg, done) {
       g.font = "bold 13px 'Malgun Gothic'"; g.fillStyle = allyCol; g.textAlign = "center"; g.fillText(`유대 Lv.${lv}`, al.x, al.y + 30 + 3 * lv);
     }
     if (s.dashT > 0) trail.push({ x: p.x, y: p.y, a: .6 });                            // 잔상: fading copies of the ship
-    for (const q of trail) { g.save(); g.globalAlpha = q.a; g.translate(q.x, q.y); g.strokeStyle = "#9ad0ff"; drawShape(g, myShape, 11); g.restore(); q.a -= .04; }
+    for (const q of trail) { g.save(); g.globalAlpha = q.a; g.translate(q.x, q.y); g.strokeStyle = "#9ad0ff"; drawShape(g, myShape, 11); g.restore(); q.a -= .04 * fdt * 60; }
     trail = trail.filter(q => q.a > 0);
     if (s.over !== "lose" && (s.inv <= 0 || s.dashT > 0 || Math.floor(s.inv * 12) % 2)) {
       g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = allyCol || "#4fc3ff";   // faint trail of recent positions
@@ -349,7 +349,7 @@ function runBattle(cfg, done) {
   }
 
   function frame(now) {
-    const dt = Math.min((now - last) / 1000, .05); last = now;
+    const dt = Math.min((now - last) / 1000, .05); last = now; fdt = dt;
     if (MENU.open) { raf = requestAnimationFrame(frame); return; }                       // menu open: everything stops (the menu is a DOM overlay)
     $("portrait").style.visibility = s.talk ? "visible" : "hidden";                     // the enemy body is drawn on the field; the portrait only shows while someone talks
     if (s.talk) { typer.add(dt * 25, keys[KEYS.fast], lineT().length); if (keys.skip && typer.hold(dt, lineT().length)) nextLine(); if (s.talk) { setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); } }   // nextLine() on the last line clears s.talk
@@ -359,9 +359,11 @@ function runBattle(cfg, done) {
       if (stopT > 0) stopT -= dt;                                                       // hit-stop: the world freezes for a moment after a heavy hit
       else for (const v of battle.step(dt, input)) onEvent(v);
       if (prevP && dt > 0) moveLook(look, (s.p.x - prevP.x) / dt, (s.p.y - prevP.y) / dt, dt);   // display only: reads the position, never writes it
-      if (prevP && (s.p.x !== prevP.x || s.p.y !== prevP.y)) wake.push({ x: prevP.x, y: prevP.y });
-      else if (wake.length) wake.shift();
-      if (wake.length > 6) wake.shift();
+      for (wk += dt * 60; wk >= 1; wk--) {                                               // wake ticks at 60 steps/s whatever the frame rate
+        if (prevP && (s.p.x !== prevP.x || s.p.y !== prevP.y)) wake.push({ x: prevP.x, y: prevP.y });
+        else if (wake.length) wake.shift();
+        if (wake.length > 6) wake.shift();
+      }
       prevP = { x: s.p.x, y: s.p.y };
       flushVolley();
       if (cfg.beat && !s.over && s.t > 0 && (beatT -= dt) <= 0) { beatT = .7; sweep(85, 45, .22, "sine", .45); setTimeout(() => sweep(70, 40, .2, "sine", .3), 170); }   // all that is left of the sound: a heartbeat
