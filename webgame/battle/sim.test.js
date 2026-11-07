@@ -144,6 +144,21 @@ test("rewind: a bullet that already hit the player is not replayed", () => {
   assert.strictEqual(b.state.maxHp - b.state.hp, 4);
 });
 
+// 방향 규칙: cfg.dirRule = {name}; a named bullet is harmless to a player moving the way it moves
+test("direction rule: moving with a named bullet is safe; standing still or moving against it hurts; off by default", () => {
+  for (const [rule, dx, dmg] of [[{ name: "동쪽" }, 1, 0], [{ name: "동쪽" }, 0, 4], [{ name: "동쪽" }, -1, 4], [undefined, 1, 4]]) {
+    const b = still({ dirRule: rule }); const bl = bul(b.state.p, 0, "#f00"); bl.vx = 120; bl.nm = rule && rule.name; b.state.bullets.push(bl);
+    run(b, .05, { dx });
+    assert.strictEqual(b.state.maxHp - b.state.hp, dmg, `rule ${!!rule} dx ${dx}`);
+  }
+});
+
+test("direction rule: bullets carry the configured name for display", () => {
+  const b = createBattle({ ...quiet, dirRule: { name: "동쪽" }, phases: [h => h.rain(.2)] }, { rng: seeded(4) });
+  b.state.auto = false; run(b, 1.5);
+  assert.ok(b.state.bullets.length > 0 && b.state.bullets.every(x => x.nm === "동쪽"));
+});
+
 // ---- the real stage 1 configs: every phase actually fires, with the player standing still and a huge HP pool ----
 global.SPEAKERS = {}; global.BATTLES = {}; global.ACTS = {}; global.runBattle = () => {};
 require("../stage1/battles.js"); require("../stage2/battles.js");

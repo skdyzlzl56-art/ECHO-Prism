@@ -44,7 +44,7 @@
 
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
     const add = (x, y, a, sp, size = 6, o = {}) => {
-      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col,
+      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col, nm: cfg.dirRule && cfg.dirRule.name,   // 방향 규칙: name written on the bullet
         id: uid++, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, age: 0, tr: [] });
       if (!s.over) emit("enemyShot", { size, speed: sp });
     };
@@ -181,7 +181,7 @@
       }
       s.lasers = s.lasers.filter(l => l.age < l.warn + l.dur + .15);
       if (s.inv <= 0) {
-        const i = s.bullets.findIndex(b => (!cfg.colorRule || b.col === cfg.colorRule) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
+        const i = s.bullets.findIndex(b => (!cfg.colorRule || b.col === cfg.colorRule) && !(b.nm && dx * b.vx + dy * b.vy > 0) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
         if (i >= 0) { const d = s.bullets[i].dmg; spent.add(s.bullets[i].id); s.bullets.splice(i, 1); hurt(d); }
       }
       if (cfg.survive) s.surviveLeft = Math.max(0, cfg.survive - Math.max(0, s.t - 1));   // escape battle: outlast the clock after the 1s grace
