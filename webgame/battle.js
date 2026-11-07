@@ -276,7 +276,7 @@ function runBattle(cfg, done) {
     }
     if (burstFx > 0) {                                                                  // 유대의 빛: a ring of light sweeping out from the player
       g.globalAlpha = burstFx * .8; g.strokeStyle = allyCol; g.lineWidth = 6; g.shadowColor = allyCol; g.shadowBlur = 20;
-      g.beginPath(); g.arc(p.x, p.y, (1 - burstFx) * 340, 0, TAU); g.stroke();
+      g.beginPath(); g.arc(p.x, p.y, Math.max(0, 1 - burstFx) * 340, 0, TAU); g.stroke();
     }
     g.restore();
     g.shadowBlur = 12;                                                                  // player shots fly out of the box

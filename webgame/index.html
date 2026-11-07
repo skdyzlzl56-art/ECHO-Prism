@@ -84,7 +84,7 @@ const buses = {};
 let hushed = false;                                           // battle with 침묵: every bus and the <audio> fallback read 0 until hush(false)
 let silenceLayer = 0, sfxKind = "sfx";                       // final fight: sound comes back one layer per phase (1 enemy attacks, 2 music, 4 everything else); 3 is the sky (portraits.js)
 const LAYER_AT = { shot: 1, bgm: 2, sfx: 4 };
-const mv = k => !hushed ? MENU.vol[k] : silenceLayer >= LAYER_AT[k] ? MENU.vol[k === "shot" ? "sfx" : k] : 0;
+const mv = k => { const v = MENU.vol[k === "shot" ? "sfx" : k]; return !hushed || silenceLayer >= LAYER_AT[k] ? v : 0; };   // "shot" has no volume of its own: it follows sfx (an undefined gain would throw in hush(false) and freeze the end of the fight)
 const sfxBus = k => { sfxKind = k; };                         // sweep / noise play on this bus ("shot" = the enemy's attacks)
 const hush = on => { hushed = on; silenceLayer = 0; hushLayer(0); };
 const hushLayer = n => { silenceLayer = n; for (const k in buses) buses[k].gain.value = mv(k); bgm.sync(); };
