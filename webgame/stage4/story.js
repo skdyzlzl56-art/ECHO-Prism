@@ -1,6 +1,6 @@
 // STAGE 4 - 멈춘 시계탑. Appended to SCRIPT after stage 3 (stage3/story.js).
 // Flow: 도착(워프, 황동빛 배경) -> 멈춘 시계 둘러보기 -> 째깍이 전투(되감기 규칙 입문) -> 시계지기 등장·보스전 -> 시계지기 해방·합류(동료 4) -> 4명 교대 전투 -> 클리어
-// `theme: "clocktower"` = stopped brass hours (portraits.js). Existing bgm keys only (music for stage 4 comes later).
+// `theme: "clocktower"` = stopped brass hours (portraits.js). Music: s4_field (ticking strings), s4_boss (7/8 electric); other battles use "battle".
 
 FX.stage4 = { shout: "STAGE 4", flash: 1, warp: "clocktower", shake: 1, wait: 2200, sfx: () => { sweep(700, 100, 1.6, "sine", .3); sweep(350, 700, 1.6, "triangle", .15); } };
 FX.rewind = { shout: "REWIND", flash: 1, wait: 1500, sfx: () => { sweep(1800, 200, 1, "sawtooth", .2); sweep(900, 100, 1, "triangle", .2); } };
@@ -10,7 +10,7 @@ const STAGE4 = [
   { who: "voice", theme: "night", text: "......모두 곁에 있나요? 이번에는 발밑이 이상하게 조용해요." },
   { who: "lumi", text: "응, 여기! 근데 이상하다. 내 반짝임이 천천히 올라가다가 공중에서 멈췄어." },
   { who: "hexa", text: "......숨소리가 늘어진다. 이곳은 시간이 정상이 아니다." },
-  { who: "voice", fx: "stage4", bgm: "s2_field", text: "여기는 네 번째 길, '멈춘 시계탑'이에요. 이 마을의 모든 시간을 재던 곳이래요." },
+  { who: "voice", fx: "stage4", bgm: "s4_field", text: "여기는 네 번째 길, '멈춘 시계탑'이에요. 이 마을의 모든 시간을 재던 곳이래요." },
   { who: "lumi", text: "우와, 엄청 높다! 위에 큰 시계가 있어! ...근데 바늘이 안 움직여." },
   { who: "voice", text: "네. 정각 직전에 딱 멈춰 있어요. 바늘이 마지막 한 칸을 넘지 못하고 있는 거예요." },
   { who: "glitch", text: "......먼지가 떠 있다. 떨어지지도 않고. 저건 바닥에 닿기 전에 붙잡힌 거다." },
@@ -44,7 +44,7 @@ const STAGE4 = [
   { act: "s4_ticks", bgm: "battle" },
 
   // ---- 3. 되감기 ----
-  { who: "tick", bgm: "s2_field", text: "째...깍......" },
+  { who: "tick", bgm: "s4_field", text: "째...깍......" },
   { who: "lumi", fx: "rewind", text: "봤지?! 방금 피한 탄이 또 날아왔어! 시간이 거꾸로 갔다 온 것 같아!" },
   { who: "voice", text: "5초마다 탄이 1초 반 전의 자리로 되돌아가요. 한 번 지나간 탄이라도, 한 번 더 와요." },
   { who: "hexa", text: "......예측하면 오히려 쉬워진다. 두 번째는 첫 번째와 같은 길이다." },
@@ -88,10 +88,10 @@ const STAGE4 = [
   { who: "hexa", text: "......되감기에 속지 마라. 두 번째 탄이 진짜 시험이다." },
   { who: "glitch", text: "......계산은 끝났다. 두 번 피한다. 간단하군." },
   { who: "keeper", fx: "rewind", text: "그럼 시작하겠습니다. 정각. ......다시, 처음부터." },
-  { act: "s4_keeper", bgm: "s2_boss" },
+  { act: "s4_keeper", bgm: "s4_boss" },
 
   // ---- 4. 시계지기의 해방 ----
-  { who: "keeper", bgm: "s2_field", fx: "impact", text: "......아." },
+  { who: "keeper", bgm: "s4_field", fx: "impact", text: "......아." },
   { who: "keeper", text: "톱니 하나가... 맞물리지 않았습니다. 이상합니다. 이런 일은 처음이에요." },
   { who: "lumi", text: "괜찮아?! 아프지 않아?" },
   { who: "keeper", text: "아프지 않습니다. 다만... 시계가 움직이려 하고 있습니다. 제 손을 떠나서." },
@@ -144,7 +144,7 @@ const STAGE4 = [
   { act: "s4_exit", bgm: "battle" },
 
   // ---- 6. 클리어 ----
-  { who: "tick", bgm: "s2_field", text: "째...깍...... 정각...... 지났다......" },
+  { who: "tick", bgm: "s4_field", text: "째...깍...... 정각...... 지났다......" },
   { who: "keeper", text: "......돌아갔습니다. 이제 이 톱니들도 제 시간을 찾을 것입니다." },
   { who: "lumi", text: "후우, 네 명이서 번갈아 싸우니까 훨씬 편하다! 그치?" },
   { who: "hexa", text: "......그렇군. 한 명으로는 못 버티는 순간에도, 번갈아 서면 넘길 수 있다." },
