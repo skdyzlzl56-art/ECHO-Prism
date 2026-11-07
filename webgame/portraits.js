@@ -91,7 +91,7 @@ function shard(t, col) {
   c.globalCompositeOperation = "lighter"; c.globalAlpha = .7;                       // RGB split ghosts
   for (const [dx, color] of [[-split, "#f00"], [split, "#0ff"]]) { c.strokeStyle = color; shardPath(dx); c.stroke(); }
   c.globalCompositeOperation = "source-over"; c.globalAlpha = 1;
-  c.shadowColor = col; c.shadowBlur = 20;
+  c.shadowColor = col; c.shadowBlur = 20 + 14 * kick;                              // outline glows on hit
   const n = Math.floor(t / 100), thr = talk > .1 ? .45 : .85, amp = talk > .1 ? 30 : 12;
   for (let i = 0; i < 7; i++) {                                                     // slice bands, some jump sideways
     const y0 = -112 + i * 32, v = rnd(n * 7 + i), dx = v > thr ? (rnd(n + i * 3) - .5) * 2 * amp : 0;
