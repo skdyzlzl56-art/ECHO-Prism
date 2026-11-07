@@ -213,6 +213,14 @@
     };
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX };
-  else root.createBattle = createBattle;
+  // Display only (never read by the rules): squash & stretch of the player sprite. v = velocity in px/s; look = {sx, sy, rot} is eased in place.
+  function moveLook(look, vx, vy, dt) {
+    const r = Math.min(1, Math.hypot(vx, vy) / 210), k = 1 - Math.exp(-dt * 14);
+    if (r > .05) look.rot = Math.atan2(vy, vx);
+    look.sx += (1 + .35 * r - look.sx) * k; look.sy += (1 - .25 * r - look.sy) * k;
+    return look;
+  }
+
+  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX, moveLook };
+  else { root.createBattle = createBattle; root.moveLook = moveLook; }
 })(typeof window !== "undefined" ? window : globalThis);

@@ -280,4 +280,13 @@ test("exp is a start value: a retry built from it loses the battle's gains, a ne
   assert.strictEqual(retry.state.xp, 50);
   const next = createBattle(cfg, { rng: seeded(5), lv: b.state.lv, xp: b.state.xp });
   assert.deepStrictEqual([next.state.lv, next.state.xp], [1, 70]);
+
+test("move motion stretches along travel and eases back to normal when stopped", () => {
+  const { moveLook } = require("./sim.js");
+  const look = { sx: 1, sy: 1, rot: 0 };
+  for (let i = 0; i < 30; i++) moveLook(look, 210, 0, 1 / 60);
+  assert.ok(look.sx > 1.2 && look.sy < .9, `stretched ${look.sx} ${look.sy}`);
+  assert.ok(Math.abs(look.rot) < 1e-9, "stretch axis follows travel direction");
+  for (let i = 0; i < 90; i++) moveLook(look, 0, 0, 1 / 60);
+  assert.ok(Math.abs(look.sx - 1) < .01 && Math.abs(look.sy - 1) < .01, `restored ${look.sx} ${look.sy}`);
 });

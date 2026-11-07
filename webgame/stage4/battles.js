@@ -1,6 +1,6 @@
 // Stage 4 battle configs (engine: ../battle.js runBattle, rules: ../battle/sim.js). See stage1/battles.js for the pattern helpers.
 // Rewind rule (되감기 규칙): cfg.rewind = 5. Every 5 s the bullets jump back to where they were 1.5 s earlier, so a pattern repeats once.
-// Flow: s4_ticks (mooks, rewind intro) -> s4_keeper (boss) -> 시계지기 joins -> s4_exit (4 allies, X-cycling in real play).
+// Flow: s4_ticks (mooks, rewind intro) -> s4_keeper (boss) -> 시계지기 joins -> s4_exit (4 allies, A-cycling in real play).
 // Party: PARTY3 (stage3/battles.js) is the three-ally config. PARTY4 adds the 시계지기: rapid, light shots, no heal/shield.
 // His bond light is "clock": the sim treats unknown lights as a plain burst (no heal, no power), so his role is volume of fire.
 
@@ -46,7 +46,7 @@ BATTLES.s4_keeper = {
 };
 ACTS.s4_keeper = done => runBattle(BATTLES.s4_keeper, done);
 
-// ---- 3) 풀려난 시간: 동료 4명으로 X키 교대를 체험하는 마무리 전투 ----
+// ---- 3) 풀려난 시간: 동료 4명으로 A키 교대를 체험하는 마무리 전투 ----
 BATTLES.s4_exit = {
   ...PARTY4, speaker: "tick", hp: 300, bgm: "battle", color: "#e0b86a", rewind: 5, cuts: [.5], playerHp: 24,
   winText: "시계가 다시 움직인다!",
@@ -57,7 +57,7 @@ BATTLES.s4_exit = {
     h => { h.fan(1.5, 7, .28, 115); h.side(.8, 135); h.ring(2, 13, 90, 7); },
   ],
   talks: {
-    1: [{ who: "voice", t: "X키로 네 분을 번갈아 불러 봐요! 루미, 헥사, 글리치, 시계지기 순서예요!" }, { who: "keeper", t: "저는 가볍게, 많이 쏩니다. 유대의 빛이 터지면 판 전체를 비웁니다." }],
+    1: [{ who: "voice", t: "A키로 네 분을 번갈아 불러 봐요! 루미, 헥사, 글리치, 시계지기 순서예요!" }, { who: "keeper", t: "저는 가볍게, 많이 쏩니다. 유대의 빛이 터지면 판 전체를 비웁니다." }],
     2: [{ who: "glitch", t: "또 되감기냐. 두 번 오는 탄이면 두 번 피하면 된다." }],
   },
 };

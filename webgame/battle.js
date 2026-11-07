@@ -11,11 +11,11 @@
 //                                       between warned body-slams down into the box (0 = never)
 //   talks: { 3: [{ who, t }, ...] },    dialogue shown when phase N starts
 //   ally: "lumi",                       optional companion; strength grows with the bond (유대), see BOND
-//   allies: ["lumi", "hexa"],           optional: X swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
+//   allies: ["lumi", "hexa"],           optional: A swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
 //   invuln, survive: 30,                escape battle: hits deal 0 (팅) and surviving 30s wins; bgm: null = silence, beat = heartbeat
 //   fade: .2,                           each phase turns the bgm / enemy-shot volume down by this much
 //   playerHp, winText, ew, gauge0 }
-// Controls: arrows/WASD move, Z toggles shooting (ON at start), X swaps companion, Space/Enter/Z/click advance dialogue.
+// Controls: arrows (+W/S/D) move, Z toggles shooting (ON at start), A swaps companion, Space/Enter/Z/click advance dialogue.
 //
 // BOND (유대): BOND.base is the story-given level (scenes raise it). In battle, grazing bullets fills the bond gauge;
 // a full gauge unleashes "유대의 빛" and raises the level by one (max 4). See battle/sim.js for the exact numbers.
@@ -67,7 +67,7 @@ function runBattle(cfg, done) {
   const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX, lv: BOND.lv, xp: BOND.xp }), s = battle.state, BOX = s.BOX;
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
-  let floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, lastShot = 0, lastBig = 0, lastGraze = 0;
+  let floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0;
 
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
@@ -81,7 +81,7 @@ function runBattle(cfg, done) {
     if (ev.repeat) return;
     if (s.talk) { if (ev.code === "Space" || ev.code === "Enter" || ev.code === "KeyZ") advTalk(); }
     else if (ev.code === "KeyZ") toggle();
-    else if (ev.code === "KeyX") battle.swap();                                  // 교대
+    else if (ev.code === "KeyA") battle.swap();                                  // 교대
   };
   const ku = ev => { keys[ev.code] = false; };
   const cleanup = () => {
@@ -234,7 +234,9 @@ function runBattle(cfg, done) {
       g.font = "bold 13px 'Malgun Gothic'"; g.fillStyle = allyCol; g.textAlign = "center"; g.fillText(`유대 Lv.${lv}`, al.x, al.y + 30 + 3 * lv);
     }
     if (s.over !== "lose" && (s.inv <= 0 || Math.floor(s.inv * 12) % 2)) {
-      g.save(); g.translate(p.x, p.y); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
+      g.save(); g.globalCompositeOperation = "lighter"; g.fillStyle = allyCol || "#4fc3ff";   // faint trail of recent positions
+      wake.forEach((q, i) => { g.globalAlpha = (i + 1) / wake.length * .18; g.beginPath(); g.arc(q.x, q.y, 3 + 5 * (i + 1) / wake.length, 0, TAU); g.fill(); }); g.restore();
+      g.save(); g.translate(p.x, p.y); g.rotate(look.rot); g.scale(look.sx, look.sy); g.rotate(-look.rot); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
       if (s.shieldOn) { g.strokeStyle = allyCol; g.lineWidth = 3; g.shadowColor = allyCol; g.shadowBlur = 14; g.globalAlpha = .6 + .3 * Math.sin(t * 6); g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.stroke(); }
       g.restore();
     }
@@ -261,7 +263,7 @@ function runBattle(cfg, done) {
       g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * s.gauge / 100, 8);
       g.font = "12px 'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
     }
-    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText("이동: 방향키/WASD · 사격 ON/OFF: Z 또는 클릭" + (cfg.allies ? " · 교대: X" : ""), BOX.x + BOX.w, 515);
+    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText("이동: 방향키 · 사격 ON/OFF: Z 또는 클릭" + (cfg.allies ? " · 교대: A" : ""), BOX.x + BOX.w, 515);
     if (banner) {                                                                       // phase (spell) name / bond announcement
       const k = banner.age, a = Math.min(1, k * 4, (3 - k) * 2), sx = BOX.x + BOX.w + 20 + (1 - Math.min(1, k * 4)) * 30;
       g.globalAlpha = Math.max(0, a); g.textAlign = "left"; g.textBaseline = "middle";
@@ -280,6 +282,7 @@ function runBattle(cfg, done) {
       g.textBaseline = "middle";
     }
     if (s.over) {
+      if (s.over === "lose") { g.fillStyle = "rgba(0,0,0,.65)"; g.fillRect(0, 270, 960, 150); }
       g.textAlign = "center"; g.font = "bold 56px 'Malgun Gothic'"; g.fillStyle = s.over === "win" ? "#9ad0ff" : "#ff3b5c";
       g.fillText(s.over === "win" ? (cfg.winText || "격파!") : "GAME OVER", 480, 320);
       if (s.over === "lose" && act.onclick) { g.font = "22px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("클릭하여 재도전", 480, 375); }
@@ -293,8 +296,13 @@ function runBattle(cfg, done) {
     if (s.talk) { talkN += dt * 25; setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
     else {
       setCast(null);
-      const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
+      const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
       for (const v of battle.step(dt, input)) onEvent(v);
+      if (prevP && dt > 0) moveLook(look, (s.p.x - prevP.x) / dt, (s.p.y - prevP.y) / dt, dt);   // display only: reads the position, never writes it
+      if (prevP && (s.p.x !== prevP.x || s.p.y !== prevP.y)) wake.push({ x: prevP.x, y: prevP.y });
+      else if (wake.length) wake.shift();
+      if (wake.length > 6) wake.shift();
+      prevP = { x: s.p.x, y: s.p.y };
       flushVolley();
       if (cfg.beat && !s.over && s.t > 0 && (beatT -= dt) <= 0) { beatT = .7; sweep(85, 45, .22, "sine", .45); setTimeout(() => sweep(70, 40, .2, "sine", .3), 170); }   // all that is left of the sound: a heartbeat
       hitFlash -= dt; burstFx = Math.max(0, burstFx - dt * 1.5);
