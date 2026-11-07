@@ -16,7 +16,7 @@
   // companion kits when cfg.allies lets the player swap (교대): cd = shot interval x, dm = shot damage x, heal / shield = abilities.
   // A single cfg.ally keeps the old all-round companion (KIT.all).
   const KIT = { all: { cd: 1, dm: 1, heal: 1, shield: 1 }, lumi: { cd: .8, dm: 1, heal: 1, shield: 0 }, hexa: { cd: 1.6, dm: 2, heal: 0, shield: 1 } };
-  const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, SWAP_CD = 1.5, REWIND_BACK = 1.5;
+  const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, HEAL_IV = [10, 8.5, 7, 6, 5], SWAP_CD = 1.5, REWIND_BACK = 1.5;
 
   function createBattle(cfg, opts = {}) {
     const rng = opts.rng || Math.random, HITBOX = opts.hitbox == null ? 4 : opts.hitbox, bondBase = opts.bondBase || 0;
@@ -29,6 +29,7 @@
       al: cfg.ally ? { x: BOX.x - 38, y: BOX.y + BOX.h * .75 } : null,
       bullets: [], lasers: [], zones: [], shots: [], gauge: cfg.gauge0 || 0, bondLv: 0, shieldOn: false, talk: null, hasAlly: !!cfg.ally,
       allyId: allies ? allies[0] : cfg.ally, swapCd: 0, dashT: 0, dashCd: 0, dashDir: null, lastIn: null, surviveLeft: cfg.survive || 0,
+      cool: {},   // per companion { heal, shield }: seconds left; every companion's timers run whether or not they are out
     };
     const p = s.p, e = s.e, al = s.al;
     // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, invertRule, splitRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
@@ -36,8 +37,9 @@
     const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr && k in pr ? pr[k] : cfg[k]; };   // a key absent from the phase entry falls back to the cfg-level option
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
+    for (const id of allies || [cfg.ally]) s.cool[id] = { heal: HEAL_IV[0], shield: 0 };
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
-    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], rev = null, spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false;
+    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, bonus = 0, started = false, hist = [], rev = null, spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -91,7 +93,7 @@
     };
 
     function hurt(d) {
-      if (s.shieldOn) { s.shieldOn = false; shieldT = [0, 22, 18, 14, 10][blv()]; s.inv = .6; emit("shieldBlock"); return; }
+      if (s.shieldOn) { s.shieldOn = false; s.cool[s.allyId].shield = [0, 22, 18, 14, 10][blv()]; s.inv = .6; emit("shieldBlock"); return; }
       s.hp -= d; s.inv = 1; emit("playerHurt", { dmg: d });
     }
 
@@ -104,7 +106,7 @@
       s.eHp = fin ? (full ? 0 : Math.max(1, s.eHp - dmg)) : s.eHp - dmg;   // finale: only a full-bond burst can finish (with or without cfg.jointLight)
       emit("burst", { dmg, level: blv(), up: blv() > was, light: lt });
       if (joint && (fin || !(cfg.phaseRules && cfg.phaseRules.some(x => x.finale)))) emit("jointLight", { allies: cfg.allies || [cfg.ally] });   // 합동 유대의 빛: bond full, everyone bursts
-      if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && shieldT <= 0) s.shieldOn = true;
+      if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && s.cool[s.allyId].shield <= 0) s.shieldOn = true;
     }
 
     const gT = {}, gP = {};   // ghost hp bar: the white chunk waits .6s after the latest hit, then drains at 40% of max per second
@@ -167,16 +169,16 @@
       if (firing && cd <= 0) { cd = .12; s.shots.push({ x: p.x, y: p.y - 12, vx: 0, vy: -560, dmg: 1 }); emit("playerShot"); }
       if (cfg.ally) {                                                      // companion: strength follows the bond level
         const lv = blv();
-        al.y += (p.y - al.y) * Math.min(1, dt * 3); allyCd -= dt; healT += dt;
+        al.y += (p.y - al.y) * Math.min(1, dt * 3); allyCd -= dt; for (const c of Object.values(s.cool)) { c.heal = Math.max(0, c.heal - dt); c.shield = Math.max(0, c.shield - dt); }
         if (allyCd <= 0 && s.t > 1) {
           allyCd = [1.3, 1.05, .85, .65, .5][lv] * kit().cd; const a = Math.atan2(e.y - al.y, e.x - al.x), dmg = (lv >= 3 ? 3 : 2) * kit().dm;
           for (let i = 0; i < (lv >= 2 ? 2 : 1); i++) { const aa = a + (i ? .12 : lv >= 2 ? -.12 : 0); s.shots.push({ x: al.x, y: al.y, vx: Math.cos(aa) * 460, vy: Math.sin(aa) * 460, dmg, ally: true }); }
           emit("allyShot");
         }
-        const hi = [10, 8.5, 7, 6, 5][lv], ha = lv >= 3 ? 3 : 2;
-        if (healT >= hi) { healT = 0; if (kit().heal && s.hp < MAX_HP) { s.hp = Math.min(MAX_HP, s.hp + ha); emit("heal", { amount: ha }); } }
+        const me = s.cool[s.allyId], ha = lv >= 3 ? 3 : 2;
+        if (me.heal <= 0) { me.heal = HEAL_IV[lv]; if (kit().heal && s.hp < MAX_HP) { s.hp = Math.min(MAX_HP, s.hp + ha); emit("heal", { amount: ha }); } }
         // shield: blocks one hit, then regrows after shieldT seconds (the timer only runs while a shield-bearer is out)
-        if (lv >= SHIELD_LV && kit().shield && !s.shieldOn && (shieldT -= dt) <= 0) { s.shieldOn = true; emit("shieldReady"); }
+        if (lv >= SHIELD_LV && kit().shield && !s.shieldOn && me.shield <= 0) { s.shieldOn = true; emit("shieldReady"); }
         for (const b of s.bullets) {                                       // graze: slipping past a bullet fills the bond gauge
           if (b.gz || s.inv > 0) continue;
           const d = Math.hypot(b.x - p.x, b.y - p.y);
