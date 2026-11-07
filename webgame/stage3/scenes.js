@@ -49,11 +49,23 @@ function drawShardAlly(g, x, y, t, col, k = 1) {                                
   g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill(); g.restore();
 }
 
-function drawTomoeAlly(g, x, y, t, col, k = 1) {                                        // 글리치 new look: three crescent blades circling a sharp core, a crackle of lightning
-  g.save(); g.translate(x, y); g.scale(k, k); g.strokeStyle = g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 14; g.lineWidth = 2.5;
-  for (let i = 0; i < 3; i++) { const a = t * 2.2 + i * TAU / 3; g.beginPath(); g.arc(Math.cos(a) * 11, Math.sin(a) * 11, 6, a + 1, a + 4.6); g.stroke(); }
+// Three crescent blades on a tilted orbit (3D): far ones are smaller and fainter, near ones larger and brighter; each blade also tumbles on its own axis. Drawn far -> near.
+function drawTomoeBlades(g, R, r, spin, lw) {
+  const tilt = 1.0, yaw = spin * .35, blades = [0, 1, 2].map(i => {
+    const a = spin + i * TAU / 3, x0 = Math.cos(a) * R, y0 = Math.sin(a) * R, y1 = y0 * Math.cos(tilt), z1 = y0 * Math.sin(tilt);
+    return { x: x0 * Math.cos(yaw) + z1 * Math.sin(yaw), y: y1, z: (-x0 * Math.sin(yaw) + z1 * Math.cos(yaw)) / R, a, i };
+  }).sort((p, q) => p.z - q.z);
+  for (const b of blades) {
+    g.save(); g.translate(b.x, b.y); g.rotate(Math.atan2(b.y, b.x)); g.scale(1 + .35 * b.z, (1 + .35 * b.z) * (.35 + .65 * Math.abs(Math.cos(b.a * 1.5 + b.i))));   // tumbling
+    g.globalAlpha = .6 + .4 * (b.z + 1) / 2; g.lineWidth = lw * (1 + .3 * b.z);
+    g.beginPath(); g.arc(0, 0, r, 1, 4.6); g.stroke(); g.restore();
+  }
+  g.globalAlpha = 1;
+}
+function drawTomoeAlly(g, x, y, t, col, k = 1) {                                        // 글리치 new look: three crescent blades orbiting in 3D round a sharp core
+  g.save(); g.translate(x, y); g.scale(k, k); g.strokeStyle = g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 14;
+  drawTomoeBlades(g, 13, 6, t * 2.2, 2.5);
   g.beginPath(); g.moveTo(0, -7); g.lineTo(4, 0); g.lineTo(0, 7); g.lineTo(-4, 0); g.closePath(); g.fill();
-  g.lineWidth = 1.2; g.beginPath(); g.moveTo(-18, -2); for (let j = 1; j <= 4; j++) g.lineTo(-18 + j * 9, (Math.random() - .5) * 10); g.stroke();
   g.restore();
 }
 

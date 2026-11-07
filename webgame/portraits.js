@@ -104,13 +104,11 @@ function shard(t, col) {
   }
 }
 
-// Cold & proud (글리치 after joining): three crescent blades circling a sharp crimson core, a crackle of lightning that flares while talking.
+// Cold & proud (글리치 after joining): three crescent blades orbiting a sharp crimson core in 3D.
 function tomoe(t, col) {
   c.strokeStyle = c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 24 + 12 * kick; c.lineWidth = 7;
-  for (let i = 0; i < 3; i++) { const a = ph / 450 + i * Math.PI * 2 / 3; c.beginPath(); c.arc(Math.cos(a) * 62, Math.sin(a) * 62, 36, a + 1, a + 4.6); c.stroke(); }
+  drawTomoeBlades(c, 74, 36, ph / 450, 7);                                           // blades orbit in 3D (stage3/scenes.js)
   c.beginPath(); c.moveTo(0, -46); c.lineTo(22, 0); c.lineTo(0, 46); c.lineTo(-22, 0); c.closePath(); c.globalAlpha = .85; c.fill(); c.globalAlpha = 1;
-  c.lineWidth = 2; c.strokeStyle = "#fff";
-  for (let k = 0; k < 2; k++) { const n = Math.floor(t / 90) + k * 7; c.beginPath(); c.moveTo(-110, (rnd(n) - .5) * 40); for (let j = 1; j <= 8; j++) c.lineTo(-110 + j * 28, (rnd(n * 3 + j) - .5) * (40 + 60 * talk)); c.stroke(); }
 }
 
 // Guide fairy: a small glowing body hovering, four translucent wings that flutter (faster while talking), falling stardust.

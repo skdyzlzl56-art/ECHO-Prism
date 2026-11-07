@@ -145,8 +145,8 @@ const STAGE3 = [
   { who: "glitch", text: "......별거 아니다. 눈앞에서 누가 당하는 게 거슬릴 뿐이다." },
   { act: "s3_morph", form: { who: "glitch", to: "calm" } },
   { who: "glitch", text: "......이 모습. 낯설군. 나쁘진 않다." },
-  { who: "lumi", text: "와, 글리치 몽글몽글해졌다! 꽃잎 같아!" },
-  { who: "glitch", text: "꽃잎은 너잖아. ......고맙다는 말은 안 한다." },
+  { who: "lumi", text: "와, 글리치 모습이 바뀌었어! 붉은 초승달 세 개가 빙글빙글 돌아. 엄청 멋있다!" },
+  { who: "glitch", text: "호들갑이다, 꽃잎. ......고맙다는 말은 안 한다." },
   { act: "s3_party" },
 
   // ---- 7. 클리어 ----
