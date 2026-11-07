@@ -356,3 +356,21 @@ test("the box is battle state: moving it moves the player's limits and the bulle
   assert.strictEqual(b.state.bullets.length, 0, "bullet outside the moved box is culled");
   assert.strictEqual(BOX.x, 330, "the shared default box is untouched");
 });
+
+test("toggle bullet: each player hit cycles its state; sway moves it sideways, still stops it, look differs", () => {
+  const cfg = { ...quiet, phases: [h => h.toggle(.5, 12)] };
+  const b = createBattle(cfg, { rng: seeded(4) }); b.state.auto = false; run(b, 1.6);
+  const t = b.state.bullets.find(x => x.tg);
+  assert.ok(t, "a toggle bullet was spawned");
+  b.state.bullets = [t]; t.x = BOX.x + 100; t.y = BOX.y + 100;
+  const hit = () => { b.state.shots.push({ x: t.x, y: t.y + 20, vx: 0, vy: -300, dmg: 1 }); run(b, .05); };
+  const still0 = { x: t.x, y: t.y }, col0 = t.col; run(b, .3);
+  assert.deepStrictEqual({ x: t.x, y: t.y }, still0, "state 0 stands still");
+  hit(); assert.notStrictEqual(t.col, col0, "state 1 looks different");
+  const x1 = t.x, y1 = t.y; run(b, .3);
+  assert.ok(t.x !== x1 && Math.abs(t.y - y1) < 1e-9, "state 1 moves sideways");
+  hit(); const x2 = t.x; run(b, .3);
+  assert.strictEqual(t.x, x2, "back to still stops"); assert.strictEqual(t.col, col0);
+  hit(); run(b, .3); assert.ok(t.x !== x2, "third hit sets it moving again");
+  for (let i = 0; i < 20; i++) { run(b, .3); assert.ok(t.x >= BOX.x && t.x <= BOX.x + BOX.w, "sway bounces inside the box"); }
+});
