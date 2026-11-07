@@ -322,3 +322,36 @@ test("fast input never advances a dialogue line", () => {
   const b = createBattle(quiet, { rng: seeded(1) }); b.state.talk = { lines: [{ who: "x", t: "abc" }, { who: "x", t: "def" }], i: 0 };
   b.step(1, { dx: 0, dy: 0, fast: true }); assert.strictEqual(b.state.talk.i, 0, "X alone does not go to the next line");
 });
+
+// ---- bullets motion (ticket 04) ----
+const track = (b, secs) => { const out = []; for (let t = 0; t < secs; t += 1 / 60) { b.step(1 / 60, {}); const x = b.state.bullets.find(v => v.id === 0); if (x) out.push({ ...x }); } return out; };
+const one = fn => { const b = createBattle({ ...quiet, phases: [h => { if (!b.state.bullets.length && b.state.t < 1.2) fn(h); }] }, { rng: seeded(1) }); b.state.auto = false; return b; };
+
+test("bounce bullet reflects off the box wall and stays inside", () => {
+  const b = one(h => h.bounce(.01, 200, 6));
+  const tr = track(b, 3);
+  assert.ok(tr.length > 60, "bullet lives");
+  assert.ok(tr.some((x, i) => i && Math.sign(x.vx) !== Math.sign(tr[i - 1].vx)), "vx flipped");
+  assert.ok(tr.every(x => x.x >= BOX.x - 1 && x.x <= BOX.x + BOX.w + 1), "never leaves sideways");
+});
+
+test("stall bullet stops, then leaves faster than it came", () => {
+  const b = one(h => h.stall(.01, 100, 6));
+  const tr = track(b, 3), sp = x => Math.hypot(x.vx, x.vy);
+  assert.ok(tr.some(x => sp(x) === 0), "paused");
+  assert.ok(sp(tr[tr.length - 1]) > 150, "accelerated after the pause");
+});
+
+test("homing bullet bends toward the player, then flies straight", () => {
+  const b = one(h => h.homing(.01, 150, 6));
+  b.state.p.x = BOX.x + 20;                                               // enemy is at EX (right), player far left
+  const tr = track(b, 2.5);
+  assert.ok(tr[tr.length - 1].vx < tr[0].vx - 20, "turned left");
+  const a = tr[tr.length - 10], z = tr[tr.length - 1];
+  assert.ok(Math.abs(a.vx - z.vx) < 1e-6 && Math.abs(a.vy - z.vy) < 1e-6, "no longer steering");
+});
+
+test("each new motion has its own tone", () => {
+  const cols = ["bounce", "stall", "homing"].map(k => { const b = one(h => h[k](.01, 100, 6)); run(b, 1.1); return b.state.bullets[0].col; });
+  assert.strictEqual(new Set(cols).size, 3);
+});
