@@ -14,7 +14,7 @@ ACTS.s6_title = done => {
     .cr-line { opacity: 0; animation: lineIn 1.2s ease-out forwards }
     @keyframes lineIn { from { opacity: 0; letter-spacing: 14px; filter: blur(6px) } to { opacity: 1; letter-spacing: 3px; filter: none } }
   </style>
-  <div style="position:relative;overflow:hidden;height:100%;background:#06030f;color:#e6dcff;font-family:Pretendard,'Malgun Gothic';text-align:center">
+  <div style="position:relative;overflow:hidden;height:100%;background:#06030f;color:#e6dcff;font-family:Galmuri11,'Malgun Gothic';text-align:center">
     ${[0, 2, 4].map(d => `<div class="cr-ring" style="animation-delay:-${d}s"></div>`).join("")}
     <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:22px;animation:creditsRoll ${roll}s linear forwards">
       ${credit.map(([t, px], i) => `<div class="cr-line" style="font-size:${px}px;font-weight:bold;min-height:${px || 24}px;animation-delay:${i * .35}s">${t}</div>`).join("")}</div>

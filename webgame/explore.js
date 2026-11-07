@@ -129,7 +129,7 @@ function runExplore(cfg, done) {
     g.fillText(`${cfg.label} ${lit} / ${spots.length}`, 30, 20);
     g.font = "bold 16px Galmuri11,'Malgun Gothic'"; g.fillText("HP", 30, 54);
     g.fillStyle = "#333"; g.fillRect(62, 54, 160, 16); g.fillStyle = "#fff"; g.fillRect(62, 54, 160 * Math.min(1, (hp + (hurtT > 0 ? 1 : 0)) / MAXHP), 16); g.fillStyle = hp <= 2 ? "#ff5a5a" : "#4fc3ff"; g.fillRect(62, 54, 160 * hp / MAXHP, 16);
-    g.font = "15px Pretendard,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText(cfg.hint, 250, 22);
+    g.font = "15px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText(cfg.hint, 250, 22);
     g.fillStyle = "rgba(255,255,255,.35)"; g.fillRect(250, 56, 400, 4);
     for (const s of spots) { g.fillStyle = s.lit ? "#ffe9a8" : "#7c8591"; g.fillRect(250 + 400 * s.x / W - 2, 54, 4, 8); }
     g.fillStyle = "#fff"; g.fillRect(250 + 396 * Math.min(1, p.x / W), 51, 4, 14);
@@ -141,7 +141,7 @@ function runExplore(cfg, done) {
     if (line) {
       if (sp) { g.font = "bold 18px Galmuri11,'Malgun Gothic'"; g.fillStyle = col; g.fillText(sp.name, 36, V.boxY + 14); }
       const shown = line.text.slice(0, Math.floor(line.age * 40));
-      g.font = (sp ? "" : "italic ") + "22px Pretendard,'Malgun Gothic'"; g.fillStyle = sp ? "#f4f6ff" : "#ffe9a8";
+      g.font = (sp ? "" : "italic ") + "22px Galmuri11,'Malgun Gothic'"; g.fillStyle = sp ? "#f4f6ff" : "#ffe9a8";
       wrap(shown, 44).slice(0, 3).forEach((s, i) => g.fillText(s, 36, V.boxY + 42 + i * 28));
       if (line.age > .5 && shown.length === line.text.length) { g.font = "16px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText(q.length ? "▼ Space" : "▼", V.w - 24, V.h - 28); g.textAlign = "left"; }
     }

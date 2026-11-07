@@ -77,7 +77,7 @@ ACTS.s3_morph = done => {
     } else {
       if (!swapped) { swapped = true; applyForm("glitch", "calm"); }
       g.globalAlpha = Math.min(1, t - 2.4); drawTomoeAlly(g, 480, 250, t, NEW, 6);
-      g.font = "bold 30px Pretendard,'Malgun Gothic'"; g.fillStyle = NEW; g.fillText("글리치", 480, 345);
+      g.font = "bold 30px Galmuri11,'Malgun Gothic'"; g.fillStyle = NEW; g.fillText("글리치", 480, 345);
     }
     if (t > 4.2) { cancelAnimationFrame(raf); act.hidden = true; act.innerHTML = ""; stage.classList.remove("pick"); done(); return; }
     raf = requestAnimationFrame(step);
@@ -105,13 +105,13 @@ ACTS.s3_party = done => {
     const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
     g.fillStyle = "#070b1c"; g.fillRect(0, 0, 960, 540);
     g.globalAlpha = Math.min(1, t); g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = "bold 40px Pretendard,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류!", 480, 90);
+    g.font = "bold 40px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류!", 480, 90);
     who.forEach((m, i) => {
       g.globalAlpha = Math.max(0, Math.min(1, t - .3 - i * .35)); m.draw(t);
-      g.font = "bold 26px Pretendard,'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
-      g.font = "14px Pretendard,'Malgun Gothic'"; g.fillStyle = "#cfe"; wrap(m.role, 12).forEach((s, k) => g.fillText(s, m.x, 380 + k * 20));
+      g.font = "bold 26px Galmuri11,'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
+      g.font = "14px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#cfe"; wrap(m.role, 12).forEach((s, k) => g.fillText(s, m.x, 380 + k * 20));
     });
-    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px Pretendard,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText("클릭, SPACE 또는 Z로 계속", 480, 490);
+    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText("클릭, SPACE 또는 Z로 계속", 480, 490);
     g.globalAlpha = 1; raf = requestAnimationFrame(step);
   }
   act.onclick = go; addEventListener("keydown", key); raf = requestAnimationFrame(step);

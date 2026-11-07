@@ -89,13 +89,13 @@ ACTS.s1_party = done => {
     const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
     g.fillStyle = "#070b1c"; g.fillRect(0, 0, 960, 540);
     g.globalAlpha = Math.min(1, t); g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = "bold 40px Pretendard,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류!", 480, 90);
+    g.font = "bold 40px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류!", 480, 90);
     who.forEach((m, i) => {
       g.globalAlpha = Math.max(0, Math.min(1, t - .3 - i * .35)); m.draw(t);
-      g.font = "bold 28px Pretendard,'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
-      g.font = "16px Pretendard,'Malgun Gothic'"; g.fillStyle = "#cfe"; g.fillText(m.role, m.x, 380);
+      g.font = "bold 28px Galmuri11,'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
+      g.font = "16px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#cfe"; g.fillText(m.role, m.x, 380);
     });
-    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px Pretendard,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText("클릭, SPACE 또는 Z로 계속", 480, 480);
+    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText("클릭, SPACE 또는 Z로 계속", 480, 480);
     g.globalAlpha = 1; raf = requestAnimationFrame(step);
   }
   act.onclick = go; addEventListener("keydown", key); raf = requestAnimationFrame(step);
