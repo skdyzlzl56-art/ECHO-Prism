@@ -183,15 +183,21 @@ function book(t, col) {
   c.beginPath(); c.moveTo(0, 70); c.lineTo(-6, 100 + 4 * pulse); c.lineTo(0, 94); c.lineTo(6, 100 + 4 * pulse); c.closePath(); c.fill();
 }
 
-// Echo (에코): a voice travelling as a sine wave; each copy fainter and further out, like a call coming back from the walls.
+// Echo (에코): a few lines make a sphere; the rings orbit around its core and the whole thing wobbles like a call that has not settled.
 function wave(t, col) {
-  c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 18; c.lineWidth = 3;
-  for (let k = 0; k < 4; k++) {
-    c.globalAlpha = 1 - k * .25; c.beginPath();
-    for (let x = -110; x <= 110; x += 6) { const y = Math.sin(x / 22 - ph / 250 + k * .9) * (34 + 14 * pulse) * (1 - Math.abs(x) / 150) * (1 - k * .18); x === -110 ? c.moveTo(x, y + k * 26 - 40) : c.lineTo(x, y + k * 26 - 40); }
-    c.stroke();
+  c.strokeStyle = col; c.shadowColor = col; c.shadowBlur = 16; c.lineWidth = 3;
+  const R = 78 + 6 * pulse, wob = Math.sin(ph / 400) * .12 + Math.sin(ph / 170) * .04 * (1 + talk * 2);
+  c.save(); c.translate(Math.sin(ph / 530) * 7, Math.cos(ph / 410) * 5); c.scale(1 + wob, 1 - wob);
+  for (let k = 0; k < 4; k++) {                                                                  // four great circles, each turning on its own axis
+    const tilt = ph / 1100 + k * Math.PI / 4, rot = k * Math.PI / 4 + Math.sin(ph / 700 + k) * .35;
+    c.globalAlpha = .95 - k * .1; c.beginPath(); c.ellipse(0, 0, R, Math.max(4, Math.abs(Math.cos(tilt)) * R), rot, 0, 7); c.stroke();
+    const q = ph / (600 + k * 130) + k, ex = Math.cos(q) * R, ey = Math.sin(q) * Math.cos(tilt) * R;   // a bead rides each ring
+    c.fillStyle = col; c.beginPath(); c.arc(Math.cos(rot) * ex - Math.sin(rot) * ey, Math.sin(rot) * ex + Math.cos(rot) * ey, 5, 0, 7); c.fill();
   }
-  c.globalAlpha = 1; c.fillStyle = col; c.beginPath(); c.arc(-110, -40, 5, 0, 7); c.fill();
+  c.globalAlpha = 1;
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, 26); g.addColorStop(0, "#fff"); g.addColorStop(1, "transparent");
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, 26, 0, 7); c.fill();
+  c.restore();
 }
 
 const SHAPES = { orb, prism, rings, bloom, shard, tomoe, fairy, easel, gear, page, book, wave };
