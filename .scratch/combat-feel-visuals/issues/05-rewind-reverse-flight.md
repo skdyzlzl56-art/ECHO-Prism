@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 되감기 구간 동안 탄이 이동 궤적을 역순으로 이동한다(테스트)
 - [ ] 되감기 끝에 탄이 1.5초 전 위치에 도달한다

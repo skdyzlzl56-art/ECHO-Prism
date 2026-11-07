@@ -4,7 +4,7 @@
 
 **Blocked by:** 09-battle-sprites-enemies
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 쪽지 새 도안
 - [ ] 사서 새 도안

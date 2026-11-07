@@ -4,7 +4,7 @@
 
 **Blocked by:** 16-background-layers-warp
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 이름이 퍼지는 이벤트가 배경 효과로 표현된다
 - [ ] 침묵전에서 BGM과 효과음이 모두 무음이고 전투 후 복구된다(테스트)

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 화가, 째깍이 등 각 적이 자기 캐릭터 모습으로 그려진다
 - [ ] 글리치만 글리치 모양을 쓴다

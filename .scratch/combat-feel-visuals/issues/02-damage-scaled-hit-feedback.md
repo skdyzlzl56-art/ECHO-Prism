@@ -4,7 +4,7 @@
 
 **Blocked by:** 01-ghost-hp-bar
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 피해량 구간별로 피격음이 다르다
 - [ ] 피해량이 클수록 진동과 히트스톱이 길고 강하다

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 수치를 표시하는 모든 지점이 하나의 포맷 함수를 거친다
 - [ ] 3.5999999 가 3.60 또는 3.6 으로 나온다(테스트)

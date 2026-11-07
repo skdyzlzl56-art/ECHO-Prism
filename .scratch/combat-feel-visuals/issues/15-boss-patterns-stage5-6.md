@@ -4,7 +4,7 @@
 
 **Blocked by:** 13-boss-patterns-stage1-2
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 보스마다 새 패턴이 최소 하나 이상 있다
 - [ ] 최종 침묵전 패턴이 앞선 보스와 구별된다

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 최종전에서 설명 대사가 해당 패턴 시작 전에 나온다(테스트)
 - [ ] 엔딩이 페이드아웃된다

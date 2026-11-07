@@ -4,7 +4,7 @@
 
 **Blocked by:** 09-battle-sprites-enemies
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 시계지기 외 동료는 각자 다른 색이나 형태를 가진다
 - [ ] 동료 구분이 한눈에 된다

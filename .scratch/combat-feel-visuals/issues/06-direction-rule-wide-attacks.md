@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 방향 규칙용 넓은 범위 공격이 나온다
 - [ ] 맞는 방향으로 움직이면 안전, 아니면 피해(테스트)

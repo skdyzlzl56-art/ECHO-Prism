@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 레벨별 공격력/HP 표
 - [ ] 스테이지별 적 HP/공격력 스케일

@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 스테이지별 배경 레이어가 시차로 움직인다
 - [ ] 워프 효과가 있다

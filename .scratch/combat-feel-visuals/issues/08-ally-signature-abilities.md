@@ -4,7 +4,7 @@
 
 **Blocked by:** 03-cooldown-hud, 07-growth-curves
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 동료마다 서로 다른 특수기가 있다
 - [ ] 시계지기는 탄막 소거 특수기를 쓴다(테스트)

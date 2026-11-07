@@ -4,7 +4,7 @@
 
 **Blocked by:** 09-battle-sprites-enemies
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 동료 합류 장면에서 변신 연출이 나온다
 - [ ] 이후 글리치는 새 모습으로 표시된다

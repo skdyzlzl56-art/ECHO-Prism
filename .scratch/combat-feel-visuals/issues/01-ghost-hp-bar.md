@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 적 체력바에 흰 잔상 구간이 생기고 지연 후 줄어든다
 - [ ] 내 체력바도 같은 방식으로 동작한다

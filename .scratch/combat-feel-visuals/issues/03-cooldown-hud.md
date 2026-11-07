@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 대시 쿨타임 표시
 - [ ] 회복과 방패 쿨타임 표시

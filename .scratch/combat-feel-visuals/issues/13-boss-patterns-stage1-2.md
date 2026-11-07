@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 보스마다 새 패턴이 최소 하나 이상 있다
 - [ ] 페이즈마다 패턴 구성이 눈에 띄게 다르다

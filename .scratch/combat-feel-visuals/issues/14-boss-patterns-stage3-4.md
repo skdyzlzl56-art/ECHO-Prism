@@ -4,7 +4,7 @@
 
 **Blocked by:** 05-rewind-reverse-flight, 06-direction-rule-wide-attacks
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 보스마다 새 패턴이 최소 하나 이상 있다
 - [ ] 규칙(색·되감기·방향)과 패턴이 맞물린다
