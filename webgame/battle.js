@@ -315,11 +315,12 @@ function runBattle(cfg, done) {
       g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * s.gauge / 100, 8);
       g.font = "12px 'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
     }
-    {                                                                                   // cooldowns: dash, and (companion out now) heal / shield; "준비" when ready
-      const c = s.cool && s.cool[s.allyId], cdTxt = (n, v) => `${n} ${v > 0 ? v.toFixed(1) + "s" : "준비"}`;
-      g.font = "13px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#cfe";
-      g.fillText(cdTxt("대시", s.dashCd), BOX.x + BOX.w + 20, 340);
-      if (s.hasAlly && c) { g.fillText(cdTxt("회복", c.heal), BOX.x + BOX.w + 20, 358); g.fillText(s.shieldOn ? "방패 준비" : cdTxt("방패", c.shield), BOX.x + BOX.w + 20, 376); if (cfg.allies) g.fillText(cdTxt("특수기", c.sig), BOX.x + BOX.w + 20, 394); }
+    {                                                                                   // cooldown rings: dash around the player, heal / shield / special around the companion out now; bright + thick when ready
+      const ring = (x, y, r, k, col) => { g.save(); g.lineWidth = k >= 1 ? 3 : 2; g.strokeStyle = col; g.shadowColor = col; g.shadowBlur = k >= 1 ? 10 : 0; g.globalAlpha = k >= 1 ? .55 + .35 * Math.abs(Math.sin(t * 5)) : .22; g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke();
+        if (k > 0 && k < 1) { g.globalAlpha = .9; g.beginPath(); g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + k * TAU); g.stroke(); } g.restore(); };
+      const cr = battle.cooldownRings();
+      if (s.over !== "lose") ring(p.x, p.y, 25, cr.dash, "#9ad0ff");
+      if (s.hasAlly && s.al && s.over !== "lose") { ring(s.al.x, s.al.y, 21, cr.heal, "#7f7"); ring(s.al.x, s.al.y, 26, cr.shield, allyCol || "#4fc3ff"); if (cfg.allies) ring(s.al.x, s.al.y, 31, cr.sig, "#fd6"); }
     }
     g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText(`이동: 방향키 · 사격 ON/OFF: ${keyLabel(MENU.keys.fire)} 또는 클릭 · 대시: ${keyLabel(MENU.keys.dash)}` + (cfg.allies ? ` · 교대: ${keyLabel(MENU.keys.swap)}` : "") + " · 메뉴: C", BOX.x + BOX.w, 515);
     if (banner) {                                                                       // phase (spell) name / bond announcement
