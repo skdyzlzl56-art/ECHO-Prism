@@ -17,7 +17,7 @@ BATTLES.s3_blots = {
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "chase", speed: 85, dash: 9 }],
   phases: [
     h => { h.rain(.45, 120); h.aim(1.4, 150); },
-    h => { h.wave(1.8, 85); h.fan(1.6, 7, .28, 115); h.side(.9, 140); },
+    h => { h.wave(1.8, 85); h.fan(1.6, 7, .28, 115); h.side(.9, 140); h.swell(2.5); },
   ],
   talks: { 1: [{ who: "blot", t: "색... 닦는다... 닦는다..." }, { who: "lumi", t: "이 얼룩들, 닦는 소리만 내! 으스스해!" }] },
 };
