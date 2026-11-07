@@ -30,7 +30,8 @@
       allyId: allies ? allies[0] : cfg.ally, swapCd: 0, surviveLeft: cfg.survive || 0,
     };
     const p = s.p, e = s.e, al = s.al;
-    const kit = () => allies ? KIT[s.allyId] : KIT.all;
+    const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
+    const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
     let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
@@ -78,9 +79,9 @@
     // 유대의 빛: clears the field, hurts the enemy, heals, and the bond (ally strength) rises one level
     function burst() {
       s.gauge = 0; const was = blv(); bonus++;
-      const dmg = cfg.invuln ? 0 : 8 + 4 * blv(); s.eHp -= dmg; s.bullets = []; s.lasers = []; s.hp = Math.min(MAX_HP, s.hp + 3);   // invuln: the light still clears the field, it just can't hurt
-      emit("burst", { dmg, level: blv(), up: blv() > was });
-      if (blv() >= SHIELD_LV && kit().shield && !s.shieldOn && shieldT <= 0) s.shieldOn = true;
+      const lt = light(), dmg = cfg.invuln ? 0 : Math.round((8 + 4 * blv()) * (lt === "power" ? 1.5 : 1)); s.eHp -= dmg; s.bullets = []; s.lasers = []; if (!lt || lt === "heal") s.hp = Math.min(MAX_HP, s.hp + 3);   // invuln: the light still clears the field, it just can't hurt
+      emit("burst", { dmg, level: blv(), up: blv() > was, light: lt });
+      if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && shieldT <= 0) s.shieldOn = true;
     }
 
     function update(dt, input) {

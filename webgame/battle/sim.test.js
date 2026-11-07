@@ -76,6 +76,24 @@ test("swap (교대): cooldown, bond shared, kits differ (lumi heals / hexa shiel
   assert.ok(!single.swap() && single.state.shieldOn, "a lone ally keeps the old all-round kit");
 });
 
+test("swap cycles 4 allies in order, keeps cooldown, and bond is one shared value", () => {
+  const ids = ["lumi", "hexa", "a3", "a4"], kits = { a3: { cd: 1, dm: 1, heal: 0, shield: 0 }, a4: { cd: 1, dm: 1, heal: 0, shield: 0 } };
+  const b = createBattle({ ...quiet, hp: 1000, ally: "lumi", allies: ids, kits }, { rng: seeded(8), bondBase: 3 });
+  b.state.auto = false; const s = b.state, seen = [];
+  for (let i = 0; i < 5; i++) { assert.ok(b.swap(), "swap " + i); seen.push(s.allyId); assert.ok(!b.swap(), "cooldown"); run(b, 1.6); }
+  assert.deepStrictEqual(seen, ["hexa", "a3", "a4", "lumi", "hexa"]);
+  assert.strictEqual(s.bondLv, 3, "bond kept across swaps");
+});
+
+test("bond light is per ally: lumi heals, hexa keeps the shield, others do neither", () => {
+  const lights = { lumi: "heal", hexa: "shield", a3: "power" }, kits = { a3: { cd: 1, dm: 1, heal: 0, shield: 0 } };
+  const mk = id => { const b = createBattle({ ...quiet, hp: 1000, ally: "lumi", allies: [id], kits, lights, gauge0: 100 }, { rng: seeded(9), bondBase: 1 }); b.state.hp = 5; b.state.shieldOn = false; return b; };
+  const lumi = mk("lumi"); lumi.step(1 / 60); assert.strictEqual(lumi.state.hp, 5 + 3);
+  const hexa = mk("hexa"); const ev = hexa.step(1 / 60); assert.strictEqual(hexa.state.hp, 5); assert.ok(hexa.state.shieldOn); assert.strictEqual(ev.find(v => v.type === "burst").light, "shield");
+  const a3 = mk("a3"); const e3 = a3.step(1 / 60); assert.strictEqual(a3.state.hp, 5); assert.ok(!a3.state.shieldOn);
+  assert.ok(e3.find(v => v.type === "burst").dmg > hexa.state.eMax - hexa.state.eHp, "power light hits harder");
+});
+
 test("invulnerable enemy: hits and the bond burst deal 0; surviving the clock wins", () => {
   const cfg = { ...quiet, hp: 100, ally: "lumi", invuln: true, survive: 3, gauge0: 100 };
   const b = createBattle(cfg, { rng: seeded(7), bondBase: 1 });
