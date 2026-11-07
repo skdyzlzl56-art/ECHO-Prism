@@ -31,9 +31,9 @@ BATTLES.s6_trial = { stage: 6,
     h => { h.rain(.6, 105); h.side(1.1, 120); h.fan(2, 5, .3, 100); h.dirWall(7); },
   ],
   talks: {
-    1: [{ who: "voice", t: "붉은 탄만 맞아요! 미술관에서 배운 그대로예요!" }],
-    2: [{ who: "keeper", t: "5초마다 되감깁니다. 한 번 본 궤적은 두 번째가 쉽습니다." }],
-    3: [{ who: "hexa", t: "탄이 가는 쪽으로 걸어라. 멈추는 것도, 거스르는 것도 안 된다." }],
+    0: [{ who: "voice", t: "붉은 탄만 맞아요! 미술관에서 배운 그대로예요!" }],
+    1: [{ who: "keeper", t: "5초마다 되감깁니다. 한 번 본 궤적은 두 번째가 쉽습니다." }],
+    2: [{ who: "hexa", t: "탄이 가는 쪽으로 걸어라. 멈추는 것도, 거스르는 것도 안 된다." }],
   },
 };
 ACTS.s6_trial = done => runBattle(BATTLES.s6_trial, done);

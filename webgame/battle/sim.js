@@ -25,10 +25,10 @@
   };
     // Signature moves (cfg.allies only): the ally out fires its own move when cool[id].sig runs out. power by bond level 0..4.
   const SIG_CD = [18, 16, 14, 12, 10], SIG = {
-    lumi: { kind: "ward", power: [1, 1.5, 2, 2.5, 3] },                   // invulnerable for power s
-    hexa: { kind: "blast", power: [6, 9, 12, 15, 18] },                  // damage to the enemy
-    glitch: { kind: "reflect", power: [100, 140, 180, 220, 260] },       // bullets within power px fly back
-    keeper: { kind: "clear", power: [140, 180, 230, 300, 9999] },        // 시계지기: bullets within power px vanish
+    lumi: { kind: "ward", call: "내 등불 뒤로 숨어!", power: [1, 1.5, 2, 2.5, 3] },   // invulnerable for power s
+    hexa: { kind: "blast", call: "......비켜라. 일격이다.", power: [6, 9, 12, 15, 18] },                  // damage to the enemy
+    glitch: { kind: "reflect", call: "흥, 도로 가져가!", power: [100, 140, 180, 220, 260] },       // bullets within power px fly back
+    keeper: { kind: "clear", call: "정각입니다. 탄막을 정리하겠습니다.", power: [140, 180, 230, 300, 9999] },        // 시계지기: bullets within power px vanish
   };
   const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, HEAL_IV = [10, 8.5, 7, 6, 5], SWAP_CD = 1.5, REWIND_BACK = 1.5;
 
@@ -213,7 +213,7 @@
           else if (g.kind === "blast") s.eHp = cfg.invuln ? s.eHp : rl("finale") ? Math.max(1, s.eHp - pw) : s.eHp - pw;
           else if (g.kind === "reflect") for (const b of s.bullets) { if (Math.hypot(b.x - p.x, b.y - p.y) <= pw) { b.vx = -b.vx; b.vy = -b.vy; b.acc = 0; b.w = 0; b.home = null; } wipe(); }
           else { s.bullets = s.bullets.filter(b => Math.hypot(b.x - p.x, b.y - p.y) > pw); wipe(); }
-          emit("signature", { ally: s.allyId, kind: g.kind, power: pw });
+          emit("signature", { ally: s.allyId, kind: g.kind, power: pw, call: g.call });
         }
         // shield: blocks one hit, then regrows after shieldT seconds (the timer only runs while a shield-bearer is out)
         if (lv >= SHIELD_LV && kit().shield && !s.shieldOn && me.shield <= 0) { s.shieldOn = true; emit("shieldReady"); }

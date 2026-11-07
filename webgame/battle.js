@@ -168,7 +168,7 @@ function runBattle(cfg, done) {
         v.allies.forEach((id, i) => setTimeout(() => sweep(300 * (1 + i * .25), 2400, 1.1, "sine", .22), i * 120)); noise(.5, .5); break;
       case "rewind": retrigger($("flash"), "on", 250); sweep(1400, 300, .35, "sawtooth", .16); break;   // 되감기: the bullets jump back
       case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
-      case "signature": banner = { txt: { ward: "수호", blast: "일격", reflect: "반사", clear: "탄막 소거" }[v.kind], age: 0, bond: true }; retrigger($("flash"), "on", 300); sweep(500, 1800, .4, "sine", .2); break;
+      case "signature": if (v.call && s.al) say(v.call, s.al.x, s.al.y - 40, allyCol); banner = { txt: { ward: "수호", blast: "일격", reflect: "반사", clear: "탄막 소거" }[v.kind], age: 0, bond: true }; retrigger($("flash"), "on", 300); sweep(500, 1800, .4, "sine", .2); break;
       case "dash": sweep(900, 300, .12, "sawtooth", .12); noise(.08, .15); break;
       case "swap":allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
       case "phase":

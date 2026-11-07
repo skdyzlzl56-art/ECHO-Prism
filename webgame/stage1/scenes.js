@@ -150,7 +150,7 @@ ACTS.s1_explore = done => {
     if (inv <= 0 || Math.floor(inv * 12) % 2) { g.save(); g.translate(p.x, p.y); drawShape(g, myShape, 13); g.restore(); }
     g.font = "bold 22px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "top";
     g.fillText(`등불 ${lit} / 3`, 30, 24);
-    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText(open ? "이동: 방향키 / WASD" : "이동: 방향키 / WASD · 꺼진 등불 곁에 서 있으면 불이 붙어요 · 균열과 낙뢰를 피하세요!", 30, 56);
+    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText(open ? "이동: 방향키" : "이동: 방향키 · 꺼진 등불 곁에 서 있으면 불이 붙어요 · 균열과 낙뢰를 피하세요!", 30, 56);
     if (msg) {
       g.globalAlpha = Math.max(0, Math.min(1, (5.5 - msg.age) * 2, msg.age * 4 + .2));
       g.fillStyle = "#0b1026"; g.fillRect(60, 84, 840, 110); g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(60, 84, 840, 110);   // above the floor (FL.y = 210) so it never hides lamps or hazards

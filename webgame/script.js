@@ -36,6 +36,7 @@ const SCRIPT = [
   { who: "voice",  text: "...좋아요. 그게 지금의 당신이에요. 아주 잘 어울려요." },
   { who: "voice",  text: "잠깐... 이 기척은..." },
   { who: "voice",  fx: "alert", text: "균열이에요! 방향키로 피하고, 사격은 이미 켜져 있어요! Z키로 끄고 켤 수 있어요!" },
+  { who: "voice",  text: "당신 둘레의 푸른 원은 대시가 준비되면 가득 차요. 곁에 동료가 서면 그 곁의 원들은 회복, 방패, 특수기가 준비됐다는 뜻이에요." },
   { who: "glitch", fx: "shake", text: "기억... 냄새가 난다... 신선한 기억!" },
   { who: "glitch", text: "내놔. 그 형태 그대로... 전부 지워주마!" },
   { act: "battle", bgm: "battle" },

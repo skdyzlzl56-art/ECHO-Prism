@@ -13,6 +13,6 @@ test("story text uses no male-gendered reference (only 헥사 is male; others ar
   for (const f of src.filter(f => /(script|story|scenes)\.js$/.test(f))) assert.doesNotMatch(fs.readFileSync(f, "utf8"), male, path.relative(__dirname, f));
 });
 
-test("battle text does not name WASD (A is the swap key; left is arrows only)", () => {
-  for (const f of src.filter(f => /(script|battles)\.js$/.test(f))) assert.doesNotMatch(fs.readFileSync(f, "utf8"), /WASD/, path.relative(__dirname, f));
+test("story and battle text does not name WASD (A is the swap key; left is arrows only)", () => {
+  for (const f of src.filter(f => /(script|battles|story|scenes)\.js$/.test(f))) assert.doesNotMatch(fs.readFileSync(f, "utf8"), /WASD/, path.relative(__dirname, f));
 });
