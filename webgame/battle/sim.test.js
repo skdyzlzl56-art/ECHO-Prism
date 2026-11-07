@@ -233,6 +233,27 @@ test("stage 1 boss: HP is doubled and has six named phases", () => {
   assert.strictEqual(boss.phases.length, 6);
 });
 
+// 판 규칙: cfg.boxRule = { amp, period, dmg }; the box slides sideways, drags the player along, and pinning against the fixed wall hurts
+test("box rule: the box slides periodically and drags the player with it", () => {
+  const b = still({ boxRule: { amp: 60, period: 4 } });
+  const x0 = b.state.p.x; run(b, 1);                                      // quarter period: box at its far right
+  assert.ok(Math.abs(b.state.BOX.x - (BOX.x + 60)) < 2, `box.x ${b.state.BOX.x}`);
+  assert.ok(Math.abs(b.state.p.x - (x0 + 60)) < 2, "player carried along");
+  run(b, 2); assert.ok(Math.abs(b.state.BOX.x - (BOX.x - 60)) < 2, "and back the other way");
+});
+
+test("box rule: pinned against the fixed wall hurts", () => {
+  const b = still({ boxRule: { amp: 60, period: 4, dmg: 3 } });
+  b.state.p.x = BOX.x + BOX.w - 10; const ev = run(b, 1);                 // dragged right into the wall
+  assert.ok(ev.some(v => v.type === "playerHurt" && v.dmg === 3));
+  assert.ok(b.state.p.x <= BOX.x + BOX.w - 10 + 1e-9, "never carried past the wall");
+});
+
+test("box rule: without the option the box stays fixed and nothing pins", () => {
+  const b = still({}); b.state.p.x = BOX.x + BOX.w - 10; const ev = run(b, 3);
+  assert.strictEqual(b.state.BOX.x, BOX.x); assert.ok(!ev.some(v => v.type === "playerHurt"));
+});
+
 // ---- code-review fixes ----
 test("rewind: a phase change drops the old history even without phaseRules", () => {
   const b = still({ hp: 100, cuts: [.5], rewind: 3 }); b.state.bullets.push(drop(BOX.x + 20, BOX.y + 10, 5));

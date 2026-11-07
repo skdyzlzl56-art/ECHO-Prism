@@ -31,13 +31,13 @@
       allyId: allies ? allies[0] : cfg.ally, swapCd: 0, dashT: 0, dashCd: 0, dashDir: null, lastIn: null, surviveLeft: cfg.survive || 0,
     };
     const p = s.p, e = s.e, al = s.al;
-    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
+    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
     // finale: shots deal 0 and only the joint light (bond full, cfg.jointLight) ends the fight.
     const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr ? pr[k] : cfg[k]; };
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
-    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], spent = new Set(), nextRw = rl("rewind") || 0, uid = 0;
+    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -97,6 +97,13 @@
       s.lastIn = dx || dy ? { dx: dx / n, dy: dy / n } : null; s.dashCd -= dt;
       const dashing = s.dashT > 0, vx = dashing ? s.dashDir.dx * DASH_D / DASH_T : dx / n * spd, vy = dashing ? s.dashDir.dy * DASH_D / DASH_T : dy / n * spd;
       if (dashing) { s.dashT -= dt; s.inv = Math.max(s.inv, .02); }                  // 대시: untouchable while it lasts
+      const br = rl("boxRule");   // 판 규칙: the box slides about its home spot and drags the player; the arena walls stay put, and being carried into one hurts
+      if (br) {
+        const nx = BOX0.x + br.amp * Math.sin(TAU * s.t / br.period), carried = p.x + nx - BOX.x, wall = Math.min(BOX0.x + BOX0.w - m, Math.max(BOX0.x + m, carried));
+        BOX.x = nx; p.x = wall;
+        if (wall !== carried && s.inv <= 0) hurt(br.dmg || 4);
+        slid = true;
+      } else if (slid) { BOX.x = BOX0.x; slid = false; }   // the rule ended with the phase: the box settles home
       p.x = Math.min(BOX.x + BOX.w - m, Math.max(BOX.x + m, p.x + vx * dt));
       p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + vy * dt));
       s.t += dt; s.inv -= dt; s.swapCd -= dt; cd -= dt; comboT -= dt; dtc = dt; if (comboT <= 0) s.combo = 0;
