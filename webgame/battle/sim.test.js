@@ -259,3 +259,29 @@ test("finale without jointLight: a full-bond burst still ends it (no soft-lock)"
   b.state.eHp = 30; run(b, 1); b.state.gauge = 100; run(b, .1);
   assert.strictEqual(b.state.over, "win");
 });
+
+test("dash (X): moves ~120px in the input direction, stays in the box, needs input and cooldown", () => {
+  const mk = () => { const b = createBattle({ ...quiet }, { rng: seeded(9) }); b.state.auto = false; return b; };
+  let b = mk(); run(b, 1.1);
+  assert.ok(!b.dash(), "no movement input -> no dash");
+  b.step(1 / 60, { dx: 1, dy: 0 }); const x0 = b.state.p.x;
+  assert.ok(b.dash(), "dash fires"); run(b, .3);
+  assert.ok(Math.abs(b.state.p.x - x0 - 120) < 15, `moved ${b.state.p.x - x0}`);
+  assert.ok(!b.dash(), "cooldown"); run(b, 1.5); b.step(1 / 60, { dx: -1 });
+  assert.ok(b.dash(), "ready again after cooldown");
+  b = mk(); run(b, 1.1, { dx: -1 }); b.dash(); run(b, .3, { dx: -1 });
+  assert.ok(b.state.p.x >= BOX.x, "never leaves the box");
+  b = mk(); b.step(1 / 60, { dx: 1 }); b.state.talk = { lines: [{ who: "x", t: "." }], i: 0 }; assert.ok(!b.dash(), "no dash during dialogue");
+});
+
+test("dash grants invulnerability to bullets and the enemy body; hits resume afterwards", () => {
+  const b = createBattle({ ...quiet }, { rng: seeded(9) }); const s = b.state; s.auto = false; run(b, 1.1);
+  b.step(1 / 60, { dx: 1 }); s.p.x = 480; s.p.y = 400; assert.ok(b.dash());
+  s.bullets.push({ id: 1, x: s.p.x + 40, y: s.p.y, vx: 0, vy: 0, size: 8, dmg: 5, age: 1 });
+  s.e.mode = "dive"; s.e.x = s.p.x; s.e.y = s.p.y;
+  const hp = s.hp; run(b, .15, { dx: 1 });
+  assert.strictEqual(s.hp, hp, "no damage while dashing");
+  s.e.mode = "idle"; s.e.y = 85; s.bullets.length = 0; run(b, .5);
+  s.bullets.push({ id: 2, x: s.p.x, y: s.p.y, vx: 0, vy: 0, size: 8, dmg: 5, age: 1 });
+  run(b, .05); assert.ok(s.hp < hp, "hit lands after dash ends");
+});

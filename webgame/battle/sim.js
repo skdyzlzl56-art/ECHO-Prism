@@ -16,7 +16,7 @@
   // companion kits when cfg.allies lets the player swap (교대): cd = shot interval x, dm = shot damage x, heal / shield = abilities.
   // A single cfg.ally keeps the old all-round companion (KIT.all).
   const KIT = { all: { cd: 1, dm: 1, heal: 1, shield: 1 }, lumi: { cd: .8, dm: 1, heal: 1, shield: 0 }, hexa: { cd: 1.6, dm: 2, heal: 0, shield: 1 } };
-  const SWAP_CD = 1.5, REWIND_BACK = 1.5;
+  const DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, SWAP_CD = 1.5, REWIND_BACK = 1.5;
 
   function createBattle(cfg, opts = {}) {
     const rng = opts.rng || Math.random, HITBOX = opts.hitbox == null ? 4 : opts.hitbox, bondBase = opts.bondBase || 0;
@@ -27,7 +27,7 @@
       p: { x: cx, y: BOX.y + BOX.h * .75 }, e: { x: EX, y: 85, mode: "idle", tt: 0, dashT: 0, lx: EX },     // enemy mode: idle | warn | dive | back
       al: cfg.ally ? { x: BOX.x - 38, y: BOX.y + BOX.h * .75 } : null,
       bullets: [], lasers: [], shots: [], gauge: cfg.gauge0 || 0, bondLv: 0, shieldOn: false, talk: null, hasAlly: !!cfg.ally,
-      allyId: allies ? allies[0] : cfg.ally, swapCd: 0, surviveLeft: cfg.survive || 0,
+      allyId: allies ? allies[0] : cfg.ally, swapCd: 0, dashT: 0, dashCd: 0, dashDir: null, lastIn: null, surviveLeft: cfg.survive || 0,
     };
     const p = s.p, e = s.e, al = s.al;
     // cfg.phaseRules[level] = { colorRule, rewind, dirRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
@@ -93,8 +93,11 @@
 
     function update(dt, input) {
       const ox = p.x, oy = p.y, firing = s.auto, spd = firing ? 150 : 210, dx = input.dx || 0, dy = input.dy || 0, n = Math.hypot(dx, dy) || 1, m = 10;
-      p.x = Math.min(BOX.x + BOX.w - m, Math.max(BOX.x + m, p.x + dx / n * spd * dt));
-      p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + dy / n * spd * dt));
+      s.lastIn = dx || dy ? { dx: dx / n, dy: dy / n } : null; s.dashCd -= dt;
+      const dashing = s.dashT > 0, vx = dashing ? s.dashDir.dx * DASH_D / DASH_T : dx / n * spd, vy = dashing ? s.dashDir.dy * DASH_D / DASH_T : dy / n * spd;
+      if (dashing) { s.dashT -= dt; s.inv = Math.max(s.inv, .02); }                  // 대시: untouchable while it lasts
+      p.x = Math.min(BOX.x + BOX.w - m, Math.max(BOX.x + m, p.x + vx * dt));
+      p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + vy * dt));
       s.t += dt; s.inv -= dt; s.swapCd -= dt; cd -= dt; comboT -= dt; dtc = dt; if (comboT <= 0) s.combo = 0;
       if (!started && s.t > 1) {
         started = true; emit("phase", { level: 0, name: (cfg.names && cfg.names[0]) || "", talk: false, start: true });
@@ -207,6 +210,11 @@
         s.allyId = allies[(allies.indexOf(s.allyId) + 1) % allies.length]; s.swapCd = SWAP_CD;
         if (!kit().shield) s.shieldOn = false;
         emit("swap", { ally: s.allyId }); return true;
+      },
+      dash() {                                                               // 대시: burst in the held direction, invulnerable, with a cooldown
+        if (s.over || s.talk || s.dashCd > 0 || s.dashT > 0 || !s.lastIn) return false;
+        s.dashDir = s.lastIn; s.dashT = DASH_T; s.dashCd = DASH_CD; s.inv = Math.max(s.inv, DASH_T + .02);
+        emit("dash", { dx: s.dashDir.dx, dy: s.dashDir.dy }); return true;
       },
       advance() { if (s.talk && ++s.talk.i >= s.talk.lines.length) s.talk = null; },
     };

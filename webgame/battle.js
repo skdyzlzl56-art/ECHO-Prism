@@ -67,7 +67,7 @@ function runBattle(cfg, done) {
   const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX }), s = battle.state, BOX = s.BOX;
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
-  let floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, lastShot = 0, lastBig = 0, lastGraze = 0;
+  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, lastShot = 0, lastBig = 0, lastGraze = 0;
 
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
@@ -82,6 +82,7 @@ function runBattle(cfg, done) {
     if (s.talk) { if (ev.code === "Space" || ev.code === "Enter" || ev.code === "KeyZ") advTalk(); }
     else if (ev.code === "KeyZ") toggle();
     else if (ev.code === "KeyA") battle.swap();                                  // 교대
+    else if (ev.code === "KeyX") battle.dash();                                  // 대시
   };
   const ku = ev => { keys[ev.code] = false; };
   const cleanup = () => {
@@ -137,7 +138,8 @@ function runBattle(cfg, done) {
         v.allies.forEach((id, i) => setTimeout(() => sweep(300 * (1 + i * .25), 2400, 1.1, "sine", .22), i * 120)); noise(.5, .5); break;
       case "rewind": retrigger($("flash"), "on", 250); sweep(1400, 300, .35, "sawtooth", .16); break;   // 되감기: the bullets jump back
       case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
-      case "swap": allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
+      case "dash": sweep(900, 300, .12, "sawtooth", .12); noise(.08, .15); break;
+      case "swap":allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
       case "phase":
         if (cfg.fade) { quiet = Math.max(.15, 1 - cfg.fade * v.level); bgm.vol(quiet); }   // each phase swallows more of the sound
         if (v.name) { banner = { txt: v.name, age: 0, level: v.level }; sweep(300, 900, .35, "sawtooth", .18); }
@@ -232,7 +234,10 @@ function runBattle(cfg, done) {
       }
       g.font = "bold 13px 'Malgun Gothic'"; g.fillStyle = allyCol; g.textAlign = "center"; g.fillText(`유대 Lv.${lv}`, al.x, al.y + 30 + 3 * lv);
     }
-    if (s.over !== "lose" && (s.inv <= 0 || Math.floor(s.inv * 12) % 2)) {
+    if (s.dashT > 0) trail.push({ x: p.x, y: p.y, a: .6 });                            // 잔상: fading copies of the ship
+    for (const q of trail) { g.save(); g.globalAlpha = q.a; g.translate(q.x, q.y); g.strokeStyle = "#9ad0ff"; drawShape(g, myShape, 11); g.restore(); q.a -= .04; }
+    trail = trail.filter(q => q.a > 0);
+    if (s.over !== "lose" && (s.inv <= 0 || s.dashT > 0 || Math.floor(s.inv * 12) % 2)) {
       g.save(); g.translate(p.x, p.y); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
       if (s.shieldOn) { g.strokeStyle = allyCol; g.lineWidth = 3; g.shadowColor = allyCol; g.shadowBlur = 14; g.globalAlpha = .6 + .3 * Math.sin(t * 6); g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.stroke(); }
       g.restore();
@@ -258,7 +263,7 @@ function runBattle(cfg, done) {
       g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * s.gauge / 100, 8);
       g.font = "12px 'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
     }
-    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText("이동: 방향키 · 사격 ON/OFF: Z 또는 클릭" + (cfg.allies ? " · 교대: A" : ""), BOX.x + BOX.w, 515);
+    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText("이동: 방향키 · 사격 ON/OFF: Z 또는 클릭" + " · 대시: X" + (cfg.allies ? " · 교대: A" : ""), BOX.x + BOX.w, 515);
     if (banner) {                                                                       // phase (spell) name / bond announcement
       const k = banner.age, a = Math.min(1, k * 4, (3 - k) * 2), sx = BOX.x + BOX.w + 20 + (1 - Math.min(1, k * 4)) * 30;
       g.globalAlpha = Math.max(0, a); g.textAlign = "left"; g.textBaseline = "middle";
