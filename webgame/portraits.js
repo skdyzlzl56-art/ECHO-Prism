@@ -153,7 +153,7 @@ function gear(t, col) {
 const SHAPES = { orb, prism, rings, bloom, shard, fairy, easel, gear };
 
 // Starfield background
-const bg = document.getElementById("bg").getContext("2d");
+const bg = document.getElementById("bg").getContext("2d"), stageEl = document.getElementById("stage");
 const stars = Array.from({ length: 90 }, () => ({ x: Math.random() * 960, y: Math.random() * 540, v: .1 + Math.random() * .4, p: Math.random() * 7 }));
 // Stage 1 swaps to a warm lantern sky (embers rise) via warp(): stars streak out from the centre, then the theme flips mid-flash.
 // vx / vy: star drift per frame (x star speed); streak: draw stars as trails of that length. "flee" rushes everything leftwards, as if running right.
@@ -167,13 +167,19 @@ const THEMES = {
   core:    { sky: "linear-gradient(#26153f,#06030f)", rgb: "230,210,255", vx: 0, vy: -.3 },   // prism core: violet, light rising like breath
   flee:    { sky: "linear-gradient(#3d0f1c,#0a0306)", rgb: "255,120,130", vx: -22, vy: 0, streak: 5 }, // red alarm sky, stars streak past
 };
-let theme = THEMES.night, warpMs = 0, lastBg = 0;
-function setTheme(to) { theme = THEMES[to]; document.getElementById("stage").style.background = theme.sky; }
+let theme = THEMES.night, themeKey = "night", warpMs = 0, lastBg = 0;
+function setTheme(to) { theme = THEMES[to]; themeKey = to; document.getElementById("stage").style.background = theme.sky; }
 function warp(to = "lantern") { warpMs = 1800; setTimeout(() => setTheme(to), 900); }
 function drawBg(t) {
   const dt = Math.min(t - lastBg, 50); lastBg = t;
   bg.clearRect(0, 0, 960, 540);
-  const w = warpMs > 0 ? Math.sin(Math.PI * warpMs / 1800) : 0;   // 0 -> 1 (mid-warp) -> 0
+  for (const L of backdropLayers(themeKey, t / 1000)) {         // parallax silhouettes behind the stars (backdrop.js)
+    bg.globalAlpha = L.alpha; bg.fillStyle = `rgb(${theme.rgb})`; bg.beginPath(); bg.moveTo(0, 540);
+    for (const [x, y] of L.pts) bg.lineTo(x, y);
+    bg.lineTo(960, 540); bg.closePath(); bg.fill();
+  }
+  bg.globalAlpha = 1;
+  const w = Math.max(warpMs > 0 ? Math.sin(Math.PI * warpMs / 1800) : 0, stageEl.classList.contains("battle") ? ambientWarp(t / 1000) : 0);   // 0 -> 1 (mid-warp) -> 0; battles add a faint periodic warp
   warpMs = Math.max(0, warpMs - dt);
   for (const s of stars) {
     if (w > .02) {                                               // streak away from the centre

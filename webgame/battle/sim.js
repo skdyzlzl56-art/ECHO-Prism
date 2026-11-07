@@ -159,7 +159,9 @@
       p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + vy * dt));
       s.t += dt; s.inv -= dt; s.swapCd -= dt; cd -= dt; comboT -= dt; dtc = dt; if (comboT <= 0) s.combo = 0;
       if (!started && s.t > 1) {
-        started = true; emit("phase", { level: 0, name: (cfg.names && cfg.names[0]) || "", talk: false, start: true });
+        started = true; const l0 = cfg.talks && cfg.talks[0];                  // talks[0]: spoken before the first pattern
+        emit("phase", { level: 0, name: (cfg.names && cfg.names[0]) || "", talk: !!l0, start: true });
+        if (l0) s.talk = { lines: l0, i: 0 };
         if (cfg.ally && blv()) emit("bondStart", { level: blv() });
       }
 
