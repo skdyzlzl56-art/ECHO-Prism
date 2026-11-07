@@ -39,7 +39,7 @@
   .card.on{border-color:#fff;box-shadow:0 0 14px #4fc3ff;background:#4fc3ff33}
   #ok{font:inherit;font-size:22px;padding:4px 36px;background:#2a5b8c;color:#fff;border:3px solid #fff;cursor:pointer}
   .pick #box,.pick #portrait,.battle #box{display:none}
-  .battle #portrait{bottom:auto;top:10px;width:150px;height:150px}
+  .battle #portrait{z-index:6;bottom:auto;left:0;top:100px;transform:none;width:960px;height:300px}  /* full-width strip above the dialogue box; portraits.js draws the cast side by side */
 </style>
 </head>
 <body>
@@ -95,11 +95,13 @@ function play(fx) {
   fx.sfx(); kickPortrait();
   if (fx.flash) retrigger($("flash"), "on", 600);
   if (fx.shake) retrigger($("stage"), "shake", 500);
+  if (fx.warp) warp(fx.warp);
   if (fx.shout) { $("shout").textContent = fx.shout; retrigger($("shout"), "on", fx.wait); }
 }
 
 function show(i) {
   const line = SCRIPT[i]; speaker = SPEAKERS[line.who];
+  if (line.rename) speaker.name = line.rename;   // reveal a speaker's real name from this line on
   $("name").textContent = speaker.name;
   setPortrait(speaker);
   full = line.text; pos = 0; $("text").textContent = ""; $("next").hidden = true;
@@ -117,12 +119,38 @@ function tick() {
 
 function finish() { clearInterval(timer); timer = null; $("text").textContent = full; $("next").hidden = false; }
 
+// background music: audio/bgm_<name>.ogg, seamless loop. Web Audio buffer; <audio> fallback (e.g. opened via file://)
+const bgm = (() => {
+  const VOL = { intro: .18, battle: .2, s1_field: .2, s1_boss: .2 };                 // per-track volume, kept below the sound effects
+  const bufs = {}; let cur = null, name = null;
+  const load = n => bufs[n] ||= fetch(`audio/bgm_${n}.ogg`).then(r => r.arrayBuffer()).then(b => ac.decodeAudioData(b));
+  const stop = () => {
+    name = null; if (!cur) return; const c = cur; cur = null;
+    if (c.g) { c.g.gain.setTargetAtTime(0, ac.currentTime, .15); setTimeout(() => c.s.stop(), 800); } else c.a.pause();
+  };
+  async function play(n) {
+    if (name === n) return; stop(); name = n;
+    try {
+      const buf = await load(n); if (name !== n) return;
+      const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = buf; s.loop = true; g.gain.value = VOL[n] ?? .25;
+      s.connect(g).connect(ac.destination); s.start(); cur = { s, g };
+    } catch {
+      if (name !== n) return;
+      const a = new Audio(`audio/bgm_${n}.ogg`); a.loop = true; a.volume = VOL[n] ?? .25; a.play().catch(() => {}); cur = { a };
+    }
+  }
+  const vol = k => { if (!cur || !name) return; const v = (VOL[name] ?? .25) * k; if (cur.g) cur.g.gain.setTargetAtTime(v, ac.currentTime, .4); else cur.a.volume = Math.min(1, v); };   // k = 0..1 of the track's normal volume
+  return { play, stop, vol };
+})();
+
 let acting = false;
 function next() {
   if (idx >= SCRIPT.length - 1) {        // end of script
     idx = SCRIPT.length; $("text").textContent = "TO BE CONTINUED..."; $("name").textContent = ""; $("next").hidden = true; return;
   }
   const l = SCRIPT[++idx];
+  if (l.bgm === "off") bgm.stop(); else if (l.bgm) bgm.play(l.bgm);
+  if (l.theme) setTheme(l.theme);                    // background mood: night | lantern | silence | flee (portraits.js)
   if (l.act) { acting = true; ACTS[l.act](() => { acting = false; next(); }); }   // scene in game.js
   else show(idx);
 }
@@ -134,10 +162,26 @@ function advance() {
   next();
 }
 
+// hold Ctrl: fast-forward dialogue (stops at scenes/effects, which block input anyway)
+let ctrl = false;
+addEventListener("keydown", e => { if (e.key === "Control") ctrl = true; });
+addEventListener("keyup", e => { if (e.key === "Control") ctrl = false; });
+addEventListener("blur", () => { ctrl = false; });
+setInterval(() => {
+  if (!ctrl || !ac || busy || acting || idx >= SCRIPT.length) return;
+  if (timer) finish(); else next();
+}, 90);
+
 $("stage").onclick = advance;
-addEventListener("keydown", e => { if (e.code === "Space" || e.code === "Enter") { e.preventDefault(); advance(); } });
+addEventListener("keydown", e => { if (e.code === "Space" || e.code === "Enter" || e.code === "KeyZ") { e.preventDefault(); advance(); } });
 </script>
 <script src="game.js"></script>
+<script src="battle/sim.js"></script>
 <script src="battle.js"></script>
+<script src="stage1/battles.js"></script>
+<script src="stage1/scenes.js"></script>
+<script src="stage1/story.js"></script>
+<script src="stage2/battles.js"></script>
+<script src="stage2/story.js"></script>
 </body>
 </html>

@@ -1,121 +1,167 @@
-// First battle + procedural battle music. Needs: ac, $, sweep, noise, retrigger (index.html),
-// stage/act/myShape/drawShape/HITBOX (game.js), setPortrait/kickPortrait (portraits.js).
+// Battle view: canvas drawing, keyboard/mouse, sound and DOM around the rules in battle/sim.js (createBattle).
+// Needs: ac, $, sweep, noise, retrigger, bgm (index.html), stage/act/myShape/drawShape/HITBOX (game.js),
+// SPEAKERS/TAU (script.js), setPortrait/kickPortrait (portraits.js), createBattle (battle/sim.js).
+//
+// cfg = {
+//   speaker, hp, bgm, color,            enemy portrait key, enemy HP, music name, bullet colour
+//   cuts: [.75, .5, .25],               HP ratios where the next phase starts
+//   names: ["..."],                     phase (spell) names shown at the start of each phase
+//   phases: [h => {...}, ...],          one pattern per phase, built from the helpers h.* (battle/sim.js)
+//   moves: [{ x, amp, spd, speed, dash }, ...]   enemy movement per phase: x = "none" | "sway" | "chase", dash = seconds
+//                                       between warned body-slams down into the box (0 = never)
+//   talks: { 3: [{ who, t }, ...] },    dialogue shown when phase N starts
+//   ally: "lumi",                       optional companion; strength grows with the bond (유대), see BOND
+//   allies: ["lumi", "hexa"],           optional: X swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
+//   invuln, survive: 30,                escape battle: hits deal 0 (팅) and surviving 30s wins; bgm: null = silence, beat = heartbeat
+//   fade: .2,                           each phase turns the bgm / enemy-shot volume down by this much
+//   playerHp, winText, ew, gauge0 }
+// Controls: arrows/WASD move, Z toggles shooting (ON at start), X swaps companion, Space/Enter/Z/click advance dialogue.
+//
+// BOND (유대): BOND.base is the story-given level (scenes raise it). In battle, grazing bullets fills the bond gauge;
+// a full gauge unleashes "유대의 빛" and raises the level by one (max 4). See battle/sim.js for the exact numbers.
+// The level reached is kept (BOND.base) when a battle is won; a lost battle is retried from the level it started with.
 
-// ---- 배경음악: 132bpm, A minor (Am-F-C-G). level(0~2)이 오를수록 악기가 늘어난다 ----
-const music = (() => {
-  const SD = 60 / 132 / 4, ROOTS = [55, 43.65, 65.41, 49], ARP = [0, 3, 7, 12];
-  let timer, mg, nbuf, step, nextT;
-  const env = (g, t, v, d) => { g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d); };
-  const tone = (type, f0, f1, t, d, v) => {
-    const o = ac.createOscillator(), g = ac.createGain(); o.type = type;
-    o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + d);
-    env(g, t, v, d); o.connect(g).connect(mg); o.start(t); o.stop(t + d);
-  };
-  const tick = (t, d, v, hp) => {                                      // filtered noise: hat / snare
-    const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
-    s.buffer = nbuf; f.type = "highpass"; f.frequency.value = hp; env(g, t, v, d);
-    s.connect(f).connect(g).connect(mg); s.start(t, Math.random() * .5); s.stop(t + d);
-  };
-  function play(s, t) {
-    const lv = music.level, r = ROOTS[(s >> 3) & 3], p = s & 7;
-    if (s % 4 === 0) tone("sine", 160, 45, t, .2, 1);                                  // kick, four on the floor
-    if (lv > 0 && s % 8 === 4) { tick(t, .14, .6, 1500); tone("triangle", 230, 120, t, .08, .35); }   // snare
-    if (s % (lv > 1 ? 1 : 2) === 0) tick(t, .04, s % 4 === 2 ? .3 : .14, 7000);                      // hats
-    if (p === 0 || p === 3 || p === 6) tone("square", r * (p === 6 ? 2 : 1), r * (p === 6 ? 2 : 1), t, .17, .2);  // bass
-    if (lv > 0 && s % (lv > 1 ? 1 : 2) === 0) { const f = r * 4 * 2 ** (ARP[(s >> (lv > 1 ? 0 : 1)) % 4] / 12); tone("triangle", f, f, t, .1, .13); } // arp
+const BATTLES = {};
+const BOND = { base: 0 };
+
+// ---- 첫 전투: 글리치 ----
+BATTLES.glitch = {
+  speaker: "glitch", hp: 320, bgm: "battle", color: "#ff3b5c",
+  names: ["균열 「떨어지는 장벽」", "균열 「겨냥하는 파편」", "균열 「광란의 부채」", "균열 「붕괴의 나선」"],
+  moves: [{ x: "sway", amp: 40, spd: .8 }, { x: "sway", amp: 80, spd: 1 }, { x: "sway", amp: 90, spd: 1.2, dash: 9 }, { x: "chase", speed: 70, dash: 7 }],
+  phases: [
+    h => { h.wall(2.8, 95); h.aim(1.3, 150); },
+    h => { h.rain(.5); h.aimFan(1.2, 3, .28, 165); h.wave(2.4, 85); },
+    h => { h.fan(1.5, 7, .3, 120, 6, { w: .35 }); h.side(.55); h.laser(3.6, false); },
+    h => { h.spiral(.08, 3, .4, 110, 6); h.laser(3, true); h.aim(1, 170, 6); h.ring(2.2, 15, 95, 7); },
+  ],
+  talks: { 3: [{ who: "glitch", t: "크윽... 아직이야... 아직 끝나지 않았어!" }, { who: "glitch", t: "이 형태... 왜 지워지지 않는 거지...!" }, { who: "glitch", t: "좋아. 남은 전부를, 한꺼번에 쏟아주마!" }] },
+};
+ACTS.battle = done => runBattle(BATTLES.glitch, done);
+
+// enemy body drawn at its current position (it moves like the player does)
+function drawEnemyBody(g, key, x, y, t, warn) {
+  const sp = SPEAKERS[key], col = sp.color;
+  g.save(); g.translate(x + (warn ? (Math.random() - .5) * 6 : 0), y);
+  const gr = g.createRadialGradient(0, 0, 0, 0, 0, 60); gr.addColorStop(0, col + "aa"); gr.addColorStop(1, "transparent");
+  g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 60, 0, TAU); g.fill();
+  g.strokeStyle = warn ? "#fff" : col; g.shadowColor = col; g.shadowBlur = 18; g.lineWidth = 3;
+  if (sp.shape === "rings") {
+    for (let i = 0; i < 3; i++) { const q = (t / 2 + i / 3) % 1, r = 12 + 22 * q; g.globalAlpha = 1 - q; g.beginPath(); for (let j = 0; j < 6; j++) g.lineTo(Math.cos(j * 1.047 + .52) * r, Math.sin(j * 1.047 + .52) * r); g.closePath(); g.stroke(); }
+    g.globalAlpha = 1; g.fillStyle = col; g.beginPath(); for (let j = 0; j < 6; j++) g.lineTo(Math.cos(j * 1.047 + .52) * 11, Math.sin(j * 1.047 + .52) * 11); g.fill();
+  } else if (sp.shape === "orb") {                                                      // silence: a hollow disc, ripples that collapse inward without a sound
+    g.fillStyle = "#05080c"; g.beginPath(); g.arc(0, 0, 20, 0, TAU); g.fill(); g.stroke();
+    for (let i = 0; i < 3; i++) { const q = (t / 2 + i / 3) % 1; g.globalAlpha = q; g.beginPath(); g.arc(0, 0, 62 - 44 * q, 0, TAU); g.stroke(); }
+    g.globalAlpha = 1;
+  } else {
+    g.rotate(t * .8); g.fillStyle = col + "55"; g.beginPath();
+    [26, 10, 22, 8, 28, 11, 20, 9, 24].forEach((R, j) => g.lineTo(Math.cos(j * TAU / 9) * R, Math.sin(j * TAU / 9) * R));
+    g.closePath(); g.fill(); g.stroke();
   }
-  return {
-    level: 0,
-    start() {
-      if (timer) return;
-      mg = ac.createGain(); mg.gain.value = .3; mg.connect(ac.destination);
-      nbuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); nbuf.getChannelData(0).forEach((_, i, d) => d[i] = Math.random() * 2 - 1);
-      step = 0; nextT = ac.currentTime + .1;
-      timer = setInterval(() => { while (nextT < ac.currentTime + .15) { play(step++, nextT); nextT += SD; } }, 30);
-    },
-    stop() { clearInterval(timer); timer = null; if (mg) mg.gain.setTargetAtTime(0, ac.currentTime, .08); },
-  };
-})();
+  g.restore();
+}
 
-// ---- 첫 전투: 피하면서 쏴서 균열을 쓰러뜨린다 ----
-ACTS.battle = done => {
-  stage.classList.add("battle"); act.hidden = false; setPortrait(SPEAKERS.glitch);
+function runBattle(cfg, done) {
+  stage.classList.add("battle"); act.hidden = false; setPortrait(SPEAKERS[cfg.speaker]);
   act.innerHTML = `<canvas id="ar" width="960" height="540"></canvas>`;
-  const g = $("ar").getContext("2d"), BOX = { x: 330, y: 190, w: 300, h: 260 }, MAX_HP = 20, E_MAX = 80;
-  const EX = 480, E_Y = 150, E_W = 75;                                  // enemy hit zone: |x-EX|<E_W and y<E_Y
-  const cx = BOX.x + BOX.w / 2, oy = BOX.y - 50;                        // enemy bullets start above the box
-  const keys = {}, p = { x: cx, y: BOX.y + BOX.h * .75 };
-  let bullets = [], shots = [], floats = [], hp = MAX_HP, eHp = E_MAX, inv = 0, t = 0, cd = 0, combo = 0, comboT = 0, hitFlash = 0;
-  let a1 = 0, a2 = 0, a3 = 0, level = 0, last = performance.now(), raf, over = null, auto = false, fx = [];
+  const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX }), s = battle.state, BOX = s.BOX;
+  const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
+  let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
+  let floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, lastShot = 0, lastBig = 0, lastGraze = 0;
 
-  const toggle = () => { auto = !auto; sweep(auto ? 500 : 400, auto ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
-  const kd = e => {
-    keys[e.code] = true;
-    if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault();
-    if (e.code === "Space" && !e.repeat) toggle();
+  const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
+  const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
+  const advTalk = () => {                                               // first press finishes the typing, the next goes to the next line
+    if (talkN < s.talk.lines[s.talk.i].t.length) talkN = 99; else { battle.advance(); talkN = 0; if (!s.talk) setPortrait(SPEAKERS[cfg.speaker]); }
   };
-  const ku = e => { keys[e.code] = false; };
+  const press = () => s.talk ? advTalk() : toggle();
+  const kd = ev => {
+    keys[ev.code] = true;
+    if (ev.code.startsWith("Arrow") || ev.code === "Space") ev.preventDefault();
+    if (ev.repeat) return;
+    if (s.talk) { if (ev.code === "Space" || ev.code === "Enter" || ev.code === "KeyZ") advTalk(); }
+    else if (ev.code === "KeyZ") toggle();
+    else if (ev.code === "KeyX") battle.swap();                                  // 교대
+  };
+  const ku = ev => { keys[ev.code] = false; };
   const cleanup = () => {
-    cancelAnimationFrame(raf); music.stop(); removeEventListener("keydown", kd); removeEventListener("keyup", ku);
+    $("portrait").style.visibility = ""; setCast(null);cancelAnimationFrame(raf); bgm.stop(); removeEventListener("keydown", kd); removeEventListener("keyup", ku);
     act.onclick = act.onmousedown = null;
   };
   const end = () => { cleanup(); act.hidden = true; act.innerHTML = ""; stage.classList.remove("battle"); done(); };
-  const add = (x, y, ang, sp) => bullets.push({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, r: 6 });
 
-  function update(dt) {
-    const firing = auto && !over, spd = firing ? 130 : 200;             // shooting slows you down
-    const dx = (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0);
-    const dy = (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0);
-    const n = Math.hypot(dx, dy) || 1, m = 10;
-    p.x = Math.min(BOX.x + BOX.w - m, Math.max(BOX.x + m, p.x + dx / n * spd * dt));
-    p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + dy / n * spd * dt));
-    t += dt; inv -= dt; cd -= dt; comboT -= dt; hitFlash -= dt; if (comboT <= 0) combo = 0;
+  // enemy shot sound: the bigger / faster the bullet, the longer, lower and louder (weak shots are throttled)
+  const shotSfx = (size, sp) => {
+    const pw = Math.min(1.5, Math.max(0, (size - 6) / 8 + (sp - 150) / 400)), n = performance.now();   // 0 = weak ... 1.5 = menacing
+    if (pw < .3) { if (n - lastShot < 90) return; lastShot = n; sweep(1100 + Math.random() * 300, 450, .1, "triangle", .2 * quiet); noise(.03, .12 * quiet); return; }
+    if (n - lastBig < 200) return; lastBig = n;
+    const f = 1000 - 450 * pw;
+    sweep(f, f * .4, .12 + .25 * pw, "sawtooth", (.22 + .2 * pw) * quiet);
+    noise(.08 + .12 * pw, (.3 + .15 * pw) * quiet);
+  };
 
-    if (firing && cd <= 0) { cd = .12; shots.push({ x: p.x, y: p.y - 12 }); sweep(1000, 700, .05, "triangle", .05); }
-    for (const s of shots) s.y -= 560 * dt;
-    for (const s of shots) if (s.y < E_Y && Math.abs(s.x - EX) < E_W) {            // shot lands
-      s.dead = true; eHp--; combo++; comboT = .5; hitFlash = .08; kickPortrait();
-      const f = 450 + Math.min(combo, 16) * 40; sweep(f, f * 1.6, .08, "square", .13); noise(.04, .2);
-      floats.push({ x: s.x + (Math.random() - .5) * 30, y: E_Y - 10, age: 0 });
-      fx.push({ x: s.x, y: E_Y, age: 0 });                                          // round burst
-      for (let i = 0; i < 5; i++) { const a = Math.random() * TAU, v = 80 + Math.random() * 140; fx.push({ x: s.x, y: E_Y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, age: 0, sp: true }); }
-    }
-    for (const f of fx) { f.age += dt; if (f.sp) { f.x += f.vx * dt; f.y += f.vy * dt; } }
-    fx = fx.filter(f => f.age < (f.sp ? .35 : .3));
-    shots = shots.filter(s => !s.dead && s.y > -20);
-    for (const f of floats) f.age += dt; floats = floats.filter(f => f.age < .6);
-
-    const r = eHp / E_MAX, lv = r > .66 ? 0 : r > .33 ? 1 : 2;                       // enemy gets angrier as it weakens
-    if (lv > level) { level = lv; bullets = []; noise(.3, .5); sweep(100, 600, .5, "sawtooth", .25); retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); }
-    music.level = level;
-
-    if (t > 1) {                                                                      // 1s grace
-      a1 += dt; if (a1 > (level ? .4 : .25)) { a1 = 0; add(BOX.x + Math.random() * BOX.w, BOX.y - 12, Math.PI / 2, 130 + Math.random() * 40); }
-      if (level > 0) { a2 += dt; if (a2 > (level > 1 ? .9 : .7)) { a2 = 0; add(EX, oy, Math.atan2(p.y - oy, p.x - EX), 170); } }
-      if (level > 1) { a3 += dt; if (a3 > 1.4) { a3 = 0; for (let i = -3; i <= 3; i++) add(EX, oy, Math.PI / 2 + i * .3, 120); } }
-    }
-    for (const b of bullets) { b.x += b.vx * dt; b.y += b.vy * dt; }
-    bullets = bullets.filter(b => b.y < BOX.y + BOX.h + 20 && b.y > BOX.y - 120 && b.x > BOX.x - 40 && b.x < BOX.x + BOX.w + 40);
-    if (inv <= 0) {
-      const i = bullets.findIndex(b => Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
-      if (i >= 0) { bullets.splice(i, 1); hp -= 4; inv = 1; noise(.1, .5); sweep(300, 80, .2, "square", .3); }
-    }
-    if (hp <= 0) {
-      over = "lose"; music.stop(); noise(.5, .5); sweep(400, 40, 1, "sawtooth", .3);
-      setTimeout(() => { act.onclick = () => { cleanup(); ACTS.battle(done); }; }, 600);
-    } else if (eHp <= 0) {
-      over = "win"; bullets = []; music.stop(); noise(.6, .7); sweep(80, 1600, .9, "sawtooth", .3); sweep(200, 40, .6, "sine", .6);
-      retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); setTimeout(end, 1600);
+  // events from the simulation -> sound and visual effects
+  function onEvent(v) {
+    switch (v.type) {
+      case "enemyShot": shotSfx(v.size, v.speed); break;
+      case "playerShot": sweep(1000, 700, .05, "triangle", .05); break;
+      case "allyShot": sweep(1400, 900, .06, "sine", .05); break;
+      case "enemyHit": {
+        hitFlash = .08; kickPortrait();
+        if (v.dmg) { const f = 450 + Math.min(v.combo, 16) * 40; sweep(f, f * 1.6, .08, "square", .13); noise(.04, .2); }
+        else { const n = performance.now(); if (n - lastTing > 80) { lastTing = n; sweep(2600, 2500, .3, "sine", .22); sweep(3900, 3800, .2, "sine", .1); } }   // 팅! it can't be hurt
+        say(v.dmg ? "-" + v.dmg : "0", v.x + (Math.random() - .5) * 30, v.y - 10, v.dmg ? (v.ally ? allyCol : "#fff") : "#8fa3b5");
+        fx.push({ x: v.x, y: v.y, age: 0 });                                              // round burst
+        for (let i = 0; i < 5; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 140; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); }
+        break;
+      }
+      case "graze": { const n = performance.now(); if (n - lastGraze > 70) { lastGraze = n; sweep(2200, 3000, .04, "sine", .06); } break; }
+      case "playerHurt": noise(.12, .6); sweep(300, 80, .2, "square", .35); break;
+      case "shieldBlock": say("방패!", s.p.x, s.p.y - 20, allyCol); sweep(900, 1800, .25, "sine", .25); noise(.08, .3); break;
+      case "shieldReady": sweep(500, 1200, .3, "sine", .12); break;
+      case "heal": say("+" + v.amount, s.p.x, s.p.y - 20, allyCol); sweep(600, 1400, .25, "sine", .12); break;
+      case "burst":
+        burstFx = 1; say(v.dmg ? "-" + v.dmg : "0", s.e.x, s.e.y + 40, v.dmg ? allyCol : "#8fa3b5"); if (!v.dmg) sweep(2600, 2500, .5, "sine", .25); say("+3", s.p.x, s.p.y - 20, allyCol);
+        sweep(400, 2000, .8, "sine", .3); sweep(200, 1000, .8, "triangle", .2); noise(.3, .4); retrigger($("flash"), "on", 600);
+        banner = { txt: v.up ? `유대 Lv.${v.level}! 지원이 강해졌다` : "유대의 빛!", age: 0, bond: true };
+        break;
+      case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
+      case "swap": allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
+      case "phase":
+        if (cfg.fade) { quiet = Math.max(.15, 1 - cfg.fade * v.level); bgm.vol(quiet); }   // each phase swallows more of the sound
+        if (v.name) { banner = { txt: v.name, age: 0, level: v.level }; sweep(300, 900, .35, "sawtooth", .18); }
+        if (!v.start) { noise(.3, .5); sweep(100, 600, .5, "sawtooth", .25); retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); }
+        if (v.talk) talkN = 0;
+        break;
+      case "laserWarn": sweep(1800, 2400, .15, "square", .18); break;
+      case "laserFire": sweep(220, 40, .5, "sawtooth", .4); noise(.3, .45); break;
+      case "split": noise(.1, .3); sweep(500, 150, .18, "sawtooth", .2); break;
+      case "dashWarn": sweep(1800, 2400, .2, "square", .2); break;
+      case "dashStart": sweep(500, 80, .5, "sawtooth", .3); noise(.2, .35); break;
+      case "dashEnd": noise(.25, .5); retrigger(stage, "shake", 300); break;
+      case "lose":
+        bgm.stop(); noise(.5, .5); sweep(400, 40, 1, "sawtooth", .3);
+        setTimeout(() => { act.onclick = () => { cleanup(); runBattle(cfg, done); }; }, 600);
+        break;
+      case "win":
+        if (cfg.ally) BOND.base = Math.max(BOND.base, s.bondLv);                         // the bond carries over to the next battle / stage
+        bgm.stop(); noise(.6, .7); sweep(80, 1600, .9, "sawtooth", .3); sweep(200, 40, .6, "sine", .6);
+        retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); setTimeout(end, 1600);
+        break;
     }
   }
 
   function draw() {
+    const { p, e, t } = s;
     g.clearRect(0, 0, 960, 540);
-    g.save(); g.globalCompositeOperation = "lighter";                                  // hit effects: soft glow + round burst + sparks
-    if (hitFlash > 0) {
-      const gr = g.createRadialGradient(EX, 85, 0, EX, 85, 120);
+    g.save(); g.globalCompositeOperation = "lighter";
+    g.lineWidth = 2; g.strokeStyle = col;                                               // enemy aura: slow rings, faster in later phases
+    for (let i = 0; i < 3; i++) { const q = ((t * (.35 + .12 * s.level) + i / 3) % 1); g.globalAlpha = (1 - q) * .45; g.beginPath(); g.arc(e.x, e.y, 60 + q * 90, 0, TAU); g.stroke(); }
+    g.globalAlpha = 1;
+    if (hitFlash > 0) {                                                                 // hit effects: soft glow + round burst + sparks
+      const gr = g.createRadialGradient(e.x, e.y, 0, e.x, e.y, 120);
       gr.addColorStop(0, `rgba(255,255,255,${hitFlash * 4})`); gr.addColorStop(1, "rgba(255,80,120,0)");
-      g.fillStyle = gr; g.beginPath(); g.arc(EX, 85, 120, 0, TAU); g.fill();
+      g.fillStyle = gr; g.beginPath(); g.arc(e.x, e.y, 120, 0, TAU); g.fill();
     }
     for (const f of fx) {
       if (f.sp) { g.fillStyle = `rgba(255,220,230,${1 - f.age / .35})`; g.beginPath(); g.arc(f.x, f.y, 3, 0, TAU); g.fill(); continue; }
@@ -124,44 +170,122 @@ ACTS.battle = done => {
       g.fillStyle = gr; g.beginPath(); g.arc(f.x, f.y, r, 0, TAU); g.fill();
       g.strokeStyle = `rgba(255,255,255,${1 - k})`; g.lineWidth = 2; g.beginPath(); g.arc(f.x, f.y, r * .9, 0, TAU); g.stroke();
     }
+    for (const l of s.lasers) {                                                         // lasers: thin flickering warning, then a wide beam
+      g.save(); g.translate(l.x, l.y); g.rotate(l.a);
+      if (l.age < l.warn) {
+        g.globalAlpha = .35 + .4 * Math.abs(Math.sin(l.age * 22)); g.strokeStyle = "#fff"; g.lineWidth = 2; g.setLineDash([10, 8]);
+        g.beginPath(); g.moveTo(0, 0); g.lineTo(700, 0); g.stroke();
+        g.fillStyle = col; g.globalAlpha = .9; g.beginPath(); g.arc(0, 0, 6 + 12 * l.age / l.warn, 0, TAU); g.fill();
+      } else {
+        const k = 1 - (l.age - l.warn) / l.dur, w = l.w * (.5 + .5 * Math.min(1, k * 3));
+        g.globalAlpha = Math.max(0, Math.min(1, k * 2)); g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 24; g.fillRect(0, -w / 2, 700, w);
+        g.fillStyle = "#fff"; g.fillRect(0, -w * .22, 700, w * .44);
+      }
+      g.restore();
+    }
+    if (e.mode === "warn") {                                                            // body-slam warning: dashed line down to where it will land
+      g.globalAlpha = .4 + .5 * Math.abs(Math.sin(e.tt * 20)); g.strokeStyle = "#fff"; g.lineWidth = 3; g.setLineDash([12, 8]);
+      g.beginPath(); g.moveTo(e.x, e.y); g.lineTo(e.lx, BOX.y + BOX.h - 30); g.stroke(); g.setLineDash([]); g.globalAlpha = 1;
+    }
     g.restore();
+    drawEnemyBody(g, cfg.speaker, e.x, e.y, t, e.mode === "warn");
     g.fillStyle = "rgba(0,0,20,.7)"; g.fillRect(BOX.x, BOX.y, BOX.w, BOX.h);
     g.save(); g.beginPath(); g.rect(BOX.x, BOX.y, BOX.w, BOX.h); g.clip();
-    g.fillStyle = "#ff3b5c"; g.shadowColor = "#ff3b5c"; g.shadowBlur = 10;
-    for (const b of bullets) { g.beginPath(); g.arc(b.x, b.y, b.r, 0, TAU); g.fill(); }
+    if (e.y > BOX.y - 40) drawEnemyBody(g, cfg.speaker, e.x, e.y, t, false);           // the enemy is visible inside the box while diving
+    g.globalCompositeOperation = "lighter";
+    for (const b of s.bullets) {                                                        // glowing bullets with a short trail
+      g.fillStyle = b.col;
+      b.tr.forEach((q, i) => { g.globalAlpha = (i + 1) / b.tr.length * .35; g.beginPath(); g.arc(q.x, q.y, b.r * (.4 + .12 * i), 0, TAU); g.fill(); });
+      g.globalAlpha = .35; g.beginPath(); g.arc(b.x, b.y, b.r * 1.9, 0, TAU); g.fill();
+      g.globalAlpha = 1; g.shadowColor = b.col; g.shadowBlur = b.r > 8 ? 18 : 10; g.beginPath(); g.arc(b.x, b.y, b.r, 0, TAU); g.fill();
+      g.shadowBlur = 0; g.fillStyle = "#fff"; g.beginPath(); g.arc(b.x, b.y, b.r * .45, 0, TAU); g.fill();
+    }
+    if (burstFx > 0) {                                                                  // 유대의 빛: a ring of light sweeping out from the player
+      g.globalAlpha = burstFx * .8; g.strokeStyle = allyCol; g.lineWidth = 6; g.shadowColor = allyCol; g.shadowBlur = 20;
+      g.beginPath(); g.arc(p.x, p.y, (1 - burstFx) * 340, 0, TAU); g.stroke();
+    }
     g.restore();
-    g.fillStyle = "#cff"; g.shadowColor = "#4fc3ff"; g.shadowBlur = 12;                // player shots fly out of the box
-    for (const s of shots) g.fillRect(s.x - 2.5, s.y - 9, 5, 18);
+    g.shadowBlur = 12;                                                                  // player shots fly out of the box
+    for (const sh of s.shots) { g.fillStyle = sh.ally ? allyCol : "#cff"; g.shadowColor = sh.ally ? allyCol : "#4fc3ff"; if (sh.ally) { g.beginPath(); g.arc(sh.x, sh.y, 5, 0, TAU); g.fill(); } else g.fillRect(sh.x - 2.5, sh.y - 9, 5, 18); }
     g.shadowBlur = 0;
-    if (over !== "lose" && (inv <= 0 || Math.floor(inv * 12) % 2)) {
-      g.save(); g.translate(p.x, p.y); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill(); g.restore();
+    if (s.al) {                                                                         // companion: blossom that grows with the bond
+      const lv = s.bondLv, al = s.al;
+      if (s.allyId === "hexa") drawHexa(g, al.x, al.y, t, allyCol, .55 + .1 * lv);          // guardian: pulsing hexagons (scenes.js)
+      else {
+        g.save(); g.translate(al.x, al.y); g.scale(1 + .15 * lv, 1 + .15 * lv); g.strokeStyle = allyCol; g.shadowColor = allyCol; g.shadowBlur = 14 + 4 * lv; g.lineWidth = 2;
+        for (let k = 0; k < 6; k++) { const a = t * 1.5 + k * Math.PI / 3; g.beginPath(); g.arc(Math.cos(a) * 9, Math.sin(a) * 9, 7, 0, TAU); g.stroke(); }
+        g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 3, 0, TAU); g.fill(); g.restore();
+      }
+      g.font = "bold 13px 'Malgun Gothic'"; g.fillStyle = allyCol; g.textAlign = "center"; g.fillText(`유대 Lv.${lv}`, al.x, al.y + 30 + 3 * lv);
+    }
+    if (s.over !== "lose" && (s.inv <= 0 || Math.floor(s.inv * 12) % 2)) {
+      g.save(); g.translate(p.x, p.y); drawShape(g, myShape, 11); g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill();
+      if (s.shieldOn) { g.strokeStyle = allyCol; g.lineWidth = 3; g.shadowColor = allyCol; g.shadowBlur = 14; g.globalAlpha = .6 + .3 * Math.sin(t * 6); g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.stroke(); }
+      g.restore();
     }
     g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(BOX.x, BOX.y, BOX.w, BOX.h);
 
-    g.fillStyle = "#333"; g.fillRect(BOX.x, 168, BOX.w, 10);                            // enemy HP bar
-    g.fillStyle = level > 1 ? "#ff3b5c" : "#ffd84f"; g.fillRect(BOX.x, 168, BOX.w * Math.max(eHp, 0) / E_MAX, 10);
+    g.fillStyle = "#333"; g.fillRect(BOX.x, 168, BOX.w, 10);
+    if (cfg.survive) {                                                                  // escape battle: the enemy can't be hurt, so show the clock instead of its HP
+      g.fillStyle = "#7dd3ff"; g.fillRect(BOX.x, 168, BOX.w * (1 - s.surviveLeft / cfg.survive), 10);
+      g.font = "bold 16px 'Malgun Gothic'"; g.textAlign = "right"; g.fillStyle = "#7dd3ff"; g.fillText(`탈출까지 ${Math.ceil(s.surviveLeft)}초`, BOX.x + BOX.w, 164); g.textAlign = "left";
+    } else { g.fillStyle = s.level > 1 ? "#ff3b5c" : "#ffd84f"; g.fillRect(BOX.x, 168, BOX.w * Math.max(s.eHp, 0) / s.eMax, 10); }   // enemy HP bar
+    g.font = "bold 16px 'Malgun Gothic'"; g.textAlign = "left"; g.textBaseline = "bottom"; g.fillStyle = SPEAKERS[cfg.speaker].color; g.fillText(SPEAKERS[cfg.speaker].name, BOX.x, 164);
     g.font = "bold 26px 'Malgun Gothic'"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
-    for (const f of floats) { g.globalAlpha = 1 - f.age / .6; g.fillText("-1", f.x, f.y - f.age * 60); }
+    for (const f of floats) { g.globalAlpha = 1 - f.age / .6; g.fillStyle = f.col || "#fff"; g.fillText(f.txt, f.x, f.y - f.age * 60); }
     g.globalAlpha = 1;
-    if (combo > 2) { g.font = "bold 22px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${combo} HIT`, BOX.x + BOX.w + 20, 215); }
+    if (s.combo > 2) { g.font = "bold 22px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${s.combo} HIT`, BOX.x + BOX.w + 20, 215); }
 
-    g.font = "20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${Math.max(hp, 0)} / ${MAX_HP}`, BOX.x, 485);
-    g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(hp, 0) / MAX_HP, 20);
-    g.font = "bold 20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = auto ? "#7dffb0" : "#889"; g.fillText(auto ? "사격 ON" : "사격 OFF", BOX.x + BOX.w + 20, 250);
-    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText("이동: 방향키/WASD · 사격 ON/OFF: SPACE 또는 클릭", BOX.x + BOX.w, 515);
-    if (over) {
-      g.textAlign = "center"; g.font = "bold 56px 'Malgun Gothic'"; g.fillStyle = over === "win" ? "#9ad0ff" : "#ff3b5c";
-      g.fillText(over === "win" ? "격파!" : "GAME OVER", 480, 320);
-      if (over === "lose" && act.onclick) { g.font = "22px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("클릭하여 재도전", 480, 375); }
+    g.font = "20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${Math.max(s.hp, 0)} / ${s.maxHp}`, BOX.x, 485);
+    g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(s.hp, 0) / s.maxHp, 20);
+    g.font = "bold 20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = s.auto ? "#7dffb0" : "#889"; g.fillText(s.auto ? "사격 ON" : "사격 OFF", BOX.x + BOX.w + 20, 250);
+    if (s.hasAlly) {                                                                    // bond gauge: fills by grazing bullets
+      g.font = "bold 15px 'Malgun Gothic'"; g.fillStyle = allyCol; g.fillText(`유대 Lv.${s.bondLv}${s.shieldOn ? " · 방패" : ""}`, BOX.x + BOX.w + 20, 276);
+      g.fillStyle = "#333"; g.fillRect(BOX.x + BOX.w + 20, 288, 120, 8); g.fillStyle = allyCol; g.fillRect(BOX.x + BOX.w + 20, 288, 120 * s.gauge / 100, 8);
+      g.font = "12px 'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
+    }
+    g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText("이동: 방향키/WASD · 사격 ON/OFF: Z 또는 클릭" + (cfg.allies ? " · 교대: X" : ""), BOX.x + BOX.w, 515);
+    if (banner) {                                                                       // phase (spell) name / bond announcement
+      const k = banner.age, a = Math.min(1, k * 4, (3 - k) * 2), sx = BOX.x + BOX.w + 20 + (1 - Math.min(1, k * 4)) * 30;
+      g.globalAlpha = Math.max(0, a); g.textAlign = "left"; g.textBaseline = "middle";
+      g.font = "bold 14px 'Malgun Gothic'"; g.fillStyle = banner.bond ? allyCol : col;
+      if (!banner.bond) g.fillText(`PHASE ${banner.level + 1}`, sx, 340);
+      g.font = "bold 20px 'Malgun Gothic'"; g.fillStyle = banner.bond ? allyCol : "#fff"; g.fillText(banner.txt, sx, banner.bond ? 370 : 366);
+      g.globalAlpha = 1;
+    }
+    if (s.talk) {
+      const L = s.talk.lines[s.talk.i], sp = SPEAKERS[L.who];
+      g.fillStyle = "rgba(0,0,0,.7)"; g.fillRect(0, 0, 960, 540);
+      g.fillStyle = "#0b1026"; g.fillRect(60, 400, 840, 120); g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(60, 400, 840, 120);
+      g.textAlign = "left"; g.textBaseline = "top"; g.font = "bold 24px 'Malgun Gothic'"; g.fillStyle = sp.color; g.fillText(sp.name, 84, 414);
+      g.font = "28px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText(L.t.slice(0, talkN | 0), 84, 456);
+      if (talkN >= L.t.length) { g.textAlign = "right"; g.fillText("▼", 880, 480); }
+      g.textBaseline = "middle";
+    }
+    if (s.over) {
+      g.textAlign = "center"; g.font = "bold 56px 'Malgun Gothic'"; g.fillStyle = s.over === "win" ? "#9ad0ff" : "#ff3b5c";
+      g.fillText(s.over === "win" ? (cfg.winText || "격파!") : "GAME OVER", 480, 320);
+      if (s.over === "lose" && act.onclick) { g.font = "22px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("클릭하여 재도전", 480, 375); }
     }
     g.textAlign = "left";
   }
 
-  function step(now) {
+  function frame(now) {
     const dt = Math.min((now - last) / 1000, .05); last = now;
-    if (!over) update(dt);
-    draw(); raf = requestAnimationFrame(step);
+    $("portrait").style.visibility = s.talk ? "visible" : "hidden";                     // the enemy body is drawn on the field; the portrait only shows while someone talks
+    if (s.talk) { talkN += dt * 25; setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
+    else {
+      setCast(null);
+      const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
+      for (const v of battle.step(dt, input)) onEvent(v);
+      if (cfg.beat && !s.over && s.t > 0 && (beatT -= dt) <= 0) { beatT = .7; sweep(85, 45, .22, "sine", .45); setTimeout(() => sweep(70, 40, .2, "sine", .3), 170); }   // all that is left of the sound: a heartbeat
+      hitFlash -= dt; burstFx = Math.max(0, burstFx - dt * 1.5);
+      if (banner && (banner.age += dt) > 3) banner = null;
+      for (const f of floats) f.age += dt; floats = floats.filter(f => f.age < .6);
+      for (const f of fx) { f.age += dt; if (f.sp) { f.x += f.vx * dt; f.y += f.vy * dt; } } fx = fx.filter(f => f.age < (f.sp ? .35 : .3));
+    }
+    draw(); raf = requestAnimationFrame(frame);
   }
-  addEventListener("keydown", kd); addEventListener("keyup", ku); act.onmousedown = toggle;
-  music.level = 0; music.start(); raf = requestAnimationFrame(step);
-};
+  addEventListener("keydown", kd); addEventListener("keyup", ku); act.onmousedown = press;
+  if (cfg.bgm) bgm.play(cfg.bgm); else bgm.stop(); raf = requestAnimationFrame(frame);
+}

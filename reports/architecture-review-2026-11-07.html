@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>Architecture review for webgame (ECHO PRISM)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+</script>
+<style>
+  .seam { border: 2px dashed #64748b; }
+  .deep { background: linear-gradient(135deg, #0f172a, #1e293b); color: #fff; }
+  .mod { border: 2px solid #334155; background: #fff; }
+  .ghost { opacity: .35; border-style: dashed; }
+  .lbl { font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; }
+</style>
+</head>
+<body class="bg-stone-50 text-slate-900 font-sans">
+<main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+
+<header>
+  <h1 class="font-serif text-3xl">webgame · architecture review</h1>
+  <p class="text-sm text-slate-500 mt-1">2026-11-07 · 웹 게임(<span class="font-mono">webgame/</span>) · 테스트 0개, ADR 0개</p>
+  <div class="flex flex-wrap gap-4 text-xs mt-4 items-center">
+    <span class="mod px-2 py-1 lbl">module</span>
+    <span class="seam px-2 py-1 lbl">seam</span>
+    <span class="px-2 py-1 lbl border-2 border-red-600 text-red-700">leakage</span>
+    <span class="deep px-2 py-1 lbl">deep module</span>
+  </div>
+</header>
+
+<section id="candidates" class="space-y-12">
+
+<article id="c1" class="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
+  <h2 class="font-serif text-2xl">1. 장면(act) 수명주기를 한 module로</h2>
+  <div class="flex gap-2 text-xs">
+    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+    <span class="px-2 py-0.5 rounded bg-slate-100">in-process</span>
+  </div>
+  <p class="font-mono text-sm text-slate-600">game.js (pick) · battle.js (runBattle) · stage1/scenes.js (s1_explore, s1_party)</p>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div>
+      <div class="lbl text-slate-500 mb-1">Before: 4 scenes, 4 copies of the same plumbing</div>
+      <div class="rounded-lg border border-slate-200 bg-white p-3">
+        <pre class="mermaid">
+flowchart TB
+  P[pick] --> L1[class + canvas + raf + listeners + cleanup + done]
+  B[runBattle] --> L2[class + canvas + raf + listeners + cleanup + done]
+  E[s1_explore] --> L3[class + canvas + raf + listeners + cleanup + done]
+  Y[s1_party] --> L4[class + canvas + raf + listeners + cleanup + done]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class L1,L2,L3,L4 leak
+        </pre>
+      </div>
+    </div>
+    <div>
+      <div class="lbl text-slate-500 mb-1">After: scenes shrink to update + draw</div>
+      <div class="deep rounded-lg p-4 space-y-2">
+        <div class="lbl text-emerald-300">runScene(mode, { update, draw, keys })</div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="ghost border rounded p-1">canvas / raf / dt</div>
+          <div class="ghost border rounded p-1">listeners add + remove</div>
+          <div class="ghost border rounded p-1">stage class toggle</div>
+          <div class="ghost border rounded p-1">done() exactly once</div>
+        </div>
+        <div class="seam rounded p-2 text-xs text-slate-200">seam: each scene = one adapter (pick, battle, explore, party)</div>
+      </div>
+    </div>
+  </div>
+  <p><b>Problem:</b> 수명주기 코드가 4번 복사되어 있고, 정리(cleanup)가 장면마다 다르게 틀릴 수 있다 (재도전은 cleanup 후 재귀 호출).</p>
+  <p><b>Solution:</b> 장면은 <span class="font-mono">update(dt)</span>와 <span class="font-mono">draw(g)</span>만 내놓고, 수명주기는 module 하나가 맡는다.</p>
+  <ul class="list-disc ml-5 text-sm">
+    <li>locality: 누수·이중 종료 버그가 한 곳</li>
+    <li>leverage: 새 장면마다 20줄 감소</li>
+    <li>4 adapters → 진짜 seam</li>
+  </ul>
+</article>
+
+<article id="c2" class="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
+  <h2 class="font-serif text-2xl">2. 소리(sfx · bgm)를 한 module 뒤로</h2>
+  <div class="flex gap-2 text-xs">
+    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+    <span class="px-2 py-0.5 rounded bg-slate-100">local-substitutable</span>
+  </div>
+  <p class="font-mono text-sm text-slate-600">index.html (sweep, noise, blip, bgm, FX.sfx) · battle.js (shotSfx, 호출 20여 곳) · stage1/scenes.js · story.js</p>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div>
+      <div class="lbl text-slate-500 mb-1">Before: 소리 값이 호출 지점마다 흩어짐</div>
+      <div class="space-y-1">
+        <div class="h-10 border-l-4 border-red-500 bg-red-50 px-2 flex items-center text-xs font-mono">battle.js — sweep(1100, 450, .1, "triangle", .2)</div>
+        <div class="h-10 border-l-4 border-red-500 bg-red-50 px-2 flex items-center text-xs font-mono">scenes.js — sweep(520, 1040, .6, "sine", .16)</div>
+        <div class="h-10 border-l-4 border-red-500 bg-red-50 px-2 flex items-center text-xs font-mono">index.html FX — sweep(150, 600, 1.4, ...)</div>
+        <div class="h-10 border-l-4 border-red-500 bg-red-50 px-2 flex items-center text-xs font-mono">bgm VOL 표 — 0.3 → 0.2 (따로 조절)</div>
+      </div>
+    </div>
+    <div>
+      <div class="lbl text-slate-500 mb-1">After: 의미로 부르고, 값은 안에서</div>
+      <div class="deep rounded-lg p-4 space-y-2">
+        <div class="lbl text-emerald-300">sound.play("enemyShot", { size, speed }) · sound.music("s1_boss")</div>
+        <div class="ghost border rounded p-1 text-xs">oscillator 설계 · 위협도 → 길이/음량 · 볼륨 균형 · bgm 전환</div>
+        <div class="seam rounded p-2 text-xs text-slate-200">adapters: WebAudio (prod) · silent (tests)</div>
+      </div>
+    </div>
+  </div>
+  <p><b>Problem:</b> "소리가 묻힌다"는 조정이 두 번 나왔고, 매번 여러 파일을 고쳐야 했다.</p>
+  <p><b>Solution:</b> 효과음을 이름과 의미(크기·속도)로 요청하고, 합성 값과 음량 균형은 module 안에 숨긴다.</p>
+  <ul class="list-disc ml-5 text-sm">
+    <li>locality: 음량 균형이 한 곳</li>
+    <li>leverage: 호출 20여 곳이 한 줄씩</li>
+    <li>silent adapter로 전투를 소리 없이 테스트</li>
+  </ul>
+</article>
+
+<article id="c3" class="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
+  <h2 class="font-serif text-2xl">3. 전투 시뮬레이션을 화면·입력·소리에서 분리</h2>
+  <div class="flex gap-2 text-xs">
+    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">Strong</span>
+    <span class="px-2 py-0.5 rounded bg-slate-100">ports &amp; adapters</span>
+  </div>
+  <p class="font-mono text-sm text-slate-600">battle.js (runBattle 약 250줄 클로저)</p>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div>
+      <div class="lbl text-slate-500 mb-1">Before: 한 클로저에 전부</div>
+      <div class="mod rounded-lg p-3 space-y-1 text-xs">
+        <div class="bg-red-50 border border-red-300 rounded p-1">탄·광선·충돌·페이즈 (규칙)</div>
+        <div class="bg-red-50 border border-red-300 rounded p-1">canvas 그리기</div>
+        <div class="bg-red-50 border border-red-300 rounded p-1">키보드·마우스</div>
+        <div class="bg-red-50 border border-red-300 rounded p-1">소리 호출</div>
+        <div class="bg-red-50 border border-red-300 rounded p-1">대사 상자·DOM 정리</div>
+        <div class="lbl text-red-700 pt-1">테스트하려면 브라우저를 띄워야 함</div>
+      </div>
+    </div>
+    <div>
+      <div class="lbl text-slate-500 mb-1">After: 규칙 module + 두 adapter</div>
+      <div class="deep rounded-lg p-4 space-y-2">
+        <div class="lbl text-emerald-300">battle.step(dt, input) → { state, events }</div>
+        <div class="ghost border rounded p-1 text-xs">phases · bullets · lasers · collision · ally · enemy movement · bond</div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="seam rounded p-1 text-slate-200">canvas adapter → draw(state)</div>
+          <div class="seam rounded p-1 text-slate-200">sound adapter ← events</div>
+        </div>
+        <div class="text-xs text-slate-300">headless test: 6페이즈를 돌려 "빈틈이 있는가" 검사</div>
+      </div>
+    </div>
+  </div>
+  <p><b>Problem:</b> 전투 규칙이 canvas와 DOM에 묶여 있어서, 패턴 검증을 하려면 브라우저에서 억지로 돌려야 했다. 동료·적 이동 같은 새 규칙도 이 한 클로저에 계속 쌓인다.</p>
+  <p><b>Solution:</b> 규칙을 <span class="font-mono">step(dt, input)</span> 뒤에 두고, 그리기와 소리는 상태와 이벤트를 받는 adapter로 만든다.</p>
+  <ul class="list-disc ml-5 text-sm">
+    <li>interface가 test surface가 됨</li>
+    <li>locality: 판정 버그가 한 module</li>
+    <li>2 adapters (canvas, headless) → 진짜 seam</li>
+  </ul>
+</article>
+
+<article id="c4" class="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
+  <h2 class="font-serif text-2xl">4. 대사 진행(dialogue)을 module로: Ctrl 스킵이 내부를 엿봄</h2>
+  <div class="flex gap-2 text-xs">
+    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">Worth exploring</span>
+    <span class="px-2 py-0.5 rounded bg-slate-100">in-process</span>
+  </div>
+  <p class="font-mono text-sm text-slate-600">index.html (next, advance, show, tick, finish, bgm 트리거, Ctrl 스킵) · script.js · stage1/story.js (SCRIPT.push)</p>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div>
+      <div class="lbl text-slate-500 mb-1">Before: 전역 상태 + 외부 접근</div>
+      <div class="rounded-lg border border-slate-200 bg-white p-3">
+        <pre class="mermaid">
+flowchart LR
+  CK[Ctrl 스킵 setInterval] -. reads .-> S{{idx · busy · acting · timer}}
+  AD[advance] --> S
+  NX[next] --> S
+  ST[stage1/story.js] -. SCRIPT.push .-> SC[SCRIPT]
+  classDef leak stroke:#dc2626,stroke-width:2px;
+  class CK,ST leak
+        </pre>
+      </div>
+    </div>
+    <div>
+      <div class="lbl text-slate-500 mb-1">After: 작은 interface</div>
+      <div class="deep rounded-lg p-4 space-y-2">
+        <div class="lbl text-emerald-300">dialogue.advance() · dialogue.skip(on)</div>
+        <div class="ghost border rounded p-1 text-xs">타이핑 · 효과 대기 · 장면 위임 · bgm 신호 · 스크립트 끝</div>
+        <div class="seam rounded p-2 text-xs text-slate-200">seam: 스크립트는 데이터로 등록 (stage = 데이터 module)</div>
+      </div>
+    </div>
+  </div>
+  <p><b>Problem:</b> 스킵 기능이 <span class="font-mono">busy</span>·<span class="font-mono">acting</span> 같은 내부 상태를 직접 읽고, 스테이지는 로드 순서에 기대어 <span class="font-mono">SCRIPT</span>에 끼어든다.</p>
+  <p><b>Solution:</b> 진행 상태를 module 안에 숨기고, 입력은 <span class="font-mono">advance</span>와 <span class="font-mono">skip</span>만 쓴다.</p>
+  <ul class="list-disc ml-5 text-sm">
+    <li>locality: 스킵 버그가 한 곳</li>
+    <li>스테이지 2 추가가 파일 하나</li>
+  </ul>
+</article>
+
+<article id="c5" class="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
+  <h2 class="font-serif text-2xl">5. 캐릭터 외형 한 곳에서 (루미·헥사가 세 번 그려짐)</h2>
+  <div class="flex gap-2 text-xs">
+    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">Worth exploring</span>
+    <span class="px-2 py-0.5 rounded bg-slate-100">in-process</span>
+  </div>
+  <p class="font-mono text-sm text-slate-600">portraits.js (bloom, rings, fairy) · battle.js (동료 꽃잎 인라인) · stage1/scenes.js (drawBlossom, drawHexa, drawFairy)</p>
+  <div class="grid md:grid-cols-2 gap-4">
+    <div>
+      <div class="lbl text-slate-500 mb-1">Before: 같은 모양, 세 곳</div>
+      <div class="space-y-1 text-xs font-mono">
+        <div class="mod rounded p-2">portraits.js · <b>bloom()</b></div>
+        <div class="mod rounded p-2 border-red-500">battle.js · 꽃잎 for-loop (인라인 복사)</div>
+        <div class="mod rounded p-2 border-red-500">scenes.js · <b>drawBlossom()</b></div>
+      </div>
+    </div>
+    <div>
+      <div class="lbl text-slate-500 mb-1">After: 외형 = SPEAKERS 데이터 하나</div>
+      <div class="deep rounded-lg p-4 space-y-2">
+        <div class="lbl text-emerald-300">drawLook(g, speakerKey, x, y, t, scale)</div>
+        <div class="ghost border rounded p-1 text-xs">bloom · rings · fairy · shard · orb 전부</div>
+        <div class="seam rounded p-2 text-xs text-slate-200">초상화 · 전투 동료 · 탐색 · 카드가 같은 interface 사용</div>
+      </div>
+    </div>
+  </div>
+  <p><b>Problem:</b> 루미의 외형을 바꾸려면 세 파일을 고쳐야 한다. 이미 어긋나기 시작했다 (크기·색 처리가 다름).</p>
+  <p><b>Solution:</b> 화자 키와 크기로 그리는 module 하나로 모은다.</p>
+  <ul class="list-disc ml-5 text-sm">
+    <li>locality: 외형 수정이 한 곳</li>
+    <li>delete 3 near-duplicates</li>
+  </ul>
+</article>
+
+</section>
+
+<section id="top-recommendation" class="rounded-xl deep p-6">
+  <div class="lbl text-emerald-300">Top recommendation</div>
+  <h2 class="font-serif text-2xl mt-1">3. 전투 시뮬레이션 분리</h2>
+  <p class="mt-2 text-slate-200">변경이 가장 잦은 module이고(커밋마다 수정, 오늘도 동료 유대·적 이동 요청이 같은 클로저로 들어감), 테스트가 하나도 없는 이유가 곧 이 module의 모양이다. seam을 세우면 패턴 검증이 가능해지고, 2번(소리)과 1번(장면)이 그 위에서 자연스럽게 따라온다.</p>
+  <p class="mt-3 text-sm"><a class="underline text-emerald-300" href="#c3">카드로 이동 →</a></p>
+</section>
+
+</main>
+</body>
+</html>

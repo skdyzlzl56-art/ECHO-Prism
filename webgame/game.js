@@ -47,7 +47,7 @@ ACTS.pick = done => {
     const k = e.code;
     if (k === "ArrowLeft" || k === "KeyA") select((sel + PLAYER_SHAPES.length - 1) % PLAYER_SHAPES.length);
     else if (k === "ArrowRight" || k === "KeyD") select((sel + 1) % PLAYER_SHAPES.length);
-    else if (k === "Enter" || k === "Space") { e.preventDefault(); confirm(); }
+    else if (k === "Enter" || k === "Space" || k === "KeyZ") { e.preventDefault(); confirm(); }
   };
   $("ok").onclick = confirm; addEventListener("keydown", key); select(sel); raf = requestAnimationFrame(loop);
 };

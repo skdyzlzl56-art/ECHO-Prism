@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "code-to-music": {
+      "source": "Cam10001110101/claude-skills-base",
+      "sourceType": "github",
+      "skillPath": "mnt/skills/examples/code-to-music/SKILL.md",
+      "computedHash": "2bf12735e4da022b108a4e3eafd5daf053d280f5bed3653f1db179190b02a2fa"
+    }
+  }
+}

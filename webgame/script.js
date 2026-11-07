@@ -1,8 +1,8 @@
 // Shape = personality. Round/soft = warm, angular/sharp = cold/aggressive.
 // pitch: blip Hz (high = light, low = heavy), spin: motion speed multiplier
 const SPEAKERS = {
-  voice:  { name: "???",    pitch: 380, spin: 0.8, shape: "orb",   color: "#9ad0ff" }, // 부드럽고 신비로운 목소리
-  glitch: { name: "글리치", pitch: 90,  spin: 1.0, shape: "shard", color: "#ff3b5c" }, // 날카롭고 폭력적인 균열
+  voice:  { name: "???",    pitch: 380, spin: 0.8, shape: "fairy", color: "#9ad0ff", close: 3 }, // 부드럽고 신비로운 안내자 (요정)
+  glitch: { name: "글리치", pitch: 90,  spin: 1.0, shape: "shard", color: "#ff3b5c", close: 0 }, // 날카롭고 폭력적인 균열
 };
 
 // Player shapes (개체의 도형). path(c, r) only builds the outline; caller fills/strokes.
@@ -21,8 +21,9 @@ const PLAYER_SHAPES = [
 // act lines are not dialogue: they hand control to ACTS[act] (game.js) and resume when it calls done()
 const SCRIPT = [
   // 1막 - 눈을 뜨다
-  { who: "voice",  text: "......들리나요? 아직 꺼지지 않았군요." },
+  { who: "voice",  bgm: "intro", text: "......들리나요? 아직 꺼지지 않았군요." },
   { who: "voice",  text: "여기는 모든 기억이 빛으로 남는 곳, 에코 프리즘." },
+  { who: "voice",  rename: "리라", text: "저는 이곳을 떠도는 작은 요정, '리라'예요. 당신을 깨우러 왔답니다." },
   { who: "voice",  text: "당신은 막 깨어났어요. 이름도, 얼굴도 흩어져 버렸지만..." },
   { who: "voice",  text: "형태만큼은 다시 고를 수 있답니다. 마음이 이끄는 모양을 골라 보세요." },
   { act: "pick" },
@@ -30,13 +31,13 @@ const SCRIPT = [
   // 2막 - 균열
   { who: "voice",  text: "...좋아요. 그게 지금의 당신이에요. 아주 잘 어울려요." },
   { who: "voice",  text: "잠깐... 이 기척은..." },
-  { who: "voice",  fx: "alert", text: "균열이에요! 방향키나 WASD로 피하고, 스페이스로 맞서 싸워요!" },
+  { who: "voice",  fx: "alert", text: "균열이에요! 방향키나 WASD로 피하고, 사격은 이미 켜져 있어요! Z키로 끄고 켤 수 있어요!" },
   { who: "glitch", fx: "shake", text: "기억... 냄새가 난다... 신선한 기억!" },
   { who: "glitch", text: "내놔. 그 형태 그대로... 전부 지워주마!" },
-  { act: "battle" },
+  { act: "battle", bgm: "battle" },
 
   // 3막 - 끝과 시작
-  { who: "glitch", text: "크윽... 이 따뜻한 빛은... 싫어..." },
+  { who: "glitch", bgm: "intro", text: "크윽... 이 따뜻한 빛은... 싫어..." },
   { who: "voice",  text: "해냈어요! 하지만 균열은 이 세계 곳곳에 남아 있어요." },
   { who: "voice",  fx: "title", text: "잃어버린 이름을 찾는 여정이, 지금 시작됩니다." },
 ];

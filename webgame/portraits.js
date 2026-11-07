@@ -5,6 +5,8 @@ const SZ = 300; cv.width = cv.height = SZ;
 let cur = null, pulse = 0, kick = 0;
 let ph = 0, last = 0, talk = 0;   // ph: animation phase; advances faster while talking
 
+let cast = null;                  // battle conversation: list of speakers shown side by side (null = single portrait)
+const setCast = list => { cast = list; };
 const setPortrait = sp => { cur = sp; };
 const pulsePortrait = () => { pulse = 1; };
 const kickPortrait = () => { kick = 1; };
@@ -101,16 +103,63 @@ function shard(t, col) {
   }
 }
 
-const SHAPES = { orb, prism, rings, bloom, shard };
+// Guide fairy: a small glowing body hovering, four translucent wings that flutter (faster while talking), falling stardust.
+function fairy(t, col) {
+  const bob = Math.sin(ph / 420) * 12, flap = Math.sin(ph / 70) * (.12 + .1 * talk);
+  c.translate(0, bob);
+  c.shadowColor = col; c.shadowBlur = 22; c.lineWidth = 2;
+  for (const s of [-1, 1]) for (const [len, rot, wd] of [[100, -.55, 38], [72, .5, 28]]) {         // upper pair large, lower pair small
+    c.save(); c.scale(s, 1); c.rotate(rot * (1 + flap * 2)); c.translate(len * .5 + 10, 0);
+    c.strokeStyle = col; c.fillStyle = col; c.globalAlpha = .18; c.beginPath(); c.ellipse(0, 0, len * .5, wd * (1 - flap * 3), 0, 0, 7); c.fill();
+    c.globalAlpha = .75; c.stroke(); c.restore();
+  }
+  c.globalAlpha = 1;
+  const r = 20 + 4 * pulse, g = c.createRadialGradient(0, 0, 0, 0, 0, r * 2.4);                       // glowing body
+  g.addColorStop(0, "#fff"); g.addColorStop(.35, col); g.addColorStop(1, "transparent");
+  c.fillStyle = g; c.beginPath(); c.arc(0, 0, r * 2.4, 0, 7); c.fill();
+  c.fillStyle = "#fff"; c.beginPath(); c.arc(0, 0, r * .6, 0, 7); c.fill();
+  c.fillStyle = col;                                                                                  // stardust trail
+  for (let i = 0; i < 16; i++) {
+    const p = (ph / 1600 + i / 16) % 1, a = i * 2.4;
+    c.globalAlpha = (1 - p) * .9; c.beginPath(); c.arc(Math.sin(a) * (14 + 40 * p), 10 + 120 * p, 1.5 + (i % 3), 0, 7); c.fill();
+  }
+  c.globalAlpha = 1;
+}
+
+const SHAPES = { orb, prism, rings, bloom, shard, fairy };
 
 // Starfield background
 const bg = document.getElementById("bg").getContext("2d");
 const stars = Array.from({ length: 90 }, () => ({ x: Math.random() * 960, y: Math.random() * 540, v: .1 + Math.random() * .4, p: Math.random() * 7 }));
+// Stage 1 swaps to a warm lantern sky (embers rise) via warp(): stars streak out from the centre, then the theme flips mid-flash.
+// vx / vy: star drift per frame (x star speed); streak: draw stars as trails of that length. "flee" rushes everything leftwards, as if running right.
+const THEMES = {
+  night:   { sky: "linear-gradient(#1b2a5a,#0b1026)", rgb: "190,220,255", vx: 0,   vy: 1 },
+  lantern: { sky: "linear-gradient(#5a2e1b,#140a0a)", rgb: "255,196,110", vx: 0,   vy: -1 },
+  silence: { sky: "linear-gradient(#1c2a33,#06090d)", rgb: "170,190,205", vx: .25, vy: .6 },          // cold, still, slow snow
+  flee:    { sky: "linear-gradient(#3d0f1c,#0a0306)", rgb: "255,120,130", vx: -22, vy: 0, streak: 5 }, // red alarm sky, stars streak past
+};
+let theme = THEMES.night, warpMs = 0, lastBg = 0;
+function setTheme(to) { theme = THEMES[to]; document.getElementById("stage").style.background = theme.sky; }
+function warp(to = "lantern") { warpMs = 1800; setTimeout(() => setTheme(to), 900); }
 function drawBg(t) {
+  const dt = Math.min(t - lastBg, 50); lastBg = t;
   bg.clearRect(0, 0, 960, 540);
+  const w = warpMs > 0 ? Math.sin(Math.PI * warpMs / 1800) : 0;   // 0 -> 1 (mid-warp) -> 0
+  warpMs = Math.max(0, warpMs - dt);
   for (const s of stars) {
-    s.y = (s.y + s.v) % 540;
-    bg.fillStyle = `rgba(190,220,255,${.4 + .4 * Math.sin(t / 500 + s.p)})`;
+    if (w > .02) {                                               // streak away from the centre
+      const dx = s.x - 480, dy = s.y - 270, k = 1 + w * 3;
+      bg.strokeStyle = `rgba(${theme.rgb},${.3 + .6 * w})`; bg.lineWidth = 2;
+      bg.beginPath(); bg.moveTo(480 + dx * (k - .8 * w), 270 + dy * (k - .8 * w)); bg.lineTo(480 + dx * k, 270 + dy * k); bg.stroke();
+      continue;
+    }
+    s.x = (s.x + s.v * theme.vx + 960) % 960; s.y = (s.y + s.v * theme.vy + 540) % 540;
+    if (theme.streak) {                                          // speed lines
+      bg.strokeStyle = `rgba(${theme.rgb},${.35 + .35 * s.v})`; bg.lineWidth = 1 + s.v * 3;
+      bg.beginPath(); bg.moveTo(s.x, s.y); bg.lineTo(s.x - theme.vx * s.v * theme.streak, s.y); bg.stroke(); continue;
+    }
+    bg.fillStyle = `rgba(${theme.rgb},${.4 + .4 * Math.sin(t / 500 + s.p)})`;
     bg.fillRect(s.x, s.y, 2, 2);
   }
 }
@@ -119,8 +168,21 @@ function frame(t) {
   drawBg(t);
   talk = Math.max(talk * .97, pulse);
   ph += Math.min(t - last, 50) * (1 + 3 * talk) * (cur ? cur.spin : 1); last = t;   // idle = 1x, talking up to 4x
-  c.clearRect(0, 0, SZ, SZ);
-  if (cur) {
+  const W = cast ? 960 : SZ; if (cv.width !== W) cv.width = W;
+  c.clearRect(0, 0, W, SZ);
+  if (cast) {                                                  // conversation: closer characters stand further left, the active speaker is big and bright
+    const sorted = [...cast].sort((a, b) => b.close - a.close);
+    sorted.forEach((sp, i) => {
+      const on = sp === cur, x = (i + .5) * W / sorted.length, sv = [talk, pulse, kick];
+      if (!on) talk = pulse = kick = 0;
+      c.save(); c.beginPath(); c.rect(x - 160, 0, 320, SZ); c.clip();
+      c.translate(x, SZ / 2); c.scale(on ? 1 : .7, on ? 1 : .7);
+      SHAPES[sp.shape](t, on && kick > .3 ? "#fff" : sp.color);
+      c.restore();
+      if (!on) { c.save(); c.globalCompositeOperation = "source-atop"; c.fillStyle = "rgba(11,16,38,.6)"; c.fillRect(x - 160, 0, 320, SZ); c.restore(); }
+      [talk, pulse, kick] = sv;
+    });
+  } else if (cur) {
     c.save();
     c.translate(SZ / 2 + (Math.random() - .5) * (14 * kick + 5 * talk), SZ / 2 + (Math.random() - .5) * (14 * kick + 5 * talk));
     c.scale(1 + .3 * kick, 1 + .3 * kick);
