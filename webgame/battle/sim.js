@@ -27,7 +27,7 @@
       BOX, t: 0, hp: MAX_HP, maxHp: MAX_HP, eHp: E_MAX, eMax: E_MAX, level: 0, lv: opts.lv || 1, xp: opts.xp || 0, phaseName: "", over: null, auto: true, inv: 0, combo: 0,
       p: { x: cx, y: BOX.y + BOX.h * .75 }, e: { x: EX, y: 85, mode: "idle", tt: 0, dashT: 0, lx: EX },     // enemy mode: idle | warn | dive | back
       al: cfg.ally ? { x: BOX.x - 38, y: BOX.y + BOX.h * .75 } : null,
-      bullets: [], lasers: [], shots: [], gauge: cfg.gauge0 || 0, bondLv: 0, shieldOn: false, talk: null, hasAlly: !!cfg.ally,
+      bullets: [], lasers: [], zones: [], shots: [], gauge: cfg.gauge0 || 0, bondLv: 0, shieldOn: false, talk: null, hasAlly: !!cfg.ally,
       allyId: allies ? allies[0] : cfg.ally, swapCd: 0, dashT: 0, dashCd: 0, dashDir: null, lastIn: null, surviveLeft: cfg.survive || 0,
     };
     const p = s.p, e = s.e, al = s.al;
@@ -43,16 +43,18 @@
 
     // bullet colour = the battle colour's hue; saturation / lightness set by pattern kind so patterns read apart at a glance
     const hue = (() => { const n = parseInt(col.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b); if (mx === mn) return 0; const d = mx - mn; return 60 * (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4); })();
-    const TONE = { rain: [.45, .5], wall: [.55, .84], wave: [.9, .58], aim: [1, .62], aimFan: [1, .77], fan: [.85, .5], ring: [.6, .72], side: [.3, .62], spiral: [1, .44], bounce: [.75, .66], stall: [.95, .8], homing: [.7, .38] };   // [saturation, lightness]
+    const TONE = { rain: [.45, .5], wall: [.55, .84], wave: [.9, .58], aim: [1, .62], aimFan: [1, .77], fan: [.85, .5], ring: [.6, .72], side: [.3, .62], spiral: [1, .44], bounce: [.75, .66], stall: [.95, .8], homing: [.7, .38], swell: [.8, .55] };   // [saturation, lightness]
     const C = (k, o) => ({ col: `hsl(${hue},${TONE[k][0] * 100}%,${TONE[k][1] * 100}%)`, ...o });
 
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
     const add = (x, y, a, sp, size = 6, o = {}) => {
       s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col, nm: rl("dirRule") && rl("dirRule").name,   // 방향 규칙: name written on the bullet
-        id: uid++, hp: o.hp, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, bn: o.bn || 0, stall: o.stall, home: o.home, age: 0, tr: [] });
+        id: uid++, hp: o.hp, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, bn: o.bn || 0, stall: o.stall, home: o.home, gr: o.gr, r0: size, age: 0, tr: [] });
       if (!s.over) emit("enemyShot", { size, speed: sp });
     };
     const laser = (x, y, a, w, warn, dur) => { s.lasers.push({ x, y, a, w, warn, dur, age: 0, ping: false, boom: false }); };
+
+    const zone = (x, y, r, warn, dur) => { s.zones.push({ x, y, r, warn, dur, age: 0 }); };
 
     // pattern helpers handed to cfg.phases[i](h); bullets leave from the enemy's current position (e.x, e.y + 55)
     const every = (k, iv, fn) => { tm[k] = (tm[k] || 0) + dtc; if (tm[k] > iv) { tm[k] = 0; fn(); } };
@@ -70,10 +72,18 @@
       }),
       wave: (iv, sp = 85, size = 6, o = {}) => every("v", iv, () => { for (let i = 0; i < 5; i++) add(BOX.x + 30 + i * (BOX.w - 60) / 4, BOX.y - 12, Math.PI / 2, sp, size, { ...C("wave", o), sa: 38, sf: 3, ph: i * .9 }); }),
       breakable: (iv, sp = 40, size = 14, o = {}) => every("k", iv, () => add(p.x, BOX.y - 12, Math.PI / 2, sp, size, { ...C("rain", o), hp: o.hp || 5 })),   // big bullet that player/ally shots wear down; hp 0 = gone
+      // bullet that hangs above the player and flips state on every player/ally hit: o.states = [{vx, vy, col}] cycled in order (default still <-> sideways)
+      toggle: (iv, size = 12, o = {}) => every("t", iv, () => {
+        const c0 = C("rain", o).col, st = o.states || [{ vx: 0, vy: 0, col: c0 }, { vx: 90, vy: 0, col: `hsl(${(hue + 180) % 360},100%,70%)` }];
+        add(p.x, BOX.y + 40, 0, 0, size, { col: st[0].col }); const b = s.bullets[s.bullets.length - 1]; b.tg = st; b.st = 0;
+      }),
       // new motions: bounce (reflects off the side walls bn times), stall (stops at t for d s, then leaves at speed sp), homing (steers toward the player for t s)
       bounce: (iv, sp = 170, size = 6, o) => every("bn", iv, () => add(e.x, e.y + 55, Math.PI / 2 + (rng() < .5 ? -.8 : .8), sp, size, C("bounce", { bn: 3, ...o }))),
       stall: (iv, sp = 130, size = 6, o) => every("st", iv, () => add(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), sp, size, C("stall", { stall: { t: .5, d: .6, sp: sp * 2 }, ...o }))),
       homing: (iv, sp = 130, size = 6, o) => every("hm", iv, () => add(e.x, e.y + 55, Math.PI / 2, sp, size, C("homing", { home: { t: 1.2, w: 1.6 }, ...o }))),
+      // lasting threats: zone = floor patch under the player, harmless for warn s then hurting for dur s; swell = orb that grows to k x its size over t s, then bursts into a ring of n
+      zone: (iv, o = {}) => every("z", iv, () => zone(p.x, p.y, o.r || 50, o.warn || 1, o.dur || 2)),
+      swell: (iv, sp = 40, size = 8, o = {}) => every("sw", iv, () => add(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), sp, size, { ...C("swell", o), gr: o.k || 2.5, split: { t: o.t || 1.5, n: o.n || 10, sp: o.ringSp || 110, size: 5 } })),
       laser: (iv, aimed, o = {}) => every("l", iv, () => {                                // telegraphed beam: aimed at the player, or a straight drop
         if (aimed) laser(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), o.w || 26, o.warn || 1, o.dur || .5);
         else laser(rng() < .6 ? p.x : BOX.x + 20 + rng() * (BOX.w - 40), e.y + 55, Math.PI / 2, o.w || 34, o.warn || 1, o.dur || .5);
@@ -172,6 +182,10 @@
         sh.dead = true; b.hp -= sh.dmg;
         if (b.hp <= 0) { b.dead = true; emit("break", { x: b.x, y: b.y }); }
       }
+      for (const sh of s.shots) for (const b of s.bullets) if (b.tg && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // toggle bullet: a hit absorbs the shot and flips its state
+        sh.dead = true; b.st = (b.st + 1) % b.tg.length; const t = b.tg[b.st]; b.vx = t.vx; b.vy = t.vy; b.col = t.col;
+      }
+      for (const b of s.bullets) if (b.tg && (b.x < BOX.x + b.r && b.vx < 0 || b.x > BOX.x + BOX.w - b.r && b.vx > 0)) b.vx = -b.vx;   // sway turns at the walls
       for (const sh of s.shots) if (!sh.dead && sh.y < e.y + 65 && sh.y > e.y - 80 && Math.abs(sh.x - e.x) < E_W) {   // shot lands wherever the enemy is
         const d = cfg.invuln || rl("finale") ? 0 : sh.dmg;                                 // invuln enemy: hits land (ting!) but deal 0
         sh.dead = true; s.eHp -= d; s.combo++; comboT = .5;
@@ -182,7 +196,7 @@
       const r = s.eHp / E_MAX, lv2 = cuts.filter(c => r <= c).length;      // each phase has its own pattern
       if (lv2 > s.level) {
         s.level = lv2; s.xp += XP_PHASE; if (s.xp >= XP_LV) { s.xp -= XP_LV; s.lv++; }   // exp per phase broken; level is display only
-        s.bullets = []; s.lasers = []; tm = {}; hist = []; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; e.mode = "idle"; e.y = 85; e.dashT = 0;
+        s.bullets = []; s.lasers = []; s.zones = []; tm = {}; hist = []; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; e.mode = "idle"; e.y = 85; e.dashT = 0;
         const lines = cfg.talks && cfg.talks[lv2];
         emit("phase", { level: lv2, name: (cfg.names && cfg.names[lv2]) || "", talk: !!lines });
         if (lines) s.talk = { lines, i: 0 };
@@ -191,6 +205,7 @@
       if (s.t > 1 && !s.talk && (e.mode === "idle" || e.mode === "warn")) cfg.phases[Math.min(s.level, cfg.phases.length - 1)](h);   // 1s grace; the enemy rests its guns while diving
       for (const b of s.bullets) {
         b.age += dt;
+        if (b.gr) b.r = b.r0 * (1 + (b.gr - 1) * Math.min(1, b.age / b.split.t));
         if (b.sa) { b.y += b.vy * dt; b.x = b.bx + b.sa * Math.sin(b.sf * b.age + b.ph); }
         else {
           if (b.home && b.age < b.home.t) { const cur = Math.atan2(b.vy, b.vx), t = Math.atan2(p.y - b.y, p.x - b.x), d = Math.atan2(Math.sin(t - cur), Math.cos(t - cur)), a = cur + Math.max(-b.home.w * dt, Math.min(b.home.w * dt, d)), v = Math.hypot(b.vx, b.vy); b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; }
@@ -223,6 +238,11 @@
           if (along > 0 && perp < l.w / 2 + HITBOX) hurt(5);
         }
       }
+      for (const z of s.zones) {
+        z.age += dt;
+        if (z.age >= z.warn && z.age < z.warn + z.dur && s.inv <= 0 && Math.hypot(p.x - z.x, p.y - z.y) < z.r + HITBOX) hurt(4);
+      }
+      s.zones = s.zones.filter(z => z.age < z.warn + z.dur);
       s.lasers = s.lasers.filter(l => l.age < l.warn + l.dur + .15);
       if (s.inv <= 0) {
         const i = s.bullets.findIndex(b => (!rl("colorRule") || b.col === rl("colorRule")) && !(b.nm && (p.x - ox) * b.vx + (p.y - oy) * b.vy > 0) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
@@ -230,7 +250,7 @@
       }
       if (cfg.survive) s.surviveLeft = Math.max(0, cfg.survive - Math.max(0, s.t - 1));   // escape battle: outlast the clock after the 1s grace
       if (s.hp <= 0) { s.over = "lose"; emit("lose"); }
-      else if (s.eHp <= 0 || (cfg.survive && s.surviveLeft <= 0)) { s.over = "win"; s.bullets = []; s.lasers = []; emit("win"); }
+      else if (s.eHp <= 0 || (cfg.survive && s.surviveLeft <= 0)) { s.over = "win"; s.bullets = []; s.lasers = []; s.zones = []; emit("win"); }
       s.bondLv = blv(); s.phaseName = (cfg.names && cfg.names[s.level]) || "";
     }
 

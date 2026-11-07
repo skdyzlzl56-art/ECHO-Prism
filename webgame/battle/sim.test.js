@@ -445,3 +445,56 @@ test("the box is battle state: moving it moves the player's limits and the bulle
   assert.strictEqual(b.state.bullets.length, 0, "bullet outside the moved box is culled");
   assert.strictEqual(BOX.x, 330, "the shared default box is untouched");
 });
+
+test("toggle bullet: each player hit cycles its state; sway moves it sideways, still stops it, look differs", () => {
+  const cfg = { ...quiet, phases: [h => h.toggle(.5, 12)] };
+  const b = createBattle(cfg, { rng: seeded(4) }); b.state.auto = false; run(b, 1.6);
+  const t = b.state.bullets.find(x => x.tg);
+  assert.ok(t, "a toggle bullet was spawned");
+  b.state.bullets = [t]; t.x = BOX.x + 100; t.y = BOX.y + 100;
+  const hit = () => { b.state.shots.push({ x: t.x, y: t.y + 20, vx: 0, vy: -300, dmg: 1 }); run(b, .05); };
+  const still0 = { x: t.x, y: t.y }, col0 = t.col; run(b, .3);
+  assert.deepStrictEqual({ x: t.x, y: t.y }, still0, "state 0 stands still");
+  hit(); assert.notStrictEqual(t.col, col0, "state 1 looks different");
+  const x1 = t.x, y1 = t.y; run(b, .3);
+  assert.ok(t.x !== x1 && Math.abs(t.y - y1) < 1e-9, "state 1 moves sideways");
+  hit(); const x2 = t.x; run(b, .3);
+  assert.strictEqual(t.x, x2, "back to still stops"); assert.strictEqual(t.col, col0);
+  hit(); run(b, .3); assert.ok(t.x !== x2, "third hit sets it moving again");
+  for (let i = 0; i < 20; i++) { run(b, .3); assert.ok(t.x >= BOX.x && t.x <= BOX.x + BOX.w, "sway bounces inside the box"); }
+});
+
+// ---- bullets lasting (ticket 05) ----
+test("hazard zone: safe while warning, hurts once active, then disappears", () => {
+  const b = createBattle({ ...quiet, playerHp: 100, phases: [h => { if (b.state.t < 1.2) h.zone(.01, { r: 60, warn: 1, dur: 1 }); }] }, { rng: seeded(2) });
+  b.state.auto = false;
+  run(b, 1.1);
+  const z = b.state.zones[0];
+  assert.ok(z, "a zone was laid");
+  z.x = b.state.p.x; z.y = b.state.p.y;                                   // player stands in it
+  run(b, .5);
+  assert.strictEqual(b.state.hp, 100, "warning zone does no harm");
+  run(b, .9);                                                             // now past the warning
+  assert.ok(b.state.hp < 100, "active zone hurts");
+  run(b, 2);
+  assert.strictEqual(b.state.zones.length, 0, "zone expires");
+});
+
+test("swelling bullet grows, then bursts into a ring", () => {
+  const b = createBattle({ ...quiet, phases: [h => { if (!b.state.bullets.length && b.state.t < 1.2) h.swell(.01, 0, 8, { t: 1, k: 3 }); }] }, { rng: seeded(1) });
+  b.state.auto = false;
+  run(b, 1.5);
+  const orb = b.state.bullets.find(x => x.id === 0);
+  assert.ok(orb && orb.r > 8 * 1.5, "it has grown");
+  const ev = run(b, 1.2);
+  assert.ok(ev.some(v => v.type === "split"), "it burst");
+  assert.ok(!b.state.bullets.some(x => x.id === 0), "the orb is gone");
+  assert.ok(b.state.bullets.length > 4, "ring bullets left behind");
+});
+
+test("zone and swell have their own tones", () => {
+  const b = createBattle({ ...quiet, phases: [h => { if (b.state.t < 1.2) h.swell(.01, 0, 8, { t: 1, k: 3 }); }] }, { rng: seeded(1) });
+  run(b, 1.1);
+  const c = b.state.bullets[0].col;
+  assert.ok(!["rain", "wall", "wave", "aim", "bounce", "stall", "homing"].some(k => { const d = createBattle({ ...quiet, phases: [h => { if (d.state.t < 1.2) h[k] ? h[k](.01, 100, 8) : 0; }] }, { rng: seeded(1) }); run(d, 1.1); return d.state.bullets[0] && d.state.bullets[0].col === c; }));
+});

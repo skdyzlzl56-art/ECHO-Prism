@@ -209,6 +209,12 @@ function runBattle(cfg, done) {
     g.fillStyle = "rgba(0,0,20,.7)"; g.fillRect(BOX.x, BOX.y, BOX.w, BOX.h);
     g.save(); g.beginPath(); g.rect(BOX.x, BOX.y, BOX.w, BOX.h); g.clip();
     if (e.y > BOX.y - 40) drawEnemyBody(g, cfg.speaker, e.x, e.y, t, false);           // the enemy is visible inside the box while diving
+    for (const z of s.zones) {                                                          // hazard zones: dashed ring while warning, filled pulsing disc once active
+      g.save(); g.fillStyle = col; g.strokeStyle = "#fff";
+      if (z.age < z.warn) { g.globalAlpha = .35 + .4 * Math.abs(Math.sin(z.age * 14)); g.lineWidth = 2; g.setLineDash([8, 6]); g.beginPath(); g.arc(z.x, z.y, z.r, 0, TAU); g.stroke(); }
+      else { g.globalAlpha = .45 + .15 * Math.sin(z.age * 20); g.beginPath(); g.arc(z.x, z.y, z.r, 0, TAU); g.fill(); }
+      g.restore();
+    }
     g.globalCompositeOperation = "lighter";
     for (const b of s.bullets) {                                                        // glowing bullets with a short trail
       g.fillStyle = b.col;
@@ -217,6 +223,7 @@ function runBattle(cfg, done) {
       g.globalAlpha = 1; g.shadowColor = b.col; g.shadowBlur = b.r > 8 ? 18 : 10; g.beginPath(); g.arc(b.x, b.y, b.r, 0, TAU); g.fill();
       g.shadowBlur = 0; g.fillStyle = "#fff"; g.beginPath(); g.arc(b.x, b.y, b.r * .45, 0, TAU); g.fill();
       if (b.hp > 0) { g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 2; g.beginPath(); g.arc(b.x, b.y, b.r + 3, 0, TAU); g.stroke(); g.fillStyle = "#fff"; g.font = "bold 11px sans-serif"; g.textAlign = "center"; g.fillText(b.hp, b.x, b.y + 4); g.fillStyle = b.col; }   // breakable: white ring + hp
+      if (b.tg) { g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 2; g.setLineDash(b.st % 2 ? [] : [4, 4]); g.beginPath(); g.arc(b.x, b.y, b.r + 3, 0, TAU); g.stroke(); g.setLineDash([]); }   // toggle: dashed ring = state 0, solid = state 1 (plus colour per state)
       if (b.nm) { g.save(); g.globalAlpha = 1; g.font = "11px 'Malgun Gothic'"; g.textAlign = "center"; g.fillStyle = "#fff"; g.fillText(b.nm, b.x, b.y - b.r - 4); g.restore(); }   // 방향 규칙: name written on the bullet
     }
     if (burstFx > 0) {                                                                  // 유대의 빛: a ring of light sweeping out from the player
