@@ -50,8 +50,8 @@ BATTLES.s3_painter = {
   phases: [
     h => { h.ring(1.9, 13, 90, 7, { col: RED }); h.rain(.7, 110); },                                                          // 1: 붉은 아치, 푸른 비는 무해
     h => { h.aim(1.4, 130, 10, { col: RED, split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.wave(1.8, 85); h.rain(.5, 110); },  // 2: 분열탄도 붉다
-    h => { h.spiral(.12, 3, .45, 105, 7, { w: .2 }); h.side(.8, 140, 7, { col: RED }); h.laser(4, false); },                  // 3: 푸른 나선 속 붉은 옆탄
-    h => { h.fan(1.5, 5, .35, 110, 12, { col: RED }); h.wall(3, 95, 6, { col: RED }); h.aim(.8, 200, 5); },                    // 4: 붉은 벽
+    h => { h.spiral(.12, 3, .45, 105, 7, { w: .2 }); h.side(.8, 140, 7, { col: RED }); h.laser(4, false); h.homing(2.2, 120, 7, { col: RED }); },   // 3: 푸른 나선 속 붉은 옆탄, 붉은 한 점이 쫓아온다
+    h => { h.fan(1.5, 5, .35, 110, 12, { col: RED }); h.wall(3, 95, 6, { col: RED }); h.aim(.8, 200, 5); h.bounce(1.6, 150, 7, { col: RED }); },   // 4: 붉은 벽, 벽에 튕기는 붉은 탄
     h => { h.spiral(.1, 4, .35, 112, 7, { col: RED }); h.ring(1.5, 17, 100, 8); h.wall(3, 95); h.aim(1.8, 130, 14, { col: RED, split: { t: 1, n: 12, sp: 95, size: 6 } }); },   // 5: 텅 빈 캔버스
   ],
   talks: {
