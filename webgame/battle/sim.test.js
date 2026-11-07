@@ -104,6 +104,24 @@ test("invulnerable enemy: hits and the bond burst deal 0; surviving the clock wi
   const ev2 = run(b, 2); assert.ok(ev2.some(v => v.type === "win") && b.state.over === "win");
 });
 
+// 색 규칙: cfg.colorRule = a bullet colour; only bullets of that colour can hit the player
+const bul = (p, dx, col) => ({ x: p.x + dx, y: p.y, bx: 0, vx: 0, vy: 0, r: 6, dmg: 4, col, w: 0, acc: 0, sa: 0, sf: 3, ph: 0, age: 0, tr: [] });
+const still = cfg => { const b = createBattle({ ...quiet, ...cfg }, { rng: seeded(3) }); b.state.auto = false; return b; };
+
+test("colour rule: only the chosen colour hurts; without the option every colour hurts", () => {
+  for (const [rule, col, dmg] of [[undefined, "#f00", 4], ["#0f0", "#0f0", 4], ["#0f0", "#f00", 0]]) {
+    const b = still({ colorRule: rule }); b.state.bullets.push(bul(b.state.p, 0, col));
+    run(b, .05);
+    assert.strictEqual(b.state.maxHp - b.state.hp, dmg, `rule ${rule} bullet ${col}`);
+  }
+});
+
+test("colour rule: graze and the bond gauge still work", () => {
+  const b = still({ ally: "lumi", colorRule: "#0f0" }); b.state.bullets.push(bul(b.state.p, 14, "#f00"));
+  const ev = run(b, .02);
+  assert.ok(ev.some(v => v.type === "graze") && b.state.gauge > 0 && b.state.hp === b.state.maxHp);
+});
+
 // ---- the real stage 1 configs: every phase actually fires, with the player standing still and a huge HP pool ----
 global.SPEAKERS = {}; global.BATTLES = {}; global.ACTS = {}; global.runBattle = () => {};
 require("../stage1/battles.js"); require("../stage2/battles.js");

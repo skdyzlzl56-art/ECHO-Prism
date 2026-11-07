@@ -177,7 +177,7 @@
       }
       s.lasers = s.lasers.filter(l => l.age < l.warn + l.dur + .15);
       if (s.inv <= 0) {
-        const i = s.bullets.findIndex(b => Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
+        const i = s.bullets.findIndex(b => (!cfg.colorRule || b.col === cfg.colorRule) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
         if (i >= 0) { const d = s.bullets[i].dmg; s.bullets.splice(i, 1); hurt(d); }
       }
       if (cfg.survive) s.surviveLeft = Math.max(0, cfg.survive - Math.max(0, s.t - 1));   // escape battle: outlast the clock after the 1s grace
