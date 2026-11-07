@@ -126,7 +126,19 @@ function fairy(t, col) {
   c.globalAlpha = 1;
 }
 
-const SHAPES = { orb, prism, rings, bloom, shard, fairy };
+// Painter's easel: a blank frame slowly turning, one red dab in the corner, grey flecks wiped off it.
+function easel(t, col) {
+  c.strokeStyle = c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 18; c.lineWidth = 3;
+  c.save(); c.rotate(Math.sin(ph / 1400) * .12);
+  c.strokeRect(-60, -80, 120, 160); c.globalAlpha = .12; c.fillRect(-60, -80, 120, 160); c.globalAlpha = 1;
+  c.beginPath(); c.moveTo(-30, 80); c.lineTo(-52, 120); c.moveTo(30, 80); c.lineTo(52, 120); c.stroke();
+  c.fillStyle = "#ff4d6d"; c.shadowColor = "#ff4d6d"; c.beginPath(); c.arc(34, -56, 7 + 3 * pulse, 0, 7); c.fill();
+  c.restore(); c.fillStyle = col;
+  for (let i = 0; i < 10; i++) { const p = (ph / 2200 + i * .1) % 1; c.globalAlpha = (1 - p) * .7; c.fillRect(Math.sin(i * 9.7) * 90, -90 + 200 * p, 3, 3 + i % 3); }
+  c.globalAlpha = 1;
+}
+
+const SHAPES = { orb, prism, rings, bloom, shard, fairy, easel };
 
 // Starfield background
 const bg = document.getElementById("bg").getContext("2d");
@@ -137,6 +149,7 @@ const THEMES = {
   night:   { sky: "linear-gradient(#1b2a5a,#0b1026)", rgb: "190,220,255", vx: 0,   vy: 1 },
   lantern: { sky: "linear-gradient(#5a2e1b,#140a0a)", rgb: "255,196,110", vx: 0,   vy: -1 },
   silence: { sky: "linear-gradient(#1c2a33,#06090d)", rgb: "170,190,205", vx: .25, vy: .6 },          // cold, still, slow snow
+  gallery: { sky: "linear-gradient(#2b2f35,#0c0d10)", rgb: "190,195,205", vx: .1, vy: .3 },            // washed-out grey, slow drifting dust
   flee:    { sky: "linear-gradient(#3d0f1c,#0a0306)", rgb: "255,120,130", vx: -22, vy: 0, streak: 5 }, // red alarm sky, stars streak past
 };
 let theme = THEMES.night, warpMs = 0, lastBg = 0;
