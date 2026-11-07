@@ -5,7 +5,7 @@
 // moves: enemy movement per phase (sway / chase, optional dash = seconds between warned body-slams).
 
 SPEAKERS.fragment = { name: "균열 조각", pitch: 140, spin: 1.4, shape: "shard", color: "#ff7a9a", close: 0 };   // 떼로 몰려오는 작은 균열
-SPEAKERS.lumi = { name: "루미", pitch: 560, spin: 1.3, shape: "bloom", color: "#ffa6d9", close: 2 };            // 등불지기, 동료
+SPEAKERS.lumi = { name: "루미", pitch: 560, spin: 0.6, shape: "bloom", color: "#ffa6d9", close: 2 };            // 등불지기, 동료
 SPEAKERS.hexa = { name: "헥사", pitch: 110, spin: 0.7, shape: "rings", color: "#ffb347", close: 1 };            // 문지기, 보스 -> 아군
 
 // ---- 1) 균열 조각 무리: 루미를 구한다 (루미는 아직 동료가 아님) ----
