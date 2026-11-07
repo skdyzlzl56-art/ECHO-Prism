@@ -37,7 +37,7 @@ ACTS.s5_index = done => runBattle(BATTLES.s5_index, done);
 
 // ---- 3) 사서: 4페이즈. 모든 탄에 「이름」이 적혀 있다 (방향 규칙) ----
 BATTLES.s5_librarian = {
-  ...PARTY4, speaker: "librarian", hp: 580, bgm: "s2_boss", color: "#a9b8e0", dirRule: { name: "이름" }, cuts: [.75, .5, .25], playerHp: 28, ew: 90,
+  ...PARTY4, speaker: "librarian", hp: 580, bgm: "s5_boss", color: "#a9b8e0", dirRule: { name: "이름" }, cuts: [.75, .5, .25], playerHp: 28, ew: 90,
   winText: "이름이 풀려난다!",
   names: ["사서 「조용히 해 주십시오」", "사서 「대출 중」", "사서 「열람 금지」", "사서 「마지막 장」"],
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 }, { x: "sway", amp: 90, spd: 1.3, dash: 6.5 }],

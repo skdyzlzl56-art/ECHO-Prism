@@ -1,6 +1,6 @@
 // STAGE 5 - 이름 없는 도서관. Appended to SCRIPT after stage 4 (stage4/story.js).
 // Flow: 도착(워프, 먹빛 서가) -> 서가 둘러보기(단서) -> 쪽지 전투 -> 색인 서랍(방향 규칙 입문) -> 사서 등장·보스전 -> 사서의 해방(개체의 과거 단서) -> 클리어
-// `theme: "library"` = ink-blue stacks, pages drifting up (portraits.js). Existing bgm keys only (music for stage 5 comes later).
+// `theme: "library"` = ink-blue stacks, pages drifting up (portraits.js). Music: s5_field (cello+harp), s5_boss (choral synth orchestra); other battles use "battle".
 // Clues for the finale (chapter 6): 침묵 = 개체의 잊힌 첫 기억 (반납되지 못한 한 권), ??? = 이 세계 자체의 의식. 둘 다 여기서는 직접 말하지 않고 암시만 한다.
 // The name "에코" is never spoken here; only "메아리" is hinted. Chapter 6 gives it.
 
@@ -13,7 +13,7 @@ const STAGE5 = [
   { who: "lumi", text: "응, 나도 맡았어! 오래된 종이 냄새! 근데 조용해도 너무 조용하다." },
   { who: "hexa", text: "......소리가 삼켜진 정적과는 다르다. 누군가 일부러 목소리를 낮추게 만드는 조용함이다." },
   { who: "keeper", text: "도서관은 원래 그렇습니다. 소리를 낮추는 곳이지요. ......다만 이렇게까지 낮은 적은 없었습니다." },
-  { who: "voice", fx: "stage5", bgm: "s2_field", text: "여기는 다섯 번째 길, '이름 없는 도서관'이에요. 마을의 이름을 전부 모아 두던 곳이래요." },
+  { who: "voice", fx: "stage5", bgm: "s5_field", text: "여기는 다섯 번째 길, '이름 없는 도서관'이에요. 마을의 이름을 전부 모아 두던 곳이래요." },
   { who: "lumi", text: "우와, 책장이 천장까지 닿아! 어디가 끝인지 모르겠어!" },
   { who: "glitch", text: "......책이 하나같이 등이 비어 있다. 제목도 이름도 없는 책이 수만 권이군." },
   { who: "hexa", text: "......이름이 먼저 사라진다는 말이 사실이었다. 여기서 증거를 보는군." },
@@ -60,7 +60,7 @@ const STAGE5 = [
   { act: "s5_pages", bgm: "battle" },
 
   // ---- 3. 쪽지 이후, 색인 서랍 ----
-  { who: "scrap", bgm: "s2_field", text: "펄럭...... 이름...... 어디 있어......" },
+  { who: "scrap", bgm: "s5_field", text: "펄럭...... 이름...... 어디 있어......" },
   { who: "lumi", text: "후우, 다 흩어졌다! 그런데 이 쪽지들, 꼭 우는 것 같았어." },
   { who: "voice", text: "우는 게 아니라, 불러 달라고 외친 걸지도 몰라요. '이름을 내놔'라는 말은, '내 이름을 불러 줘'일 수도 있잖아요." },
   { who: "hexa", text: "......그렇게 들었나. 너는 귀가 좋구나." },
@@ -79,7 +79,7 @@ const STAGE5 = [
   { act: "s5_index", bgm: "battle" },
 
   // ---- 4. 사서의 등장 ----
-  { who: "scrap", bgm: "s2_field", text: "...대답했다......." },
+  { who: "scrap", bgm: "s5_field", text: "...대답했다......." },
   { who: "lumi", text: "해냈다! 같이 움직이니까 정말 이름이 길을 열어 줬어!" },
   { who: "voice", text: "이름이 적힌 탄은 방향을 읽으면 되는 거예요. 이걸 방향 규칙이라고 불러요." },
   { who: "hexa", text: "......방향을 읽는다. 탄의 흐름에 몸을 맡기는 것도 하나의 용기로군." },
@@ -128,10 +128,10 @@ const STAGE5 = [
   { who: "lumi", text: "응! 같이 움직이면 이름이 길을 열어 주니까, 우린 안 무서워!" },
   { who: "glitch", text: "......멈추지 않고 달리면 된다. 쉽군." },
   { who: "librarian", fx: "name", text: "......읽겠습니다. 한 줄도 빠뜨리지 않고." },
-  { act: "s5_librarian", bgm: "s2_boss" },
+  { act: "s5_librarian", bgm: "s5_boss" },
 
   // ---- 5. 사서의 해방 ----
-  { who: "librarian", bgm: "s2_field", fx: "impact", text: "......아." },
+  { who: "librarian", bgm: "s5_field", fx: "impact", text: "......아." },
   { who: "librarian", text: "손이 떨리는군요. 책장을 넘기는 손이 처음으로 멈추지 않습니다." },
   { who: "lumi", text: "괜찮아?! 많이 아파?" },
   { who: "librarian", text: "아프지 않습니다. 다만...... 서가가, 열리려 합니다. 제 손을 떠나서요." },

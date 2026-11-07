@@ -46,3 +46,8 @@ test("stage 5 boss and practice fight use the direction rule, named bullets, and
     assert.ok(b.state.bullets.length > 0 && b.state.bullets.every(x => x.nm === cfg.dirRule.name), id);
   }
 });
+
+test("stage 5 has its own music: librarian boss uses s5_boss and no stage 5 line uses stage 2 tracks", () => {
+  assert.strictEqual(D.BATTLES.s5_librarian.bgm, "s5_boss");
+  for (const l of D.STAGE5) if (l.bgm) assert.ok(!/^s2_/.test(l.bgm), `${l.bgm}: ${l.text || l.act}`);
+});
