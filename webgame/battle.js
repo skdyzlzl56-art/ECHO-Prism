@@ -298,7 +298,7 @@ function runBattle(cfg, done) {
   function frame(now) {
     const dt = Math.min((now - last) / 1000, .05); last = now;
     $("portrait").style.visibility = s.talk ? "visible" : "hidden";                     // the enemy body is drawn on the field; the portrait only shows while someone talks
-    if (s.talk) { talkN += dt * 25; setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
+    if (s.talk) { talkN += dt * 25 * talkRate(keys.KeyX); setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
     else {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };

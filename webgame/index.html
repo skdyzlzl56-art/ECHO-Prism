@@ -110,8 +110,9 @@ function show(i) {
   else timer = setInterval(tick, CHAR_MS);
 }
 
+let xHeld = false;                  // hold X: type faster (does not advance the line)
 function tick() {
-  const ch = full[pos++];
+  pos = Math.min(full.length, pos + talkRate(xHeld)); const ch = full[pos - 1];
   $("text").textContent = full.slice(0, pos);
   if (ch.trim() && !/[.,!?…]/.test(ch)) { blip(speaker.pitch); pulsePortrait(); } // sound + pulse only on spoken chars
   if (pos >= full.length) finish();
@@ -164,6 +165,9 @@ function advance() {
 
 // hold Ctrl: fast-forward dialogue (stops at scenes/effects, which block input anyway)
 let ctrl = false;
+addEventListener("keydown", e => { if (e.code === "KeyX") xHeld = true; });
+addEventListener("keyup", e => { if (e.code === "KeyX") xHeld = false; });
+addEventListener("blur", () => { xHeld = false; });
 addEventListener("keydown", e => { if (e.key === "Control") ctrl = true; });
 addEventListener("keyup", e => { if (e.key === "Control") ctrl = false; });
 addEventListener("blur", () => { ctrl = false; });

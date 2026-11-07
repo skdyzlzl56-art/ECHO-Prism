@@ -229,6 +229,7 @@
     return look;
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX, moveLook };
-  else { root.createBattle = createBattle; root.moveLook = moveLook; }
+  const talkRate = fast => fast ? 5 : 1;   // dialogue typing speed multiplier while X is held
+  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX, moveLook, talkRate };
+  else { root.createBattle = createBattle; root.moveLook = moveLook; root.talkRate = talkRate; }
 })(typeof window !== "undefined" ? window : globalThis);
