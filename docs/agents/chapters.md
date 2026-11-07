@@ -7,6 +7,16 @@ Copy `webgame/stage6/` as the template (newest, has every rule). Each `webgame/s
 
 ## Tests
 Run `npm test` (all `*.test.js`). `node --test <directory>` does not work on Node 24.
+- Put a feature's tests in its own new `*.test.js` (e.g. `webgame/battle/<feature>.test.js`); appending to the end of `sim.test.js` makes every parallel ticket conflict.
+- `webgame/battle.smoke.test.js` runs the real `battle.js` frame loop on stubs. A view change that needs a new global (a DOM helper, a constant) adds it to the stub list there.
+- `webgame/hygiene.test.js` fails on leftover conflict markers and on stale key text.
+
+## Merging
+- Run `git diff --check` and `npm test` before committing a merge; commit only when both are green. After resolving a conflict in a test file, check each test still has its closing `});`.
+- Start the next implementer only after the integration branch is green, so its base holds every merged ticket.
+
+## Keys
+Key names appear in several places: `webgame/dialogue.js` (`KEYS`), `webgame/menu.js` (`fixKeys`, `keyLabel`), `battle.js` hints, story text (`script.js`, `stageN/story.js`, `stageN/scenes.js`). When a key changes, grep for its old name in all of them.
 
 ## Music
 Generator scripts: `music/stageN_music.py`, notes in `music/README.md`. `music/tools/` is git-ignored: in a worktree, copy it from the main checkout before generating. Loops go to `webgame/audio/bgm_<key>.ogg`. Judging how a track sounds is the user's job.
