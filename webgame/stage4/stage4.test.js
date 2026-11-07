@@ -40,7 +40,7 @@ test("stage 4 battles: bgm exists, boss and mooks rewind, rewinds actually fire"
   }
 });
 
-test("4 allies cycle with X: lumi -> hexa -> glitch -> keeper -> lumi, each with a kit and a bond light", () => {
+test("4 allies cycle with A: lumi -> hexa -> glitch -> keeper -> lumi, each with a kit and a bond light", () => {
   const P = D.PARTY4; assert.deepStrictEqual([...P.allies], ["lumi", "hexa", "glitch", "keeper"]);
   for (const id of P.allies) assert.ok(P.lights[id], `light for ${id}`);
   assert.strictEqual(new Set(Object.values(P.lights)).size, 4, "four distinct lights");

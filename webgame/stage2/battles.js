@@ -1,5 +1,5 @@
 // Stage 2 battle configs (engine: ../battle.js runBattle, rules: ../battle/sim.js). See stage1/battles.js for the pattern helpers.
-// Both companions are available here: X swaps 루미 <-> 헥사 (allies). The bond level is shared and carries over from earlier battles.
+// Both companions are available here: A swaps 루미 <-> 헥사 (allies). The bond level is shared and carries over from earlier battles.
 // Flow: s2_mooks -> s2_silence (can be beaten once) -> it rises again -> s2_flee (unbeatable: hits deal 0, survive to escape).
 
 SPEAKERS.silence = { name: "침묵", pitch: 70, spin: 0.5, shape: "orb", color: "#9fb4c7", close: 0 };   // 소리·빛·이름을 삼키는 것. 말수가 적고 끊긴다

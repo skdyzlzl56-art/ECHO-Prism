@@ -5,6 +5,14 @@ const files = ["script.js", ...[1, 2, 3, 4, 5, 6].flatMap(n => [`stage${n}/battl
 const D = vm.runInNewContext("const BATTLES = {}, ACTS = {}, FX = {}, sweep = () => {}, noise = () => {};\n" + files.map(rd).join("\n") + "\n({ SCRIPT, SPEAKERS, BATTLES });");
 const bgms = new Set(fs.readdirSync(path.join(__dirname, "audio")).map(f => f.replace(/^bgm_|\.ogg$/g, "")));
 
+test("swap key is A, not X; no 'X키' text left in the game", () => {
+  const b = rd("battle.js");
+  assert.match(b, /ev\.code === "KeyA"\) battle\.swap\(\)/);
+  assert.doesNotMatch(b, /KeyX/);
+  assert.doesNotMatch(b, /keys\.KeyA/, "A must not also move left");
+  for (const f of [...files, "battle.js", "stage4/scenes.js"]) assert.doesNotMatch(rd(f), /X키|교대: X/, f);
+});
+
 test("battle bgm files and speakers exist; script bgm/speakers exist", () => {
   assert.ok(Object.keys(D.BATTLES).length >= 15);
   for (const [k, b] of Object.entries(D.BATTLES)) {
