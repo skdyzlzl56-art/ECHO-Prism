@@ -12,7 +12,7 @@
 //   rewind, laserWarn, laserFire, split, dashWarn, dashStart, dashEnd, phase{level,name,talk,start}, win, lose.
 (function (root) {
   "use strict";
-  const TAU = Math.PI * 2, BOX = { x: 330, y: 190, w: 300, h: 260 }, EX = 480, E_R = 26, BOND_MAX = 4;
+  const TAU = Math.PI * 2, BOX0 = { x: 330, y: 190, w: 300, h: 260 }, EX = 480, E_R = 26, BOND_MAX = 4;
   // companion kits when cfg.allies lets the player swap (교대): cd = shot interval x, dm = shot damage x, heal / shield = abilities.
   // A single cfg.ally keeps the old all-round companion (KIT.all).
   const KIT = { all: { cd: 1, dm: 1, heal: 1, shield: 1 }, lumi: { cd: .8, dm: 1, heal: 1, shield: 0 }, hexa: { cd: 1.6, dm: 2, heal: 0, shield: 1 } };
@@ -21,6 +21,7 @@
   function createBattle(cfg, opts = {}) {
     const rng = opts.rng || Math.random, HITBOX = opts.hitbox == null ? 4 : opts.hitbox, bondBase = opts.bondBase || 0;
     const MAX_HP = cfg.playerHp || 20, E_MAX = cfg.hp, E_W = cfg.ew || 75, cuts = cfg.cuts || [.75, .5, .25], col = cfg.color || "#ff3b5c";
+    const BOX = { ...BOX0 };   // the box is battle state: move s.BOX and everything follows
     const cx = BOX.x + BOX.w / 2, allies = cfg.allies, SHIELD_LV = allies ? 1 : 2;   // a shield-bearer swapped in guards from bond Lv.1
     const s = {
       BOX, t: 0, hp: MAX_HP, maxHp: MAX_HP, eHp: E_MAX, eMax: E_MAX, level: 0, lv: opts.lv || 1, xp: opts.xp || 0, phaseName: "", over: null, auto: true, inv: 0, combo: 0,
@@ -229,6 +230,6 @@
     return look;
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX, moveLook };
+  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook };
   else { root.createBattle = createBattle; root.moveLook = moveLook; }
 })(typeof window !== "undefined" ? window : globalThis);
