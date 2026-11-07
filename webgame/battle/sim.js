@@ -81,6 +81,7 @@
       s.gauge = 0; const was = blv(); bonus++;
       const lt = light(), dmg = cfg.invuln ? 0 : Math.round((8 + 4 * blv()) * (lt === "power" ? 1.5 : 1)); s.eHp -= dmg; s.bullets = []; s.lasers = []; if (!lt || lt === "heal") s.hp = Math.min(MAX_HP, s.hp + 3);   // invuln: the light still clears the field, it just can't hurt
       emit("burst", { dmg, level: blv(), up: blv() > was, light: lt });
+      if (cfg.jointLight && blv() >= BOND_MAX) emit("jointLight", { allies: cfg.allies || [cfg.ally] });   // 합동 유대의 빛: bond full, everyone bursts
       if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && shieldT <= 0) s.shieldOn = true;
     }
 
