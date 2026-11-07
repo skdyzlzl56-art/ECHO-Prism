@@ -39,3 +39,8 @@ test("stage 3 battles use the colour rule with both hurting and harmless bullets
     if (cfg.colorRule) { assert.strictEqual(cfg.colorRule, D.RED); assert.ok(cols.has(D.RED) && cols.size > 1, `${id} mixes colours`); }
   }
 });
+
+test("stage 3 has its own music: painter boss uses s3_boss and no stage 3 line uses stage 2 tracks", () => {
+  assert.strictEqual(D.BATTLES.s3_painter.bgm, "s3_boss");
+  for (const l of D.STAGE3) if (l.bgm) assert.ok(!/^s2_/.test(l.bgm), `${l.bgm}: ${l.text || l.act}`);
+});

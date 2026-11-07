@@ -1,6 +1,6 @@
 // STAGE 3 - 색을 잃은 미술관. Appended to SCRIPT after stage 2 (stage2/story.js).
 // Flow: 도착(워프, 잿빛 배경) -> 색 되찾기 탐색(그림 세 점) -> 얼룩 전투 -> 색 규칙 연습 전투 -> 화가 등장·보스전 -> 화가 해방, 글리치 해방·합류 -> 클리어
-// `theme: "gallery"` = washed-out grey sky (portraits.js). Existing bgm keys only (music for stage 3 comes later).
+// `theme: "gallery"` = washed-out grey sky (portraits.js). Music: s3_field (jazz piano), s3_boss (string rock); other battles use "battle".
 
 FX.stage3 = { shout: "STAGE 3", flash: 1, warp: "gallery", shake: 1, wait: 2200, sfx: () => { sweep(500, 90, 1.6, "sine", .3); sweep(800, 160, 1.6, "triangle", .15); } };
 FX.color = { shout: "COLOR", flash: 1, wait: 1500, sfx: () => { sweep(300, 1800, 1, "sine", .3); sweep(450, 2400, 1, "triangle", .2); } };
@@ -10,7 +10,7 @@ const STAGE3 = [
   { who: "voice", theme: "night", text: "......여기가 어디쯤일까요. 침묵의 기척은 없지만, 공기가 이상하게 가벼워요." },
   { who: "lumi", text: "아, 발이 닿았다. 바닥이 매끈해! 어디야 여기?" },
   { who: "hexa", text: "......건물 안이다. 높은 천장, 긴 복도. 사람이 살던 곳은 아닌 것 같군." },
-  { who: "voice", fx: "stage3", bgm: "s2_field", text: "여기는 세 번째 길, '색을 잃은 미술관'이에요. 이곳의 모든 기억은 그림으로 걸려 있어요." },
+  { who: "voice", fx: "stage3", bgm: "s3_field", text: "여기는 세 번째 길, '색을 잃은 미술관'이에요. 이곳의 모든 기억은 그림으로 걸려 있어요." },
   { who: "lumi", text: "그림? 와, 정말 벽 가득 걸려 있네! ...근데 전부 회색이야." },
   { who: "voice", text: "그래요. 그림 속의 색이 하나도 남지 않았어요. 마치 누군가 일부러 닦아 낸 것처럼." },
   { who: "hexa", text: "침묵이 삼킨 흔적과는 다르다. 침묵은 소리를 지운다. 이건... 정성껏 지운 손길이다." },
@@ -55,7 +55,7 @@ const STAGE3 = [
   { act: "s3_blots", bgm: "battle" },
 
   // ---- 4. 붉은 얼룩 (색 규칙) ----
-  { who: "blot", bgm: "s2_field", text: "끼...이...... 닦으면... 없어지는데......" },
+  { who: "blot", bgm: "s3_field", text: "끼...이...... 닦으면... 없어지는데......" },
   { who: "lumi", text: "하아, 이겼다! 근데 쟤네, 아직 한 마리 남은 것 같아." },
   { who: "voice", text: "잠깐요. 저 붉은 얼룩은 느낌이 달라요. 색이 선명해요." },
   { who: "hexa", text: "......붉은 것만 날카롭다. 푸른 쪽은 눈에만 보일 뿐, 가벼운 느낌이다." },
@@ -66,7 +66,7 @@ const STAGE3 = [
   { act: "s3_study", bgm: "battle" },
 
   // ---- 5. 화가 등장 ----
-  { who: "lumi", bgm: "s2_field", text: "봤어? 푸른 탄이 진짜 그냥 통과했어! 몸이 간질간질했는데." },
+  { who: "lumi", bgm: "s3_field", text: "봤어? 푸른 탄이 진짜 그냥 통과했어! 몸이 간질간질했는데." },
   { who: "voice", text: "붉은 탄만 맞아요. 앞으로도 이 규칙이 이어질 거예요. 눈으로 색을 읽는 게 중요해요." },
   { who: "hexa", text: "......그리고 이런 식으로 규칙을 정한 건, 이 미술관의 주인이다." },
   { who: "painter", fx: "shake", text: "......그 이상은, 들어오시면 안 됩니다." },
@@ -93,10 +93,10 @@ const STAGE3 = [
   { who: "voice", text: "붉은 탄만 맞아요! 다른 색은 믿고 지나가요! 붉은색을 읽어요!" },
   { who: "hexa", text: "......싸우는 게 아니다. 그를 구하는 거다. 알겠지, 루미." },
   { who: "lumi", text: "응! 아프게 하지 않고, 마음만 돌려놓자!" },
-  { act: "s3_painter", bgm: "s2_boss" },
+  { act: "s3_painter", bgm: "s3_boss" },
 
   // ---- 6. 화가의 해방 ----
-  { who: "painter", bgm: "s2_field", fx: "impact", text: "......아." },
+  { who: "painter", bgm: "s3_field", fx: "impact", text: "......아." },
   { who: "painter", text: "붓이... 손에서 미끄러졌습니다. 그렇군요. 이제야 알겠습니다." },
   { who: "lumi", fx: "color", text: "와! 방 전체가 물들어! 파랑, 노랑, 빨강... 전부 돌아왔어!" },
   { who: "painter", text: "제가 지웠던 색은... 사라진 게 아니라, 제 안에 숨어 있었군요." },
