@@ -23,6 +23,13 @@
     stage: { hp: [1, 1.1, 1.2, 1.3, 1.4, 1.5], atk: [1, 1, 1.1, 1.2, 1.2, 1.3] },
     ally: { cd: [1.3, 1.05, .9, .8, .8], hits: [1, 1, 2, 2, 2], dmg: [2, 2.5, 2, 2.5, 3] },
   };
+    // Signature moves (cfg.allies only): the ally out fires its own move when cool[id].sig runs out. power by bond level 0..4.
+  const SIG_CD = [18, 16, 14, 12, 10], SIG = {
+    lumi: { kind: "ward", power: [1, 1.5, 2, 2.5, 3] },                   // invulnerable for power s
+    hexa: { kind: "blast", power: [6, 9, 12, 15, 18] },                  // damage to the enemy
+    glitch: { kind: "reflect", power: [100, 140, 180, 220, 260] },       // bullets within power px fly back
+    keeper: { kind: "clear", power: [140, 180, 230, 300, 9999] },        // 시계지기: bullets within power px vanish
+  };
   const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, HEAL_IV = [10, 8.5, 7, 6, 5], SWAP_CD = 1.5, REWIND_BACK = 1.5;
 
   function createBattle(cfg, opts = {}) {
@@ -45,7 +52,7 @@
     const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr && k in pr ? pr[k] : cfg[k]; };   // a key absent from the phase entry falls back to the cfg-level option
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
-    for (const id of allies || [cfg.ally]) s.cool[id] = { heal: HEAL_IV[0], shield: 0 };
+    for (const id of allies || [cfg.ally]) s.cool[id] = { heal: HEAL_IV[0], shield: 0, sig: 8 };
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
     let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, bonus = 0, started = false, hist = [], rev = null, spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false, dwSide = -1;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
@@ -157,7 +164,9 @@
       p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + vy * dt));
       s.t += dt; s.inv -= dt; s.swapCd -= dt; cd -= dt; comboT -= dt; dtc = dt; if (comboT <= 0) s.combo = 0;
       if (!started && s.t > 1) {
-        started = true; emit("phase", { level: 0, name: (cfg.names && cfg.names[0]) || "", talk: false, start: true });
+        started = true; const l0 = cfg.talks && cfg.talks[0];                  // talks[0]: spoken before the first pattern
+        emit("phase", { level: 0, name: (cfg.names && cfg.names[0]) || "", talk: !!l0, start: true });
+        if (l0) s.talk = { lines: l0, i: 0 };
         if (cfg.ally && blv()) emit("bondStart", { level: blv() });
       }
 
@@ -184,7 +193,7 @@
       if (firing && cd <= 0) { cd = .12; s.shots.push({ x: p.x, y: p.y - 12, vx: 0, vy: -560, dmg: GROWTH.shotDmg(s.lv) }); emit("playerShot"); }
       if (cfg.ally) {                                                      // companion: strength follows the bond level
         const lv = blv();
-        al.y += (p.y - al.y) * Math.min(1, dt * 3); allyCd -= dt; for (const c of Object.values(s.cool)) { c.heal = Math.max(0, c.heal - dt); c.shield = Math.max(0, c.shield - dt); }
+        al.y += (p.y - al.y) * Math.min(1, dt * 3); allyCd -= dt; for (const c of Object.values(s.cool)) { c.heal = Math.max(0, c.heal - dt); c.shield = Math.max(0, c.shield - dt); c.sig = Math.max(0, c.sig - dt); }
         if (allyCd <= 0 && s.t > 1) {
           allyCd = GROWTH.ally.cd[lv] * kit().cd; const a = Math.atan2(e.y - al.y, e.x - al.x), dmg = GROWTH.ally.dmg[lv] * kit().dm, n = GROWTH.ally.hits[lv];
           for (let i = 0; i < n; i++) { const aa = a + (i ? .12 : n > 1 ? -.12 : 0); s.shots.push({ x: al.x, y: al.y, vx: Math.cos(aa) * 460, vy: Math.sin(aa) * 460, dmg, ally: true }); }
@@ -192,6 +201,14 @@
         }
         const me = s.cool[s.allyId], ha = lv >= 3 ? 3 : 2;
         if (me.heal <= 0) { me.heal = HEAL_IV[lv]; if (kit().heal && s.hp < MAX_HP) { s.hp = Math.min(MAX_HP, s.hp + ha); emit("heal", { amount: ha }); } }
+        if (allies && SIG[s.allyId] && me.sig <= 0 && s.t > 1) {            // signature move: a different action per companion, stronger with the bond
+          const g = SIG[s.allyId], pw = g.power[lv]; me.sig = SIG_CD[lv];
+          if (g.kind === "ward") s.inv = Math.max(s.inv, pw);
+          else if (g.kind === "blast") s.eHp = cfg.invuln ? s.eHp : rl("finale") ? Math.max(1, s.eHp - pw) : s.eHp - pw;
+          else if (g.kind === "reflect") for (const b of s.bullets) { if (Math.hypot(b.x - p.x, b.y - p.y) <= pw) { b.vx = -b.vx; b.vy = -b.vy; b.acc = 0; b.w = 0; b.home = null; } }
+          else s.bullets = s.bullets.filter(b => Math.hypot(b.x - p.x, b.y - p.y) > pw);
+          emit("signature", { ally: s.allyId, kind: g.kind, power: pw });
+        }
         // shield: blocks one hit, then regrows after shieldT seconds (the timer only runs while a shield-bearer is out)
         if (lv >= SHIELD_LV && kit().shield && !s.shieldOn && me.shield <= 0) { s.shieldOn = true; emit("shieldReady"); }
         for (const b of s.bullets) {                                       // graze: slipping past a bullet fills the bond gauge

@@ -9,7 +9,7 @@
 //   phases: [h => {...}, ...],          one pattern per phase, built from the helpers h.* (battle/sim.js)
 //   moves: [{ x, amp, spd, speed, dash }, ...]   enemy movement per phase: x = "none" | "sway" | "chase", dash = seconds
 //                                       between warned body-slams down into the box (0 = never)
-//   talks: { 3: [{ who, t }, ...] },    dialogue shown when phase N starts
+//   talks: { 3: [{ who, t }, ...] },    dialogue shown when phase N starts (0 = before the first pattern)
 //   ally: "lumi",                       optional companion; strength grows with the bond (유대), see BOND
 //   allies: ["lumi", "hexa"],           optional: A swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
 //   invuln, survive: 30,                escape battle: hits deal 0 (팅) and surviving 30s wins; bgm: null = silence, beat = heartbeat
@@ -53,7 +53,16 @@ function drawEnemyBody(g, key, x, y, t, warn) {
     g.fillStyle = "#05080c"; g.beginPath(); g.arc(0, 0, 20, 0, TAU); g.fill(); g.stroke();
     for (let i = 0; i < 3; i++) { const q = (t / 2 + i / 3) % 1; g.globalAlpha = q; g.beginPath(); g.arc(0, 0, 62 - 44 * q, 0, TAU); g.stroke(); }
     g.globalAlpha = 1;
-  } else {
+  } else if (sp.shape === "gear") {                                                     // keeper / tick: a toothed wheel turning in steps, one hand fixed up
+    g.save(); g.rotate(Math.floor(t * 2) * .26 + Math.min(1, (t * 2 % 1) * 5) * .26); g.fillStyle = col + "33"; g.beginPath();
+    for (let i = 0; i < 16; i++) { const R = i % 2 ? 20 : 29, q = i * Math.PI / 8; g.lineTo(Math.cos(q) * R, Math.sin(q) * R); }
+    g.closePath(); g.fill(); g.stroke(); g.beginPath(); g.arc(0, 0, 11, 0, TAU); g.stroke(); g.restore();
+    g.beginPath(); g.moveTo(0, 0); g.lineTo(0, -16); g.stroke();
+  } else if (sp.shape === "easel") {                                                    // painter: a canvas on a tripod, a grey smear brushed across it
+    g.fillStyle = col + "22"; g.beginPath(); g.rect(-20, -26, 40, 32); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(-14, 6); g.lineTo(-24, 28); g.moveTo(14, 6); g.lineTo(24, 28); g.moveTo(0, 6); g.lineTo(0, 24); g.stroke();
+    g.globalAlpha = .6 + .3 * Math.sin(t * 3); g.beginPath(); g.moveTo(-14, -10); g.quadraticCurveTo(0, -22, 14, -6); g.stroke(); g.globalAlpha = 1;
+  } else {                                                                              // shard: the glitch's own jagged crystal (and fragment / blot)
     g.rotate(t * .8); g.fillStyle = col + "55"; g.beginPath();
     [26, 10, 22, 8, 28, 11, 20, 9, 24].forEach((R, j) => g.lineTo(Math.cos(j * TAU / 9) * R, Math.sin(j * TAU / 9) * R));
     g.closePath(); g.fill(); g.stroke();
@@ -150,6 +159,7 @@ function runBattle(cfg, done) {
         v.allies.forEach((id, i) => setTimeout(() => sweep(300 * (1 + i * .25), 2400, 1.1, "sine", .22), i * 120)); noise(.5, .5); break;
       case "rewind": retrigger($("flash"), "on", 250); sweep(1400, 300, .35, "sawtooth", .16); break;   // 되감기: the bullets jump back
       case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
+      case "signature": banner = { txt: { ward: "수호", blast: "일격", reflect: "반사", clear: "탄막 소거" }[v.kind], age: 0, bond: true }; retrigger($("flash"), "on", 300); sweep(500, 1800, .4, "sine", .2); break;
       case "dash": sweep(900, 300, .12, "sawtooth", .12); noise(.08, .15); break;
       case "swap":allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
       case "phase":
@@ -300,7 +310,7 @@ function runBattle(cfg, done) {
       const c = s.cool && s.cool[s.allyId], cdTxt = (n, v) => `${n} ${v > 0 ? v.toFixed(1) + "s" : "준비"}`;
       g.font = "13px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#cfe";
       g.fillText(cdTxt("대시", s.dashCd), BOX.x + BOX.w + 20, 340);
-      if (s.hasAlly && c) { g.fillText(cdTxt("회복", c.heal), BOX.x + BOX.w + 20, 358); g.fillText(s.shieldOn ? "방패 준비" : cdTxt("방패", c.shield), BOX.x + BOX.w + 20, 376); }
+      if (s.hasAlly && c) { g.fillText(cdTxt("회복", c.heal), BOX.x + BOX.w + 20, 358); g.fillText(s.shieldOn ? "방패 준비" : cdTxt("방패", c.shield), BOX.x + BOX.w + 20, 376); if (cfg.allies) g.fillText(cdTxt("특수기", c.sig), BOX.x + BOX.w + 20, 394); }
     }
     g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText(`이동: 방향키 · 사격 ON/OFF: ${keyLabel(MENU.keys.fire)} 또는 클릭 · 대시: ${keyLabel(MENU.keys.dash)}` + (cfg.allies ? ` · 교대: ${keyLabel(MENU.keys.swap)}` : "") + " · 메뉴: C", BOX.x + BOX.w, 515);
     if (banner) {                                                                       // phase (spell) name / bond announcement
