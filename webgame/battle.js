@@ -67,7 +67,7 @@ function runBattle(cfg, done) {
   const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX, lv: BOND.lv, xp: BOND.xp }), s = battle.state, BOX = s.BOX;
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
-  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0;
+  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
 
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
@@ -126,7 +126,17 @@ function runBattle(cfg, done) {
         break;
       }
       case "graze": { const n = performance.now(); if (n - lastGraze > 70) { lastGraze = n; sweep(2200, 3000, .04, "sine", .06); } break; }
-      case "playerHurt": noise(.12, .6); sweep(300, 80, .2, "square", .35); break;
+      case "playerHurt": {   // damage-scaled: sound tier, shake, hit-stop, red vignette, number and sparks
+        const h = hitFeel(v.dmg, s.maxHp);
+        if (h.tier === 0) { noise(.08, .4); sweep(400, 150, .12, "square", .22); }
+        else if (h.tier === 1) { noise(.14, .6); sweep(300, 80, .2, "square", .35); }
+        else { noise(.3, .8); sweep(220, 40, .4, "sawtooth", .45); boom(.8, 60); }
+        const st = $("stage"); st.style.setProperty("--a", h.shakeAmp); st.style.setProperty("--ms", h.shakeMs + "ms"); retrigger(st, "shake", h.shakeMs); setTimeout(() => { st.style.removeProperty("--a"); st.style.removeProperty("--ms"); }, h.shakeMs + 50);
+        stopT = h.stop; vigT = h.vignette;
+        say("-" + fmtNum(v.dmg), s.p.x, s.p.y - 20, "#ff5a5a");
+        for (let i = 0; i < 3 + 4 * h.tier; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 140; fx.push({ x: s.p.x, y: s.p.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); }
+        break;
+      }
       case "shieldBlock": say("방패!", s.p.x, s.p.y - 20, allyCol); sweep(900, 1800, .25, "sine", .25); noise(.08, .3); break;
       case "shieldReady": sweep(500, 1200, .3, "sine", .12); break;
       case "heal": say("+" + v.amount, s.p.x, s.p.y - 20, allyCol); sweep(600, 1400, .25, "sine", .12); break;
@@ -321,7 +331,8 @@ function runBattle(cfg, done) {
     else {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
-      for (const v of battle.step(dt, input)) onEvent(v);
+      if (stopT > 0) stopT -= dt;                                                       // hit-stop: the world freezes for a moment after a heavy hit
+      else for (const v of battle.step(dt, input)) onEvent(v);
       if (prevP && dt > 0) moveLook(look, (s.p.x - prevP.x) / dt, (s.p.y - prevP.y) / dt, dt);   // display only: reads the position, never writes it
       if (prevP && (s.p.x !== prevP.x || s.p.y !== prevP.y)) wake.push({ x: prevP.x, y: prevP.y });
       else if (wake.length) wake.shift();
@@ -329,6 +340,8 @@ function runBattle(cfg, done) {
       prevP = { x: s.p.x, y: s.p.y };
       flushVolley();
       if (cfg.beat && !s.over && s.t > 0 && (beatT -= dt) <= 0) { beatT = .7; sweep(85, 45, .22, "sine", .45); setTimeout(() => sweep(70, 40, .2, "sine", .3), 170); }   // all that is left of the sound: a heartbeat
+      vigT = Math.max(0, vigT - dt * 1.5);
+      const low = isLowHp(s.hp, s.maxHp); $("vig").style.opacity = Math.max(vigT, low ? .25 + .2 * Math.sin(s.t * 6) : 0);   // red edge: hit flash, plus a heartbeat pulse at low hp
       hitFlash -= dt; burstFx = Math.max(0, burstFx - dt * 1.5);
       if (banner && (banner.age += dt) > 3) banner = null;
       for (const f of floats) f.age += dt; floats = floats.filter(f => f.age < .6);
