@@ -249,6 +249,13 @@ function runBattle(cfg, done) {
       if (s.shieldOn) { g.strokeStyle = allyCol; g.lineWidth = 3; g.shadowColor = allyCol; g.shadowBlur = 14; g.globalAlpha = .6 + .3 * Math.sin(t * 6); g.beginPath(); g.arc(0, 0, 19, 0, TAU); g.stroke(); }
       g.restore();
     }
+    if (s.split) {                                                                      // 판 분할: unsafe half red (hatched pulse while warning, solid once live), safe half green, divider down the middle
+      const hw = BOX.w / 2, ux = s.split.safe > 0 ? BOX.x : BOX.x + hw, sx = s.split.safe > 0 ? BOX.x + hw : BOX.x;
+      g.save(); g.fillStyle = "#3f6"; g.globalAlpha = .18; g.fillRect(sx, BOX.y, hw, BOX.h);
+      g.fillStyle = "#f33"; g.globalAlpha = s.split.active ? .45 : .15 + .15 * Math.abs(Math.sin(t * 10)); g.fillRect(ux, BOX.y, hw, BOX.h);
+      g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 3; g.setLineDash([8, 6]); g.beginPath(); g.moveTo(BOX.x + hw, BOX.y); g.lineTo(BOX.x + hw, BOX.y + BOX.h); g.stroke(); g.restore();
+    }
+    if (s.invertWarn || s.inverted) { g.save(); g.font = "bold 22px sans-serif"; g.textAlign = "center"; g.fillStyle = s.inverted ? "#f6f" : "#ff0"; g.globalAlpha = .6 + .4 * Math.abs(Math.sin(t * 12)); g.fillText(s.inverted ? "조작 반전!" : "조작 반전 경고", BOX.x + BOX.w / 2, BOX.y - 24); g.restore(); }
     g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(BOX.x, BOX.y, BOX.w, BOX.h);
 
     g.fillStyle = "#333"; g.fillRect(BOX.x, 168, BOX.w, 10);

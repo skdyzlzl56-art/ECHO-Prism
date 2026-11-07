@@ -254,6 +254,41 @@ test("box rule: without the option the box stays fixed and nothing pins", () => 
   assert.strictEqual(b.state.BOX.x, BOX.x); assert.ok(!ev.some(v => v.type === "playerHurt"));
 });
 
+// 조작 반전 규칙: cfg.invertRule = { period, warn, dur }; warn seconds before each reversal a warning shows, then input is reversed for dur
+test("invert rule: warning comes first, then input is reversed, then it ends", () => {
+  const b = still({ invertRule: { period: 4, warn: 1, dur: 1.5 } });
+  const ev = run(b, 3.2); assert.ok(ev.some(v => v.type === "invertWarn"), "warning");
+  assert.ok(b.state.invertWarn && !b.state.inverted, "warned but input still normal");
+  const x0 = b.state.p.x; run(b, .3, { dx: 1 }); assert.ok(b.state.p.x > x0, "normal while only warned");
+  run(b, .6); assert.ok(b.state.inverted);
+  const x1 = b.state.p.x; run(b, .3, { dx: 1 }); assert.ok(b.state.p.x < x1, "reversed");
+  run(b, 1.5); assert.ok(!b.state.inverted);
+  const x2 = b.state.p.x; run(b, .2, { dx: 1 }); assert.ok(b.state.p.x > x2, "normal again");
+});
+
+test("invert rule: without the option input is never reversed", () => {
+  const b = still({}); run(b, 5); const x0 = b.state.p.x; run(b, .2, { dx: 1 });
+  assert.ok(b.state.p.x > x0); assert.ok(!b.state.inverted);
+});
+
+// 판 분할 규칙: cfg.splitRule = { period, warn, dur, dmg }; the box halves, the safe side is shown in the warning, the other side hurts
+test("split rule: warning shows the safe side, then the unsafe half hurts", () => {
+  const b = still({ splitRule: { period: 4, warn: 1, dur: 1.5, dmg: 3 } });
+  const ev = run(b, 3.2); assert.ok(ev.some(v => v.type === "splitWarn"));
+  const sp = b.state.split; assert.ok(sp && !sp.active && (sp.safe === -1 || sp.safe === 1));
+  const bad = sp.safe > 0 ? BOX.x + 20 : BOX.x + BOX.w - 20;                // a spot on the unsafe half
+  b.state.p.x = bad; b.state.hp = 100; run(b, .2); assert.strictEqual(b.state.hp, 100, "no harm while only warned");
+  b.state.p.x = bad; const ev2 = run(b, .9);
+  assert.ok(b.state.split.active && ev2.some(v => v.type === "playerHurt" && v.dmg === 3), "unsafe side hurts");
+});
+
+test("split rule: the safe side does not hurt, and without the option nothing splits", () => {
+  const b = still({ splitRule: { period: 4, warn: 1, dur: 1.5 } }); run(b, 3.9);
+  const sp = b.state.split; b.state.p.x = sp.safe > 0 ? BOX.x + BOX.w - 20 : BOX.x + 20; b.state.hp = 100;
+  const ev = run(b, .5); assert.ok(b.state.split.active); assert.ok(!ev.some(v => v.type === "playerHurt"));
+  const c = still({}); c.state.p.x = BOX.x + 20; assert.ok(!run(c, 6).some(v => v.type === "playerHurt") && !c.state.split);
+});
+
 // ---- code-review fixes ----
 test("rewind: a phase change drops the old history even without phaseRules", () => {
   const b = still({ hp: 100, cuts: [.5], rewind: 3 }); b.state.bullets.push(drop(BOX.x + 20, BOX.y + 10, 5));

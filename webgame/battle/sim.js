@@ -9,7 +9,7 @@
 //
 // cfg: see ../battle.js. Events: start-of-phase, enemyShot{size,speed}, enemyHit{x,y,dmg,ally,combo}, playerShot, allyShot,
 //   graze, playerHurt{dmg}, shieldBlock, shieldReady, heal{amount}, burst{dmg,level,up}, bondStart{level},
-//   rewind, laserWarn, laserFire, split, dashWarn, dashStart, dashEnd, phase{level,name,talk,start}, win, lose.
+//   rewind, invertWarn, splitWarn, boxSplit, laserWarn, laserFire, split, dashWarn, dashStart, dashEnd, phase{level,name,talk,start}, win, lose.
 (function (root) {
   "use strict";
   const TAU = Math.PI * 2, BOX0 = { x: 330, y: 190, w: 300, h: 260 }, EX = 480, E_R = 26, BOND_MAX = 4;
@@ -31,7 +31,7 @@
       allyId: allies ? allies[0] : cfg.ally, swapCd: 0, dashT: 0, dashCd: 0, dashDir: null, lastIn: null, surviveLeft: cfg.survive || 0,
     };
     const p = s.p, e = s.e, al = s.al;
-    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
+    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, invertRule, splitRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
     // finale: shots deal 0 and only the joint light (bond full, cfg.jointLight) ends the fight.
     const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr ? pr[k] : cfg[k]; };
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
@@ -98,7 +98,17 @@
     }
 
     function update(dt, input) {
-      const ox = p.x, oy = p.y, firing = s.auto, spd = firing ? 150 : 210, dx = input.dx || 0, dy = input.dy || 0, n = Math.hypot(dx, dy) || 1, m = 10;
+      // 조작 반전 규칙 / 판 분할 규칙: cycles of `period` s; the last `warn` s of each cycle is the warning, the first `dur` s the effect
+      const ir = rl("invertRule"), sr = rl("splitRule"), cyc = r => { const c = s.t % r.period; return c >= r.period - r.warn ? "warn" : c < r.dur && s.t >= r.period ? "on" : null; };
+      if (ir) { const ph = cyc(ir); if (ph === "warn" && !s.invertWarn) emit("invertWarn"); s.invertWarn = ph === "warn"; s.inverted = ph === "on"; } else s.invertWarn = s.inverted = false;
+      if (sr) {
+        const ph = cyc(sr);
+        if (ph === "warn" && !(s.split && !s.split.active)) { s.split = { safe: rng() < .5 ? -1 : 1, active: false }; emit("splitWarn", { safe: s.split.safe }); }
+        else if (ph === "on" && s.split && !s.split.active) { s.split.active = true; emit("boxSplit", { safe: s.split.safe }); }
+        else if (!ph) s.split = null;
+        if (s.split && s.split.active && s.inv <= 0 && (p.x < BOX.x + BOX.w / 2 ? -1 : 1) !== s.split.safe) hurt(sr.dmg || 4);
+      } else s.split = null;
+      const ox = p.x, oy = p.y, firing = s.auto, spd = firing ? 150 : 210, sg = s.inverted ? -1 : 1, dx = sg * (input.dx || 0), dy = sg * (input.dy || 0), n = Math.hypot(dx, dy) || 1, m = 10;
       s.lastIn = dx || dy ? { dx: dx / n, dy: dy / n } : null; s.dashCd -= dt;
       const dashing = s.dashT > 0, vx = dashing ? s.dashDir.dx * DASH_D / DASH_T : dx / n * spd, vy = dashing ? s.dashDir.dy * DASH_D / DASH_T : dy / n * spd;
       if (dashing) { s.dashT -= dt; s.inv = Math.max(s.inv, .02); }                  // 대시: untouchable while it lasts
