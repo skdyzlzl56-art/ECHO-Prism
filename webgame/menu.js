@@ -10,7 +10,7 @@
     { id: "dash", label: "대시", ctx: "battle", def: "KeyX" },
     { id: "fast", label: "대화 빨리 출력", ctx: "talk", def: "KeyX" },
   ];
-  const ITEMS = [{ id: "keys", label: "키 설정" }, { id: "quit", label: "종료" }, { id: "close", label: "닫기" }];
+  const ITEMS = [{ id: "keys", label: "키 설정" }, { id: "save", label: "저장" }, { id: "load", label: "불러오기" }, { id: "quit", label: "종료" }, { id: "close", label: "닫기" }];
   // movement, the menu itself and the dialogue-advance keys cannot be bound
   const RESERVED = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyS", "KeyD", "KeyC", "Space", "Enter", "Escape"]);
   const keyLabel = c => c.replace(/^Key|^Digit/, "").replace("Numpad", "N");
@@ -50,7 +50,7 @@
         if (d) wrap(m.items.length, d);
         else if (ok) {
           const id = m.items[m.sel].id;
-          if (id === "keys") go("keys"); else if (id === "quit") go("confirm", 1); else close();
+          if (id === "keys") go("keys"); else if (id === "save" || id === "load") return id; else if (id === "quit") go("confirm", 1); else close();
         }
       }
     };
@@ -69,7 +69,19 @@
     return `<div style="min-width:280px;text-align:center;font-size:24px;line-height:1.6"><h2 style="margin:0 0 8px">MENU</h2>${rows}<div style="font-size:16px;color:#ffd36b;min-height:22px">${m.msg}</div><div style="font-size:14px;color:#9ad0ff">↑↓ 선택 · Enter 확인 · Esc 뒤로 · C 닫기</div></div>`;
   };
 
-  const api = { createMenu, keyLabel, fixKeys, menuHtml };
+  // Save slot (one): scene index to restart from + BOND values. Mid-battle the caller passes the battle's own line index and the BOND from before the battle.
+  const makeSave = (idx, b) => JSON.stringify({ idx, bond: { base: b.base, lv: b.lv, xp: b.xp } });
+  const readSave = raw => {
+    try { const d = JSON.parse(raw), b = d && d.bond; return Number.isInteger(d.idx) && b && [b.base, b.lv, b.xp].every(Number.isFinite) ? { idx: d.idx, bond: { base: b.base, lv: b.lv, xp: b.xp } } : null; } catch { return null; }
+  };
+  // what lines 0..idx-1 left behind (not stored): speaker renames, background theme, music
+  const replayState = (script, idx) => {
+    const r = { renames: {}, theme: undefined, bgm: undefined };
+    for (const l of script.slice(0, idx)) { if (l.rename) r.renames[l.who] = l.rename; if (l.theme) r.theme = l.theme; if (l.bgm) r.bgm = l.bgm; }
+    return r;
+  };
+
+  const api = { makeSave, readSave, replayState, createMenu, keyLabel, fixKeys, menuHtml };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { Object.assign(root, api); root.MENU = createMenu(root.KEYS); }   // dialogue.js loads first
 })(typeof globalThis !== "undefined" ? globalThis : this);

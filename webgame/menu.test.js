@@ -55,3 +55,31 @@ test("quit needs a confirmation; declining returns to the list", () => {
   press(m, "Enter"); m.key("ArrowLeft");
   assert.strictEqual(press(m, "Enter"), "quit");
 });
+
+test("save/load are menu items; choosing one is reported to the caller, which owns the slot", () => {
+  const m = createMenu();
+  m.toggle();
+  const at = id => { const n = m.items.findIndex(i => i.id === id); assert.ok(n >= 0, id + " item"); m.page = "list"; m.sel = n; return press(m, "Enter"); };
+  assert.strictEqual(at("save"), "save");
+  assert.strictEqual(at("load"), "load");
+});
+
+test("a save point restores the scene, bond, level and exp; mid-battle it is the battle's start line", () => {
+  const { makeSave, readSave } = require("./menu.js");
+  const raw = makeSave(7, { base: 2, lv: 3, xp: 40 });
+  assert.deepStrictEqual(readSave(raw), { idx: 7, bond: { base: 2, lv: 3, xp: 40 } });
+});
+
+test("no save, or a broken one, loads nothing", () => {
+  const { readSave } = require("./menu.js");
+  assert.strictEqual(readSave(null), null);
+  assert.strictEqual(readSave("{oops"), null);
+  assert.strictEqual(readSave('{"idx":"x"}'), null);
+});
+
+test("replaying lines before the save point recovers speaker names, theme and bgm", () => {
+  const { replayState } = require("./menu.js");
+  const S = [{ who: "a", rename: "리라", bgm: "intro" }, { theme: "night" }, { bgm: "off" }, { theme: "lantern", bgm: "battle" }];
+  assert.deepStrictEqual(replayState(S, 3), { renames: { a: "리라" }, theme: "night", bgm: "off" });
+  assert.deepStrictEqual(replayState(S, 0), { renames: {}, theme: undefined, bgm: undefined });
+});

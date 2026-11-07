@@ -148,7 +148,7 @@ const bgm = (() => {
   return { play, stop, vol };
 })();
 
-let acting = false;
+let acting = false, resumeBgm;   // resumeBgm: music of the loaded save point, started on the first click
 function next() {
   if (idx >= SCRIPT.length - 1) {        // end of script
     idx = SCRIPT.length; $("text").textContent = "TO BE CONTINUED..."; $("name").textContent = ""; $("next").hidden = true; return;
@@ -161,7 +161,7 @@ function next() {
 }
 
 function advance() {
-  if (!ac) { ac = new AudioContext(); $("start").remove(); }
+  if (!ac) { ac = new AudioContext(); $("start").remove(); if (resumeBgm && resumeBgm !== "off") bgm.play(resumeBgm); }
   if (MENU.open || busy || acting) return;            // effect or scene playing, no dialogue input
   if (!typer.press(full.length)) return finish();   // first press completes the typing
   next();
@@ -185,7 +185,16 @@ addEventListener("keydown", e => { if (e.code === "Space" || e.code === "Enter" 
 // C opens / closes the menu in dialogue and battle (not during other scenes or effects). Captured first so nothing underneath sees the key.
 addEventListener("keydown", e => {
   if (!MENU.open) { if (e.code !== "KeyC" || e.repeat || !ac || busy || (acting && !stage.classList.contains("battle"))) return; MENU.toggle(); }
-  else if (MENU.key(e.code) === "quit") { location.reload(); return; }                 // a fresh load shows the title
+  else {
+    const r = MENU.key(e.code);
+    if (r === "quit") { location.reload(); return; }                 // a fresh load shows the title
+    if (r === "save") try { localStorage.setItem("echoPrismSave", makeSave(idx, BOND)); MENU.msg = "저장했어요"; } catch { MENU.msg = "저장할 수 없어요"; }   // BOND only changes when a battle is won, so mid-battle this is the battle's start
+    if (r === "load") {
+      let has = null; try { has = readSave(localStorage.getItem("echoPrismSave")); } catch {}
+      if (!has) MENU.msg = "저장된 데이터가 없어요";
+      else { try { sessionStorage.setItem("echoPrismLoad", "1"); } catch {} location.reload(); return; }
+    }
+  }
   e.preventDefault(); e.stopImmediatePropagation();
   $("menu").hidden = !MENU.open; $("menu").innerHTML = MENU.open ? menuHtml(MENU) : "";
 }, true);
@@ -209,5 +218,20 @@ addEventListener("keydown", e => {
 <script src="stage6/battles.js"></script>
 <script src="stage6/scenes.js"></script>
 <script src="stage6/story.js"></script>
+<script>
+// Load: "불러오기" sets a flag and reloads; here (all scripts ready) the save is applied and the title waits for the click that starts it.
+try {
+  const sv = sessionStorage.getItem("echoPrismLoad") && readSave(localStorage.getItem("echoPrismSave"));
+  sessionStorage.removeItem("echoPrismLoad");
+  if (sv) {
+    const r = replayState(SCRIPT, sv.idx);
+    Object.assign(BOND, sv.bond); idx = Math.min(sv.idx, SCRIPT.length - 1) - 1;
+    for (const w in r.renames) SPEAKERS[w].name = r.renames[w];
+    if (r.theme) setTheme(r.theme);
+    myShape = PLAYER_SHAPES.find(s => s.id === load()) || myShape;
+    resumeBgm = r.bgm;
+  }
+} catch {}
+</script>
 </body>
 </html>
