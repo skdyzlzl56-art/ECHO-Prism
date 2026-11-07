@@ -222,7 +222,7 @@ function runBattle(cfg, done) {
       g.globalAlpha = .35; g.beginPath(); g.arc(b.x, b.y, b.r * 1.9, 0, TAU); g.fill();
       g.globalAlpha = 1; g.shadowColor = b.col; g.shadowBlur = b.r > 8 ? 18 : 10; g.beginPath(); g.arc(b.x, b.y, b.r, 0, TAU); g.fill();
       g.shadowBlur = 0; g.fillStyle = "#fff"; g.beginPath(); g.arc(b.x, b.y, b.r * .45, 0, TAU); g.fill();
-      if (b.hp > 0) { g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 2; g.beginPath(); g.arc(b.x, b.y, b.r + 3, 0, TAU); g.stroke(); g.fillStyle = "#fff"; g.font = "bold 11px sans-serif"; g.textAlign = "center"; g.fillText(b.hp, b.x, b.y + 4); g.fillStyle = b.col; }   // breakable: white ring + hp
+      if (b.hp > 0) { g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 2; g.beginPath(); g.arc(b.x, b.y, b.r + 3, 0, TAU); g.stroke(); g.fillStyle = "#fff"; g.font = "bold 11px sans-serif"; g.textAlign = "center"; g.fillText(fmtNum(b.hp), b.x, b.y + 4); g.fillStyle = b.col; }   // breakable: white ring + hp
       if (b.tg) { g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 2; g.setLineDash(b.st % 2 ? [] : [4, 4]); g.beginPath(); g.arc(b.x, b.y, b.r + 3, 0, TAU); g.stroke(); g.setLineDash([]); }   // toggle: dashed ring = state 0, solid = state 1 (plus colour per state)
       if (b.nm) { g.save(); g.globalAlpha = 1; g.font = "11px 'Malgun Gothic'"; g.textAlign = "center"; g.fillStyle = "#fff"; g.fillText(b.nm, b.x, b.y - b.r - 4); g.restore(); }   // 방향 규칙: name written on the bullet
     }
@@ -274,9 +274,9 @@ function runBattle(cfg, done) {
     g.font = "bold 26px 'Malgun Gothic'"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
     for (const f of floats) { g.globalAlpha = 1 - f.age / .6; g.fillStyle = f.col || "#fff"; g.fillText(f.txt, f.x, f.y - f.age * 60); }
     g.globalAlpha = 1;
-    if (s.combo > 2) { g.font = "bold 22px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${s.combo} HIT`, BOX.x + BOX.w + 20, 215); }
+    if (s.combo > 2) { g.font = "bold 22px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${fmtNum(s.combo)} HIT`, BOX.x + BOX.w + 20, 215); }
 
-    g.font = "20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${Math.max(s.hp, 0)} / ${s.maxHp}`, BOX.x, 485);
+    g.font = "20px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#fff"; g.fillText(`HP ${fmtNum(Math.max(s.hp, 0))} / ${fmtNum(s.maxHp)}`, BOX.x, 485);
     g.fillStyle = "#333"; g.fillRect(BOX.x + 130, 475, 170, 20); g.fillStyle = "#4fc3ff"; g.fillRect(BOX.x + 130, 475, 170 * Math.max(s.hp, 0) / s.maxHp, 20);
     g.font = "bold 18px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#ffd36b"; g.fillText(`Lv.${s.lv}`, 20, 485);   // level + exp bar, bottom-left, clear of HP and the controls hint
     g.fillStyle = "#333"; g.fillRect(80, 475, 200, 12); g.fillStyle = "#ffd36b"; g.fillRect(80, 475, 200 * s.xp / 100, 12);

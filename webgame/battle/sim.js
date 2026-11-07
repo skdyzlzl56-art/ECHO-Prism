@@ -282,6 +282,9 @@
     return look;
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook };
-  else { root.createBattle = createBattle; root.moveLook = moveLook; }
+  // every number drawn on screen goes through this: 3 significant figures (>= 100 stays whole), no 3.5999999
+  const fmtNum = x => Math.abs(x) < 1e-3 ? "0" : Math.abs(x) >= 100 ? String(Math.round(x)) : String(+x.toPrecision(3));
+
+  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook, fmtNum };
+  else { root.createBattle = createBattle; root.moveLook = moveLook; root.fmtNum = fmtNum; }
 })(typeof window !== "undefined" ? window : globalThis);
