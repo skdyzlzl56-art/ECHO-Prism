@@ -9,7 +9,7 @@
 //   phases: [h => {...}, ...],          one pattern per phase, built from the helpers h.* (battle/sim.js)
 //   moves: [{ x, amp, spd, speed, dash }, ...]   enemy movement per phase: x = "none" | "sway" | "chase", dash = seconds
 //                                       between warned body-slams down into the box (0 = never)
-//   talks: { 3: [{ who, t }, ...] },    dialogue shown when phase N starts
+//   talks: { 3: [{ who, t }, ...] },    dialogue shown when phase N starts (0 = before the first pattern)
 //   ally: "lumi",                       optional companion; strength grows with the bond (유대), see BOND
 //   allies: ["lumi", "hexa"],           optional: A swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
 //   invuln, survive: 30,                escape battle: hits deal 0 (팅) and surviving 30s wins; bgm: null = silence, beat = heartbeat
@@ -160,6 +160,7 @@ function runBattle(cfg, done) {
         v.allies.forEach((id, i) => setTimeout(() => sweep(300 * (1 + i * .25), 2400, 1.1, "sine", .22), i * 120)); noise(.5, .5); break;
       case "rewind": retrigger($("flash"), "on", 250); sweep(1400, 300, .35, "sawtooth", .16); break;   // 되감기: the bullets jump back
       case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
+      case "signature": banner = { txt: { ward: "수호", blast: "일격", reflect: "반사", clear: "탄막 소거" }[v.kind], age: 0, bond: true }; retrigger($("flash"), "on", 300); sweep(500, 1800, .4, "sine", .2); break;
       case "dash": sweep(900, 300, .12, "sawtooth", .12); noise(.08, .15); break;
       case "swap":allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
       case "phase":
@@ -310,7 +311,7 @@ function runBattle(cfg, done) {
       const c = s.cool && s.cool[s.allyId], cdTxt = (n, v) => `${n} ${v > 0 ? v.toFixed(1) + "s" : "준비"}`;
       g.font = "13px 'Malgun Gothic'"; g.textAlign = "left"; g.fillStyle = "#cfe";
       g.fillText(cdTxt("대시", s.dashCd), BOX.x + BOX.w + 20, 340);
-      if (s.hasAlly && c) { g.fillText(cdTxt("회복", c.heal), BOX.x + BOX.w + 20, 358); g.fillText(s.shieldOn ? "방패 준비" : cdTxt("방패", c.shield), BOX.x + BOX.w + 20, 376); }
+      if (s.hasAlly && c) { g.fillText(cdTxt("회복", c.heal), BOX.x + BOX.w + 20, 358); g.fillText(s.shieldOn ? "방패 준비" : cdTxt("방패", c.shield), BOX.x + BOX.w + 20, 376); if (cfg.allies) g.fillText(cdTxt("특수기", c.sig), BOX.x + BOX.w + 20, 394); }
     }
     g.font = "16px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText(`이동: 방향키 · 사격 ON/OFF: ${keyLabel(MENU.keys.fire)} 또는 클릭 · 대시: ${keyLabel(MENU.keys.dash)}` + (cfg.allies ? ` · 교대: ${keyLabel(MENU.keys.swap)}` : "") + " · 메뉴: C", BOX.x + BOX.w, 515);
     if (banner) {                                                                       // phase (spell) name / bond announcement
