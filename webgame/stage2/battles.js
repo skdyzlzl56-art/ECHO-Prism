@@ -17,7 +17,6 @@ BATTLES.s2_mooks = { stage: 2,
   ],
   talks: { 1: [{ who: "hexa", t: "소리가 없는 만큼, 눈으로 봐라. 탄은 거짓말을 하지 않는다." }, { who: "lumi", t: "알았어! 내가 앞을 비출게!" }] },
 };
-ACTS.s2_mooks = done => runBattle(BATTLES.s2_mooks, done);
 
 // ---- 2) 침묵: 페이즈가 오를수록 BGM과 탄 소리가 줄어든다 (fade). 체력을 0으로 만들 수 있다 ----
 BATTLES.s2_silence = { stage: 2,
@@ -41,7 +40,6 @@ BATTLES.s2_silence = { stage: 2,
     4: [{ who: "silence", t: "......빛이 시끄러워. 이제 꺼." }, { who: "hexa", t: "마지막 힘이다. 밀어붙여라!" }],
   },
 };
-ACTS.s2_silence = done => runBattle(BATTLES.s2_silence, done);
 
 // ---- 3) 도망: 침묵은 쓰러지지 않는다. 팅팅 튕겨 나가는 공격, 30초만 버티면 탈출한다. BGM 없이 심장 소리만 ----
 BATTLES.s2_flee = { stage: 2,
@@ -50,4 +48,3 @@ BATTLES.s2_flee = { stage: 2,
   moves: [{ x: "chase", speed: 100, dash: 6 }],
   phases: [h => { h.spiral(.11, 3, .4, 112, 7); h.aim(1.1, 170, 6); h.wall(2.8, 105); h.laser(2.6, true); h.side(.8, 150, 7); }],
 };
-ACTS.s2_flee = done => runBattle(BATTLES.s2_flee, done);

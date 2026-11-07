@@ -90,12 +90,6 @@ test("no save, or a broken one, loads nothing", () => {
   assert.strictEqual(readSave('{"idx":"x"}'), null);
 });
 
-test("replaying lines before the save point recovers speaker names, theme and bgm", () => {
-  const { replayState } = require("./menu.js");
-  const S = [{ who: "a", rename: "리라", bgm: "intro" }, { theme: "night" }, { bgm: "off" }, { theme: "lantern", bgm: "battle" }];
-  assert.deepStrictEqual(replayState(S, 3), { renames: { a: "리라" }, forms: {}, theme: "night", bgm: "off" });
-  assert.deepStrictEqual(replayState(S, 0), { renames: {}, forms: {}, theme: undefined, bgm: undefined });
-});
 
 test("volume page: bgm and sfx adjust separately in 10% steps, clamp at 0 and 1, and persist through the store", () => {
   const data = {}, store = { get: k => data[k], set: (k, v) => { data[k] = v; } };

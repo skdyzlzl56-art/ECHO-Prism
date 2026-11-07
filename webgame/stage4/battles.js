@@ -23,7 +23,6 @@ BATTLES.s4_ticks = { stage: 4,
     2: [{ who: "hexa", t: "한 번 본 궤적이다. 되감기 직전에 자리를 봐 두면 같은 길로 피할 수 있다." }],
   },
 };
-ACTS.s4_ticks = done => runBattle(BATTLES.s4_ticks, done);
 
 // ---- 2) 시계지기: 4페이즈. 되감기마다 같은 궤적을 한 번 더 지나간다 ----
 BATTLES.s4_keeper = { stage: 4,
@@ -44,7 +43,6 @@ BATTLES.s4_keeper = { stage: 4,
     4: [{ who: "keeper", t: "이 한 분만 지나가면 내일이 옵니다. ...그게 무서워서 멈춰 세웠는데." }, { who: "voice", t: "내일은 와도 괜찮아요! 지금 흐르게 해 줘요!" }],
   },
 };
-ACTS.s4_keeper = done => runBattle(BATTLES.s4_keeper, done);
 
 // ---- 3) 풀려난 시간: 동료 4명으로 A키 교대를 체험하는 마무리 전투 ----
 BATTLES.s4_exit = { stage: 4,
@@ -61,4 +59,3 @@ BATTLES.s4_exit = { stage: 4,
     2: [{ who: "glitch", t: "또 되감기냐. 두 번 오는 탄이면 두 번 피하면 된다." }],
   },
 };
-ACTS.s4_exit = done => runBattle(BATTLES.s4_exit, done);

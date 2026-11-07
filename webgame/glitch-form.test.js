@@ -1,6 +1,6 @@
 // Ticket 12: 글리치 transforms once when joining; the new look survives save/load (replayed from the script, like renames).
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
-const { replayState } = require("./menu.js");
+const { replayState } = require("./lineplayer.js");
 const rd = f => fs.readFileSync(path.join(__dirname, f), "utf8");
 const files = ["script.js", "stage1/battles.js", "stage1/story.js", "stage2/battles.js", "stage2/story.js", "stage3/battles.js", "stage3/story.js"];
 const D = vm.runInNewContext("const BATTLES = {}, ACTS = {}, FX = {}, sweep = () => {}, noise = () => {};\n" + files.map(rd).join("\n") + "\n({ SCRIPT, SPEAKERS, FORMS, applyForm });");

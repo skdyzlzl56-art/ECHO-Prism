@@ -1,4 +1,4 @@
-// Stage 1 battle configs (engine: ../battle.js runBattle). Scenes in story.js call these via ACTS names below.
+// Stage 1 battle configs (engine: ../battle.js runBattle). Scenes in story.js call these by BATTLES name (index.html turns every BATTLES entry into an ACTS entry).
 // Bullet size: 6 = normal, 12+ = heavy orb (louder, longer shot sound, 6 damage).
 // Pattern helpers (h.*): rain wall wave aim aimFan fan ring side spiral laser (boss-only: door bloom closing). Options: { col, w, acc, split, sa, sf }.
 // Each helper has its own bullet tone (same hue, different saturation/lightness) so patterns are told apart by colour.
@@ -19,7 +19,6 @@ BATTLES.s1_fragments = { stage: 1,
   ],
   talks: { 1: [{ who: "lumi", t: "더 와! 하지만 내 등불엔 손대지 마!" }, { who: "fragment", t: "빛... 내놔... 전부... 내놔..." }] },
 };
-ACTS.s1_fragments = done => runBattle(BATTLES.s1_fragments, done);
 
 // ---- 2) 문지기 헥사: 루미가 곁에서 돕는다. 무거운 구슬(size 12~14)일수록 소리도 크고 길다 ----
 BATTLES.s1_boss = { stage: 1,
@@ -45,4 +44,3 @@ BATTLES.s1_boss = { stage: 1,
     5: [{ who: "hexa", t: "나는... 대체 누구를 지키려 했던 거지...?" }, { who: "lumi", t: "지금 네 앞에 있는 우리! 그리고... 너 자신도 지켜, 바보야!" }, { who: "hexa", t: "크아아아아--- 마지막이다! 전부 받아라!" }],
   },
 };
-ACTS.s1_boss = done => runBattle(BATTLES.s1_boss, done);

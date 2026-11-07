@@ -16,7 +16,6 @@ BATTLES.s6_echoes = { stage: 6,
   ],
   talks: { 1: [{ who: "lumi", t: "이 조각들, 우리가 지나온 길의 소리를 흉내 내! 하나도 안 무서워!" }, { who: "voice", t: "코어에 모인 소리가 조각이 되어 흘러나오는 거예요!" }] },
 };
-ACTS.s6_echoes = done => runBattle(BATTLES.s6_echoes, done);
 
 // ---- 2) 세 갈래 시험: 색 → 되감기 → 방향. 침묵 전의 총연습 ----
 BATTLES.s6_trial = { stage: 6,
@@ -36,7 +35,6 @@ BATTLES.s6_trial = { stage: 6,
     2: [{ who: "hexa", t: "탄이 가는 쪽으로 걸어라. 멈추는 것도, 거스르는 것도 안 된다." }],
   },
 };
-ACTS.s6_trial = done => runBattle(BATTLES.s6_trial, done);
 
 // ---- 3) 침묵: 5페이즈. 색 → 되감기 → 방향 → 색+되감기 → 마지막은 합동 유대의 빛 ----
 BATTLES.s6_silence = { stage: 6,
@@ -60,4 +58,3 @@ BATTLES.s6_silence = { stage: 6,
     4: [{ who: "silence", t: "......아파... 외로워... 불러... 줘......" }, { who: "voice", t: "이제 공격은 닿지 않아요! 탄을 스치며 유대를 가득 채워요. 모두의 빛이 하나로 터질 때까지!" }, { who: "lumi", t: "다 같이! 우리 넷이서 한 번에!" }],
   },
 };
-ACTS.s6_silence = done => runBattle(BATTLES.s6_silence, done);

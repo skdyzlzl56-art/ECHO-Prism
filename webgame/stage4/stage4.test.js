@@ -7,7 +7,7 @@ const files = ["script.js", "stage1/battles.js", "stage1/story.js", "stage2/batt
 const src = "const BATTLES = {}, ACTS = {}, FX = {}, sweep = () => {}, noise = () => {};\n" + files.map(rd).join("\n") + "\n({ SCRIPT, SPEAKERS, BATTLES, FX, STAGE4, PARTY4 });";
 const D = vm.runInNewContext(src);
 const all = files.map(rd).join("\n") + rd("game.js") + rd("battle.js") + rd("stage1/scenes.js") + rd("stage3/scenes.js") + rd("stage4/scenes.js");
-const acts = new Set([...all.matchAll(/ACTS\.(\w+) =/g)].map(m => m[1]));
+const acts = new Set([...all.matchAll(/(?:ACTS|BATTLES)\.(\w+) =/g)].map(m => m[1]));
 const themes = new Set([...rd("portraits.js").matchAll(/^\s+(\w+):\s+\{ sky:/gm)].map(m => m[1]));
 const bgms = new Set(fs.readdirSync(path.join(dir, "audio")).map(f => f.replace(/^bgm_|\.ogg$/g, "")));
 const shapes = rd("portraits.js").match(/const SHAPES = \{([^}]*)\}/)[1].split(",").map(s => s.trim());

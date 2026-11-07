@@ -1,6 +1,6 @@
 // Real s2_flee (30s escape) played to the end on the stubbed frame loop: it must win and call done. Run: npm test
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
-const sim = require("./battle/sim.js"), snd = require("./battle/sound.js"), dlg = require("./dialogue.js"), menu = require("./menu.js");
+const sim = require("./battle/sim.js"), snd = { ...require("./battle/sound.js"), ...require("./battle/fx.js") }, dlg = require("./dialogue.js"), menu = require("./menu.js");
 const rd = f => fs.readFileSync(path.join(__dirname, f), "utf8");
 const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPrimitive ? () => 0 : k === "length" ? 0 : stub(), set: () => true, apply: () => stub() });
 

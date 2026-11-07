@@ -88,14 +88,7 @@
   const readSave = raw => {
     try { const d = JSON.parse(raw), b = d && d.bond; return Number.isInteger(d.idx) && b && [b.base, b.lv, b.xp].every(Number.isFinite) ? { idx: d.idx, bond: { base: b.base, lv: b.lv, xp: b.xp } } : null; } catch { return null; }
   };
-  // what lines 0..idx-1 left behind (not stored): speaker renames, background theme, music
-  const replayState = (script, idx) => {
-    const r = { renames: {}, forms: {}, theme: undefined, bgm: undefined };
-    for (const l of script.slice(0, idx)) { if (l.rename) r.renames[l.who] = l.rename; if (l.form) r.forms[l.form.who] = l.form.to; if (l.theme) r.theme = l.theme; if (l.bgm) r.bgm = l.bgm; }
-    return r;
-  };
-
-  const api = { makeSave, readSave, replayState, createMenu, keyLabel, fixKeys, menuHtml };
+  const api = { makeSave, readSave, createMenu, keyLabel, fixKeys, menuHtml };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else { Object.assign(root, api); root.MENU = createMenu(root.KEYS, { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch {} } }); }   // dialogue.js loads first
 })(typeof globalThis !== "undefined" ? globalThis : this);

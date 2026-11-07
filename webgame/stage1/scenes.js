@@ -24,7 +24,6 @@ function drawFairy(g, x, y, t, col, k = 1) {                                    
   }
   g.globalAlpha = 1; g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 3.5, 0, TAU); g.fill(); g.restore();
 }
-const wrap = (s, n) => { const o = []; for (let i = 0; i < s.length; i += n) o.push(s.slice(i, i + n)); return o; };
 
 // ---- 등불 켜기: 긴 회랑을 걸으며(화면 3배) 등불 세 개에 불을 붙인다. 균열과 낙뢰를 피하고, 체력이 0이 되면 마지막 등불 곁에서 다시 시작. 대화는 아래 상자 (explore.js) ----
 ACTS.s1_explore = done => runExplore({
@@ -71,32 +70,11 @@ ACTS.s1_explore = done => runExplore({
 }, done);
 
 // ---- 동료 카드: 합류한 동료를 보여준다 ----
-ACTS.s1_party = done => {
-  stage.classList.add("pick"); act.hidden = false;
-  act.innerHTML = `<canvas id="pt" width="960" height="540"></canvas>`;
-  const g = $("pt").getContext("2d"), who = [
-    { x: 220, name: "개체", role: "형태를 고른 자", c: "#9ad0ff", draw: () => { g.save(); g.translate(220, 250); drawShape(g, myShape, 34); g.restore(); } },
-    { x: 480, name: "루미", role: "등불지기 · 전투 지원(추격탄·회복)", c: SPEAKERS.lumi.color, draw: t => drawBlossom(g, 480, 250, t, SPEAKERS.lumi.color, 2.6) },
-    { x: 740, name: "헥사", role: "문지기 · 새로운 동료", c: SPEAKERS.hexa.color, draw: t => drawHexa(g, 740, 250, t, SPEAKERS.hexa.color, 1.8) },
-  ];
-  let t = 0, last = performance.now(), raf, fin = false;
-  const go = () => {
-    if (t < 1.5 || fin) return; fin = true; cancelAnimationFrame(raf); removeEventListener("keydown", key);
-    act.onclick = null; act.hidden = true; act.innerHTML = ""; stage.classList.remove("pick"); done();
-  };
-  const key = e => { if (e.code === "Space" || e.code === "Enter" || e.code === "KeyZ") { e.preventDefault(); go(); } };
-  function step(now) {
-    const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
-    g.fillStyle = "#070b1c"; g.fillRect(0, 0, 960, 540);
-    g.globalAlpha = Math.min(1, t); g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = "bold 40px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류!", 480, 90);
-    who.forEach((m, i) => {
-      g.globalAlpha = Math.max(0, Math.min(1, t - .3 - i * .35)); m.draw(t);
-      g.font = "bold 28px Galmuri11,'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
-      g.font = "16px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#cfe"; g.fillText(m.role, m.x, 380);
-    });
-    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText("클릭, SPACE 또는 Z로 계속", 480, 480);
-    g.globalAlpha = 1; raf = requestAnimationFrame(step);
-  }
-  act.onclick = go; addEventListener("keydown", key); raf = requestAnimationFrame(step);
-};
+ACTS.s1_party = partyCard({
+  title: "동료 합류!", nameSize: 28, roleSize: 16,
+  members: () => [
+    { x: 220, name: "개체", role: "형태를 고른 자", c: "#9ad0ff", draw: g => { g.save(); g.translate(220, 250); drawShape(g, myShape, 34); g.restore(); } },
+    { x: 480, name: "루미", role: "등불지기 · 전투 지원(추격탄·회복)", c: SPEAKERS.lumi.color, draw: (g, t) => drawBlossom(g, 480, 250, t, SPEAKERS.lumi.color, 2.6) },
+    { x: 740, name: "헥사", role: "문지기 · 새로운 동료", c: SPEAKERS.hexa.color, draw: (g, t) => drawHexa(g, 740, 250, t, SPEAKERS.hexa.color, 1.8) },
+  ],
+});

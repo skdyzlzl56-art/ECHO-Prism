@@ -21,7 +21,6 @@ BATTLES.s3_blots = { stage: 3,
   ],
   talks: { 1: [{ who: "blot", t: "색... 닦는다... 닦는다..." }, { who: "lumi", t: "이 얼룩들, 닦는 소리만 내! 으스스해!" }] },
 };
-ACTS.s3_blots = done => runBattle(BATTLES.s3_blots, done);
 
 // ---- 2) 붉은 얼룩: 색 규칙 연습. 붉은 탄만 맞는다. 푸른 탄은 몸을 지나간다 ----
 BATTLES.s3_study = { stage: 3,
@@ -38,7 +37,6 @@ BATTLES.s3_study = { stage: 3,
     2: [{ who: "hexa", t: "방패는 붉은 것만 신경 쓰면 된다. 눈을 속이지 마라." }],
   },
 };
-ACTS.s3_study = done => runBattle(BATTLES.s3_study, done);
 
 // ---- 3) 화가: 페이즈마다 이름이 있다. 붉은 탄만 맞는다 (색 규칙). 5페이즈 ----
 BATTLES.s3_painter = { stage: 3,
@@ -62,4 +60,3 @@ BATTLES.s3_painter = { stage: 3,
     5: [{ who: "painter", t: "아무것도 그리지 않으면, 아무것도 잃지 않아요." }, { who: "voice", t: "그 빈 캔버스에도 색이 있었어요. 지금 되돌려 줘요!" }],
   },
 };
-ACTS.s3_painter = done => runBattle(BATTLES.s3_painter, done);

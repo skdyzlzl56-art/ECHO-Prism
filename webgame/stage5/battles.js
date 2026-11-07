@@ -16,7 +16,6 @@ BATTLES.s5_pages = { stage: 5,
   ],
   talks: { 1: [{ who: "scrap", t: "이름... 이름... 이름을 내놔..." }, { who: "lumi", t: "종이가 날아다니면서 협박해! 그래도 하나도 안 무서워!" }] },
 };
-ACTS.s5_pages = done => runBattle(BATTLES.s5_pages, done);
 
 // ---- 2) 색인 서랍: 방향 규칙 입문. 탄에 「책」이 적혀 있다 ----
 BATTLES.s5_index = { stage: 5,
@@ -33,7 +32,6 @@ BATTLES.s5_index = { stage: 5,
     2: [{ who: "hexa", t: "탄과 같은 방향으로 걸어라. 멈추는 것도, 거스르는 것도 안 된다." }],
   },
 };
-ACTS.s5_index = done => runBattle(BATTLES.s5_index, done);
 
 // ---- 3) 사서: 4페이즈. 모든 탄에 「이름」이 적혀 있다 (방향 규칙) ----
 BATTLES.s5_librarian = { stage: 5,
@@ -54,4 +52,3 @@ BATTLES.s5_librarian = { stage: 5,
     4: [{ who: "librarian", t: "마지막 장입니다. ......이 장만 넘기면, 이름들은 제 손을 떠납니다." }, { who: "voice", t: "떠나도 괜찮아요! 불러 주는 사람이 있을 거예요!" }],
   },
 };
-ACTS.s5_librarian = done => runBattle(BATTLES.s5_librarian, done);

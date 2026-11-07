@@ -75,43 +75,13 @@
 <script src="portraits.js"></script>
 <script src="dialogue.js"></script>
 <script src="menu.js"></script>
+<script src="audio.js"></script>
+<script src="lineplayer.js"></script>
 <script>
 const $ = id => document.getElementById(id);
-const CHAR_MS = 45;
-let ac, idx = -1, busy = false, timer, full = "", speaker, typer = createTyper();
-// volume menu: every sound goes through one gain per kind ("bgm" | "sfx"); MENU.vol is 0..1 and applies at once
-const buses = {};
-let hushed = false;                                           // battle with 침묵: every bus and the <audio> fallback read 0 until hush(false)
-let silenceLayer = 0, sfxKind = "sfx";                       // final fight: sound comes back one layer per phase (1 enemy attacks, 2 music, 4 everything else); 3 is the sky (portraits.js)
-const LAYER_AT = { shot: 1, bgm: 2, sfx: 4 };
-const mv = k => { const v = MENU.vol[k === "shot" ? "sfx" : k]; return !hushed || silenceLayer >= LAYER_AT[k] ? v : 0; };   // "shot" has no volume of its own: it follows sfx (an undefined gain would throw in hush(false) and freeze the end of the fight)
-const sfxBus = k => { sfxKind = k; };                         // sweep / noise play on this bus ("shot" = the enemy's attacks)
-const hush = on => { hushed = on; silenceLayer = 0; hushLayer(0); };
-const hushLayer = n => { silenceLayer = n; for (const k in buses) buses[k].gain.value = mv(k); bgm.sync(); };
-const out = k => { if (!buses[k]) { buses[k] = ac.createGain(); buses[k].gain.value = mv(k); buses[k].connect(ac.destination); } return buses[k]; };
-
-function blip(freq) {
-  const o = ac.createOscillator(), g = ac.createGain();
-  o.type = "square"; o.frequency.value = freq * (1 + (Math.random() - .5) * .06);
-  g.gain.setValueAtTime(.08, ac.currentTime);
-  g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + .06);
-  o.connect(g).connect(out("sfx"));
-  o.start(); o.stop(ac.currentTime + .06);
-}
-
-// sound effects: sweep = pitch slide, noise = burst (thud/crash)
-function sweep(f0, f1, dur, type = "sawtooth", vol = .25) {
-  const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime;
-  o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
-  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(.001, t + dur);
-  o.connect(g).connect(out(sfxKind)); o.start(); o.stop(t + dur);
-}
-function noise(dur, vol = .4) {
-  const n = ac.sampleRate * dur, b = ac.createBuffer(1, n, ac.sampleRate), d = b.getChannelData(0);
-  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
-  const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = b; g.gain.value = vol;
-  s.connect(g).connect(out(sfxKind)); s.start();
-}
+// every sound goes through audio.js (one gain per kind "bgm" | "sfx"; MENU.vol is 0..1 and applies at once); other files use these bare names
+const audio = createAudio({ volume: k => MENU.vol[k] });
+const { sweep, noise, blip, bgm, hush, hushLayer, sfxBus } = audio;
 
 // fx table: shout text, flash, shake, sound, wait (ms) before typing starts
 const FX = {
@@ -131,105 +101,49 @@ function play(fx) {
   if (fx.shout) { $("shout").textContent = fx.shout; retrigger($("shout"), "on", fx.wait); }
 }
 
-function show(i) {
-  const line = SCRIPT[i]; speaker = SPEAKERS[line.who];
-  if (line.rename) speaker.name = line.rename;   // reveal a speaker's real name from this line on
-  $("name").textContent = speaker.name; $("box").style.setProperty("--c", speaker.color);
-  setPortrait(speaker);
-  full = fixKeys(line.text, MENU.keys); typer.reset(); $("text").textContent = ""; $("next").hidden = true;
-  const fx = FX[line.fx];
-  if (fx) { busy = true; play(fx); setTimeout(() => { busy = false; timer = setInterval(tick, CHAR_MS); }, fx.wait); }
-  else timer = setInterval(tick, CHAR_MS);
-}
-
-let xHeld = false;                  // hold X: type faster (does not advance the line)
-function tick() {
-  if (MENU.open) return;
-  typer.add(1, xHeld, full.length); const pos = typer.pos, ch = full[pos - 1];
-  $("text").textContent = full.slice(0, pos);
-  if (ch && ch.trim() &&!/[.,!?…]/.test(ch)) { blip(speaker.pitch); pulsePortrait(); } // sound + pulse only on spoken chars
-  if (pos >= full.length) finish();
-}
-
-function finish() { typer.pos = full.length; clearInterval(timer); timer = null; $("text").textContent = full; $("next").hidden = false; }
-
-// background music: audio/bgm_<name>.ogg, seamless loop. Web Audio buffer; <audio> fallback (e.g. opened via file://)
-const bgm = (() => {
-  const VOL = { title: .2, intro: .18, battle: .2, s1_field: .2, s1_boss: .2, s2_field: .2, s2_boss: .2 };                 // per-track volume, kept below the sound effects
-  const bufs = {}; let cur = null, name = null;
-  const load = n => bufs[n] ||= fetch(`audio/bgm_${n}.ogg`).then(r => r.arrayBuffer()).then(b => ac.decodeAudioData(b));
-  const stop = () => {
-    name = null; if (!cur) return; const c = cur; cur = null;
-    if (c.g) { c.g.gain.setTargetAtTime(0, ac.currentTime, .5); setTimeout(() => c.s.stop(), 3000); } else c.a.pause();
-  };
-  async function play(n) {
-    if (name === n) return; stop(); name = n; kk = 1;
-    try {
-      const buf = await load(n); if (name !== n) return;
-      const s = ac.createBufferSource(), g = ac.createGain(); s.buffer = buf; s.loop = true; g.gain.value = 0; g.gain.setTargetAtTime((VOL[n] ?? .25) * kk, ac.currentTime, .6);   // fade in while the old track fades out
-      s.connect(g).connect(out("bgm")); s.start(); cur = { s, g };
-    } catch {
-      if (name !== n) return;
-      const a = new Audio(`audio/bgm_${n}.ogg`); a.loop = true; a.volume = (VOL[n] ?? .25) * mv("bgm"); a.play().catch(() => {}); cur = { a };
-    }
-  }
-  let kk = 1;
-  const sync = () => { if (cur && cur.a) cur.a.volume = Math.min(1, (VOL[name] ?? .25) * kk * mv("bgm")); };
-  const vol = k => { kk = k; if (!cur || !name) return; const v = (VOL[name] ?? .25) * k; if (cur.g) cur.g.gain.setTargetAtTime(v, ac.currentTime, .4); else cur.a.volume = Math.min(1, v * mv("bgm")); };   // k = 0..1 of the track's normal volume
-  return { play, stop, vol, sync };
-})();
-
-let acting = false, resumeBgm;   // resumeBgm: music of the loaded save point, started on the first click
-function next() {
-  if (idx >= SCRIPT.length - 1) {        // end of script
-    idx = SCRIPT.length; $("text").textContent = "TO BE CONTINUED..."; $("name").textContent = ""; $("next").hidden = true; return;
-  }
-  const l = SCRIPT[++idx];
-  if (l.bgm === "off") bgm.stop(); else if (l.bgm) bgm.play(l.bgm);
-  if (l.theme) setTheme(l.theme);                    // background mood: night | lantern | silence | flee (portraits.js)
-  if (l.act) { acting = true; ACTS[l.act](() => { acting = false; next(); }); }   // scene in game.js
-  else show(idx);
-}
-
 const endTitle = () => { setCast(null); stage.classList.remove("title"); };
+// what the story player (lineplayer.js) draws through: name tag, text box, portrait, fx
+const storyStage = {
+  header(sp) { $("name").textContent = sp.name; $("box").style.setProperty("--c", sp.color); setPortrait(sp); },
+  text(s) { $("text").textContent = s; },
+  next(visible) { $("next").hidden = !visible; },
+  fx(name) { const f = FX[name]; if (!f) return 0; play(f); return f.wait; },
+  spoke(sp) { blip(sp.pitch); pulsePortrait(); },
+  theme: t => setTheme(t),                                   // background mood: night | lantern | silence | flee (portraits.js)
+  end() { $("text").textContent = "TO BE CONTINUED..."; $("name").textContent = ""; $("next").hidden = true; },
+  restore(r) { for (const w in r.renames) SPEAKERS[w].name = r.renames[w]; for (const w in r.forms) applyForm(w, r.forms[w]); if (r.theme) setTheme(r.theme); },
+  skipTitle() { endTitle(); $("start").remove(); },
+};
+let player, resumeBgm;   // player: made once every script is loaded (below). resumeBgm: music of a loaded save point, started when the title is dismissed
+const hold = (k, v) => { if (player) player[k] = v; };
+
 function advance() {
-  if (!ac) {   // audio needs a gesture: the first click starts the title theme (or the loaded scene's music)
-    ac = new AudioContext();
+  if (!audio.unlocked) {   // audio needs a gesture: the first click starts the title theme (a loaded scene's music was asked for before and starts here too)
+    audio.unlock();
     if ($("start")) { bgm.play("title"); return; }
-    if (resumeBgm && resumeBgm !== "off") bgm.play(resumeBgm);
   }
   if ($("start")) {   // 2nd click: begin, after the title dissolves
     if (!stage.classList.contains("go")) { stage.classList.add("go"); cast.goAt = performance.now(); setTimeout(() => { stage.classList.remove("go"); endTitle(); $("start").remove(); if (resumeBgm && resumeBgm !== "off") bgm.play(resumeBgm); advance(); }, 800); }
     return;
   }
-  if (MENU.open || busy || acting) return;            // effect or scene playing, no dialogue input
-  if (!typer.press(full.length)) return finish();   // first press completes the typing
-  next();
+  player.advance();
 }
 
-// hold Ctrl: fast-forward dialogue (stops at scenes/effects, which block input anyway)
-let ctrl = false;
-addEventListener("keydown", e => { if (e.code === KEYS.fast) xHeld = true; });
-addEventListener("keyup", e => { if (e.code === KEYS.fast) xHeld = false; });
-addEventListener("blur", () => { xHeld = false; });
-addEventListener("keydown", e => { if (e.key === KEYS.skip) ctrl = true; });
-addEventListener("keyup", e => { if (e.key === KEYS.skip) ctrl = false; });
-addEventListener("blur", () => { ctrl = false; });
-setInterval(() => {
-  if (MENU.open || !ctrl || !ac || $("start") || busy || acting || idx >= SCRIPT.length) return;
-  if (typer.hold(.09, full.length)) next(); else if (timer) finish();
-}, 90);
+// hold X: type faster (does not advance the line). hold Ctrl: fast-forward dialogue (stops at scenes/effects, which block input anyway)
+addEventListener("keydown", e => { if (e.code === KEYS.fast) hold("fast", true); if (e.key === KEYS.skip) hold("skip", true); });
+addEventListener("keyup", e => { if (e.code === KEYS.fast) hold("fast", false); if (e.key === KEYS.skip) hold("skip", false); });
+addEventListener("blur", () => { hold("fast", false); hold("skip", false); });
 
 $("stage").onclick = advance;
 addEventListener("keydown", e => { if (e.code === "Space" || e.code === "Enter" || e.code === "KeyZ") { e.preventDefault(); advance(); } });
 // C opens / closes the menu in dialogue and battle (not during other scenes or effects). Captured first so nothing underneath sees the key.
 addEventListener("keydown", e => {
-  if (!MENU.open) { if (e.code !== "KeyC" || e.repeat || !ac || $("start") || busy || (acting && !stage.classList.contains("battle"))) return; MENU.toggle(); }
+  if (!MENU.open) { if (e.code !== "KeyC" || e.repeat || !audio.unlocked || $("start") || player.busy || (player.acting && !stage.classList.contains("battle"))) return; MENU.toggle(); }
   else {
     const r = MENU.key(e.code);
     if (r === "quit") { location.reload(); return; }                 // a fresh load shows the title
     if (r === "save" && stage.classList.contains("battle")) MENU.msg = "전투 중에는 저장할 수 없어요";
-    else if (r === "save") try { localStorage.setItem("echoPrismSave", makeSave(idx, BOND)); MENU.msg = "저장했어요"; } catch { MENU.msg = "저장할 수 없어요"; }   // BOND only changes when a battle is won, so mid-battle this is the battle's start
+    else if (r === "save") try { localStorage.setItem("echoPrismSave", makeSave(player.idx, BOND)); MENU.msg = "저장했어요"; } catch { MENU.msg = "저장할 수 없어요"; }   // BOND only changes when a battle is won, so mid-battle this is the battle's start
     if (r === "load") {
       let has = null; try { has = readSave(localStorage.getItem("echoPrismSave")); } catch {}
       if (!has) MENU.msg = "저장된 데이터가 없어요";
@@ -237,16 +151,18 @@ addEventListener("keydown", e => {
     }
   }
   e.preventDefault(); e.stopImmediatePropagation();
-  for (const k in MENU.vol) { if (buses[k]) buses[k].gain.value = mv(k); }   // volume page: applies to playing sound at once
-  bgm.sync();                                                                      // <audio> fallback has no bus
+  audio.syncVolumes();                                                             // volume page: applies to playing sound at once
   $("menu").hidden = !MENU.open; $("menu").innerHTML = MENU.open ? menuHtml(MENU) : "";
 }, true);
 </script>
 <script src="game.js"></script>
 <script src="battle/sim.js"></script>
 <script src="battle/sound.js"></script>
+<script src="battle/fx.js"></script>
 <script src="battle.js"></script>
 <script src="stage1/battles.js"></script>
+<script src="scene.js"></script>
+<script src="explore-rules.js"></script>
 <script src="explore.js"></script>
 <script src="stage1/scenes.js"></script>
 <script src="stage1/story.js"></script>
@@ -264,24 +180,19 @@ addEventListener("keydown", e => {
 <script src="stage6/scenes.js"></script>
 <script src="stage6/story.js"></script>
 <script>
+for (const n in BATTLES) ACTS[n] ||= done => runBattle(BATTLES[n], done);   // every battle config is also a scene of that name; a scene file's own ACTS[n] wins
+player = createLinePlayer({ script: SCRIPT, speakers: SPEAKERS, acts: ACTS, stage: storyStage, audio, text: l => fixKeys(l.text, MENU.keys), paused: () => MENU.open, ready: () => audio.unlocked && !$("start") });
 if ($("start")) { const c = [SPEAKERS.voice]; c.title = true; setCast(c); stage.classList.add("title"); }   // title screen: the cast drifts about
 // Load: "불러오기" sets a flag and reloads; here (all scripts ready) the save is applied and the title waits for the click that starts it.
 try {
   const sv = sessionStorage.getItem("echoPrismLoad") && readSave(localStorage.getItem("echoPrismSave"));
   sessionStorage.removeItem("echoPrismLoad");
   if (sv) {
-    const L = SCRIPT[sv.idx], direct = L && !L.act && L.text;   // saved on a dialogue line: show that very line, no title
-    const r = replayState(SCRIPT, sv.idx + (direct ? 1 : 0));
-    Object.assign(BOND, sv.bond); idx = direct ? sv.idx : Math.min(sv.idx, SCRIPT.length - 1) - 1;
-    for (const w in r.renames) SPEAKERS[w].name = r.renames[w];
-    for (const w in r.forms) applyForm(w, r.forms[w]);
-    if (r.theme) setTheme(r.theme);
+    Object.assign(BOND, sv.bond);
+    const { bgm: track, direct } = player.restore(sv);
     myShape = PLAYER_SHAPES.find(s => s.id === load()) || myShape;
-    resumeBgm = r.bgm;
-    if (direct) {   // audio needs a click, so music starts on the first click; the line itself is shown already, fully typed
-      endTitle(); $("start").remove(); speaker = SPEAKERS[L.who]; $("name").textContent = speaker.name; $("box").style.setProperty("--c", speaker.color); setPortrait(speaker);
-      full = fixKeys(L.text, MENU.keys); finish();
-    }
+    if (direct) { if (track && track !== "off") bgm.play(track); }   // no title: asked for now, starts on the first click (audio needs a gesture)
+    else resumeBgm = track;                                          // the title plays first; this starts when it is dismissed
   }
 } catch {}
 </script>

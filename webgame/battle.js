@@ -1,5 +1,5 @@
 // Battle view: canvas drawing, keyboard/mouse, sound and DOM around the rules in battle/sim.js (createBattle).
-// Needs: ac, $, sweep, noise, retrigger, bgm (index.html), stage/act/myShape/drawShape/HITBOX (game.js),
+// Needs: $, sweep, noise, retrigger, bgm, hush, hushLayer, sfxBus (index.html, from audio.js), stage/act/myShape/drawShape/HITBOX (game.js),
 // SPEAKERS/TAU (script.js), setPortrait/kickPortrait (portraits.js), createBattle (battle/sim.js).
 //
 // cfg = {
@@ -85,9 +85,9 @@ function runBattle(cfg, done) {
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   if (cfg.silent) hush(true);
   const snd = createBattleSound({ sweep, noise, bus: cfg.silent ? sfxBus : null, hurtTier: dmg => hitFeel(dmg, s.maxHp).tier, fade: cfg.fade, beat: cfg.beat });   // battle/sound.js: every sound of the fight
-  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0, lead: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null, stopT = 0, vigT = 0;
+  let trail = [], last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0, lead: 0 }, wake = [], wk = 0, fdt = 1 / 60, prevP = null;
+  const vfx = createBattleFx({ hitFeel, fmtNum, allyCol: () => allyCol, ally: id => SPEAKERS[id] });   // battle/fx.js: floats, sparks, banners, hit-stop, vignette
 
-  const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
   const box = createTalkBox({ talk: () => s.talk, advance: () => battle.advance(), text: L => fixKeys(L.t, MENU.keys) });   // typing, advance, skip-hold, wrapping
   const advTalk = () => { if (box.press()) setPortrait(SPEAKERS[cfg.speaker]); };
@@ -108,49 +108,23 @@ function runBattle(cfg, done) {
   };
   const end = () => { cleanup(); act.hidden = true; act.innerHTML = ""; stage.classList.remove("battle"); done(); };
 
-  // events from the simulation -> sound (battle/sound.js) and visual effects (here)
+  // events from the simulation -> sound (battle/sound.js), looks (battle/fx.js) and the battle's own flow (here)
+  const playCue = c => {
+    if (c.type === "kick") kickPortrait();
+    else if (c.type === "flash") retrigger($("flash"), "on", c.ms);
+    else if (c.amp != null) { const st = $("stage"); st.style.setProperty("--a", c.amp); st.style.setProperty("--ms", c.ms + "ms"); retrigger(st, "shake", c.ms); setTimeout(() => { st.style.removeProperty("--a"); st.style.removeProperty("--ms"); }, c.ms + 50); }   // damage-scaled shake
+    else retrigger(stage, "shake", c.ms);
+  };
   function onEvent(v) {
     snd.event(v);
+    if (v.type === "swap") allyCol = SPEAKERS[v.ally].color;
+    vfx.event(v, s).forEach(playCue);
     switch (v.type) {
-      case "enemyHit": {
-        hitFlash = .08; kickPortrait();
-        say(v.dmg ? "-" + fmtNum(v.dmg) : "0", v.x + (Math.random() - .5) * 30, v.y - 10, v.dmg ? (v.ally ? allyCol : "#fff") : "#8fa3b5");
-        fx.push({ x: v.x, y: v.y, age: 0 });                                              // round burst
-        for (let i = 0; i < 5; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 140; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); }
-        break;
-      }
-      case "playerHurt": {   // damage-scaled: shake, hit-stop, red vignette, number and sparks
-        const h = hitFeel(v.dmg, s.maxHp);
-        const st = $("stage"); st.style.setProperty("--a", h.shakeAmp); st.style.setProperty("--ms", h.shakeMs + "ms"); retrigger(st, "shake", h.shakeMs); setTimeout(() => { st.style.removeProperty("--a"); st.style.removeProperty("--ms"); }, h.shakeMs + 50);
-        stopT = h.stop; vigT = h.vignette;
-        say("-" + fmtNum(v.dmg), s.p.x, s.p.y - 20, "#ff5a5a");
-        for (let i = 0; i < 3 + 4 * h.tier; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 140; fx.push({ x: s.p.x, y: s.p.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); }
-        break;
-      }
-      case "shieldBlock": say("방패!", s.p.x, s.p.y - 20, allyCol); break;
-      case "heal": say("+" + v.amount, s.p.x, s.p.y - 20, allyCol); break;
-      case "burst":
-        burstFx = 1; say(v.dmg ? "-" + fmtNum(v.dmg) : "0", s.e.x, s.e.y + 40, v.dmg ? allyCol : "#8fa3b5"); say("+3", s.p.x, s.p.y - 20, allyCol);
-        retrigger($("flash"), "on", 600);
-        banner = { txt: v.up ? `유대 Lv.${v.level}! 지원이 강해졌다` : "유대의 빛!", age: 0, bond: true };
-        break;
-      case "jointLight":   // 합동 유대의 빛: every ally at once, a bigger flash and a rising chord
-        burstFx = 1.6; banner = { txt: "합동 유대의 빛!", age: 0, bond: true }; retrigger($("flash"), "on", 900);
-        break;
-      case "rewind": retrigger($("flash"), "on", 250); break;   // 되감기: the bullets jump back
-      case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
-      case "signature": if (v.call) { const a = s.al || s.p; say(v.call, a.x, a.y - 40, allyCol); } banner = { txt: { mend: "치유", blast: "일격", reflect: "반사", clear: "탄막 소거" }[v.kind], age: 0, bond: true }; retrigger($("flash"), "on", 300); break;
-      case "swap":allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; break;
       case "phase":
         if (cfg.silent) { hushLayer(v.level); if (v.level >= 3) ripple(); }   // each phase gives one more thing back: attacks, music, sky, the rest
         if (cfg.fade) bgm.vol(snd.quiet);   // each phase swallows more of the sound
-        if (v.name) banner = { txt: v.name, age: 0, level: v.level };
-        if (!v.start) { retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); }
         if (v.talk) box.reset();
         break;
-      case "blast": retrigger(stage, "shake", 250); say("폭발!", v.x, v.y, "#ff5a5a"); for (let i = 0; i < 10; i++) { const a = Math.random() * TAU, sp = 100 + Math.random() * 180; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
-      case "break": for (let i = 0; i < 8; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 160; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); } break;
-      case "dashEnd": retrigger(stage, "shake", 300); break;
       case "lose":
         bgm.stop();
         setTimeout(() => { act.onclick = () => { cleanup(); runBattle(cfg, done); }; }, 600);
@@ -159,7 +133,7 @@ function runBattle(cfg, done) {
         BOND.lv = s.lv; BOND.xp = s.xp;
         if (cfg.ally) BOND.base = Math.max(BOND.base, s.bondLv);                         // the bond carries over to the next battle / stage
         bgm.stop();
-        retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); setTimeout(end, 1600);
+        setTimeout(end, 1600);
         break;
     }
   }
@@ -175,12 +149,12 @@ function runBattle(cfg, done) {
     g.lineWidth = 2; g.strokeStyle = col;                                               // enemy aura: slow rings, faster in later phases
     for (let i = 0; i < 3; i++) { const q = ((t * (.35 + .12 * s.level) + i / 3) % 1); g.globalAlpha = (1 - q) * .45; g.beginPath(); g.arc(e.x, e.y, 60 + q * 90, 0, TAU); g.stroke(); }
     g.globalAlpha = 1;
-    if (hitFlash > 0) {                                                                 // hit effects: soft glow + round burst + sparks
+    if (vfx.hitFlash > 0) {                                                                 // hit effects: soft glow + round burst + sparks
       const gr = g.createRadialGradient(e.x, e.y, 0, e.x, e.y, 120);
-      gr.addColorStop(0, `rgba(255,255,255,${hitFlash * 4})`); gr.addColorStop(1, "rgba(255,80,120,0)");
+      gr.addColorStop(0, `rgba(255,255,255,${vfx.hitFlash * 4})`); gr.addColorStop(1, "rgba(255,80,120,0)");
       g.fillStyle = gr; g.beginPath(); g.arc(e.x, e.y, 120, 0, TAU); g.fill();
     }
-    for (const f of fx) {
+    for (const f of vfx.particles) {
       if (f.sp) { g.fillStyle = `rgba(255,220,230,${1 - f.age / .35})`; g.beginPath(); g.arc(f.x, f.y, 3, 0, TAU); g.fill(); continue; }
       const k = f.age / .3, r = 12 + 50 * k, gr = g.createRadialGradient(f.x, f.y, 0, f.x, f.y, r);
       gr.addColorStop(0, `rgba(255,255,255,${.9 * (1 - k)})`); gr.addColorStop(.6, `rgba(255,90,120,${.5 * (1 - k)})`); gr.addColorStop(1, "rgba(255,60,100,0)");
@@ -227,9 +201,9 @@ function runBattle(cfg, done) {
       if (b.tg) { g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 2; g.setLineDash(b.st % 2 ? [] : [4, 4]); g.beginPath(); g.arc(b.x, b.y, b.r + 3, 0, TAU); g.stroke(); g.setLineDash([]); }   // toggle: dashed ring = state 0, solid = state 1 (plus colour per state)
       if (b.nm) { g.save(); g.globalAlpha = 1; g.font = "11px Galmuri11,'Malgun Gothic'"; g.textAlign = "center"; g.fillStyle = "#fff"; g.fillText(b.nm, b.x, b.y - b.r - 4); g.restore(); }   // 방향 규칙: name written on the bullet
     }
-    if (burstFx > 0) {                                                                  // 유대의 빛: a ring of light sweeping out from the player
-      g.globalAlpha = burstFx * .8; g.strokeStyle = allyCol; g.lineWidth = 6; g.shadowColor = allyCol; g.shadowBlur = 20;
-      g.beginPath(); g.arc(p.x, p.y, Math.max(0, 1 - burstFx) * 340, 0, TAU); g.stroke();
+    if (vfx.burst > 0) {                                                                  // 유대의 빛: a ring of light sweeping out from the player
+      g.globalAlpha = vfx.burst * .8; g.strokeStyle = allyCol; g.lineWidth = 6; g.shadowColor = allyCol; g.shadowBlur = 20;
+      g.beginPath(); g.arc(p.x, p.y, Math.max(0, 1 - vfx.burst) * 340, 0, TAU); g.stroke();
     }
     g.restore();
     g.shadowBlur = 12;                                                                  // player shots fly out of the box
@@ -281,7 +255,7 @@ function runBattle(cfg, done) {
     } else { g.fillStyle = "#fff"; g.fillRect(BOX.x, 168, BOX.w * hud.enemy.ghost, 10); g.fillStyle = hud.enemy.enraged ? "#ff3b5c" : "#ffd84f"; g.fillRect(BOX.x, 168, BOX.w * hud.enemy.frac, 10); }   // enemy HP bar
     g.font = "bold 16px Galmuri11,'Malgun Gothic'"; g.textAlign = "left"; g.textBaseline = "bottom"; g.fillStyle = SPEAKERS[cfg.speaker].color; g.fillText(SPEAKERS[cfg.speaker].name, BOX.x, 164);
     g.font = "bold 26px Galmuri11,'Malgun Gothic'"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
-    for (const f of floats) { g.globalAlpha = 1 - f.age / .6; g.fillStyle = f.col || "#fff"; const hw = (+g.measureText(f.txt).width || 0) / 2 + 8; g.fillText(f.txt, Math.max(hw, Math.min(960 - hw, f.x)), f.y - f.age * 60); }   // long lines stay inside the canvas
+    for (const f of vfx.floats) { g.globalAlpha = 1 - f.age / .6; g.fillStyle = f.col || "#fff"; const hw = (+g.measureText(f.txt).width || 0) / 2 + 8; g.fillText(f.txt, Math.max(hw, Math.min(960 - hw, f.x)), f.y - f.age * 60); }   // long lines stay inside the canvas
     g.globalAlpha = 1;
     if (hud.combo > 2) { g.font = "bold 22px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${fmtNum(hud.combo)} HIT`, BOX.x + BOX.w + 20, 215); }
 
@@ -301,12 +275,13 @@ function runBattle(cfg, done) {
       if (s.hasAlly && s.al && s.over !== "lose") { ring(s.al.x, s.al.y, 21, cr.heal, "#7f7"); ring(s.al.x, s.al.y, 26, cr.shield, allyCol || "#4fc3ff"); if (cfg.allies) ring(s.al.x, s.al.y, 31, cr.sig, "#fd6"); }
     }
     g.font = "16px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "right"; g.fillText(`이동: 방향키 · 사격 ON/OFF: ${keyLabel(MENU.keys.fire)} 또는 클릭 · 대시: ${keyLabel(MENU.keys.dash)}` + (cfg.allies ? ` · 교대: ${keyLabel(MENU.keys.swap)}` : "") + " · 메뉴: C", BOX.x + BOX.w, 515);
-    if (banner) {                                                                       // phase (spell) name / bond announcement
-      const k = banner.age, a = Math.min(1, k * 4, (3 - k) * 2), sx = BOX.x + BOX.w + 20 + (1 - Math.min(1, k * 4)) * 30;
+    const ban = vfx.banner;
+    if (ban) {                                                                       // phase (spell) name / bond announcement
+      const k = ban.age, a = Math.min(1, k * 4, (3 - k) * 2), sx = BOX.x + BOX.w + 20 + (1 - Math.min(1, k * 4)) * 30;
       g.globalAlpha = Math.max(0, a); g.textAlign = "left"; g.textBaseline = "middle";
-      g.font = "bold 14px Galmuri11,'Malgun Gothic'"; g.fillStyle = banner.bond ? allyCol : col;
-      if (!banner.bond) g.fillText(`PHASE ${banner.level + 1}`, sx, 340);
-      g.font = "bold 20px Galmuri11,'Malgun Gothic'"; g.fillStyle = banner.bond ? allyCol : "#fff"; g.fillText(banner.txt, sx, banner.bond ? 370 : 366);
+      g.font = "bold 14px Galmuri11,'Malgun Gothic'"; g.fillStyle = ban.bond ? allyCol : col;
+      if (!ban.bond) g.fillText(`PHASE ${ban.level + 1}`, sx, 340);
+      g.font = "bold 20px Galmuri11,'Malgun Gothic'"; g.fillStyle = ban.bond ? allyCol : "#fff"; g.fillText(ban.txt, sx, ban.bond ? 370 : 366);
       g.globalAlpha = 1;
     }
     if (s.talk) {
@@ -337,8 +312,7 @@ function runBattle(cfg, done) {
     else {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
-      if (stopT > 0) stopT -= dt;                                                       // hit-stop: the world freezes for a moment after a heavy hit
-      else for (const v of battle.step(dt, input)) onEvent(v);
+      if (!vfx.frozen(dt)) for (const v of battle.step(dt, input)) onEvent(v);           // hit-stop: the world freezes for a moment after a heavy hit
       if (prevP && dt > 0) moveLook(look, (s.p.x - prevP.x) / dt, (s.p.y - prevP.y) / dt, dt);   // display only: reads the position, never writes it
       for (wk += dt * 60; wk >= 1; wk--) {                                               // wake ticks at 60 steps/s whatever the frame rate
         if (prevP && (s.p.x !== prevP.x || s.p.y !== prevP.y)) wake.push({ x: prevP.x, y: prevP.y });
@@ -348,12 +322,8 @@ function runBattle(cfg, done) {
       prevP = { x: s.p.x, y: s.p.y };
       snd.flush();
       snd.heartbeat(dt, !s.over && s.t > 0);
-      vigT = Math.max(0, vigT - dt * 1.5);
-      const low = isLowHp(s.hp, s.maxHp); $("vig").style.opacity = Math.max(vigT, low ? .25 + .2 * Math.sin(s.t * 6) : 0);   // red edge: hit flash, plus a heartbeat pulse at low hp
-      hitFlash -= dt; burstFx = Math.max(0, burstFx - dt * 1.5);
-      if (banner && (banner.age += dt) > 3) banner = null;
-      for (const f of floats) f.age += dt; floats = floats.filter(f => f.age < .6);
-      for (const f of fx) { f.age += dt; if (f.sp) { f.x += f.vx * dt; f.y += f.vy * dt; } } fx = fx.filter(f => f.age < (f.sp ? .35 : .3));
+      vfx.step(dt);
+      const low = isLowHp(s.hp, s.maxHp); $("vig").style.opacity = Math.max(vfx.vignette, low ? .25 + .2 * Math.sin(s.t * 6) : 0);   // red edge: hit flash, plus a heartbeat pulse at low hp
     }
     draw(); raf = requestAnimationFrame(frame);
   }

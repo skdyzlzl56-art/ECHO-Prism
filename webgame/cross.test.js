@@ -64,3 +64,11 @@ test("X dashes in battle and the hint says so", () => {
   assert.match(b, /ev\.code === MENU\.keys\.dash\) battle\.dash\(\)/);
   assert.ok(b.includes("대시: ${keyLabel(MENU.keys.dash)}"));
 });
+
+test("every act in the story is a battle or a scene that exists (a typo would only fail when the player gets there)", () => {
+  const scenes = new Set(["game.js", "battle.js", ...[1, 2, 3, 4, 5, 6].map(n => `stage${n}/scenes.js`)].filter(f => fs.existsSync(path.join(__dirname, f))).flatMap(f => [...rd(f).matchAll(/^ACTS\.(\w+) =/gm)].map(m => m[1])));
+  const acts = D.SCRIPT.filter(l => l.act).map(l => l.act);
+  assert.ok(acts.length > 15);
+  for (const a of acts) assert.ok(D.BATTLES[a] || scenes.has(a), `act "${a}" is neither a BATTLES entry nor an ACTS scene`);
+  for (const b in D.BATTLES) assert.ok(!scenes.has(b), `${b} is both a battle and a scene`);
+});

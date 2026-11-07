@@ -2,7 +2,7 @@
 // Catches view-level crashes the sim tests cannot see (e.g. reading s.talk after the last line cleared it). Looks are not checked.
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
 const rd = f => fs.readFileSync(path.join(__dirname, f), "utf8");
-const sim = require("./battle/sim.js"), snd = require("./battle/sound.js"), dlg = require("./dialogue.js"), menu = require("./menu.js");
+const sim = require("./battle/sim.js"), snd = { ...require("./battle/sound.js"), ...require("./battle/fx.js") }, dlg = require("./dialogue.js"), menu = require("./menu.js");
 
 // anything-goes stub: reads return another stub (callable), writes are accepted
 const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPrimitive ? () => 0 : k === "length" ? 0 : stub(), set: () => true, apply: () => stub() });

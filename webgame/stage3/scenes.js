@@ -75,12 +75,9 @@ function drawGlitch(g, x, y, t, k) {                                            
 
 // ---- 변신: 글리치의 각진 파편이 부서졌다가 따뜻한 새 모습으로 다시 모인다 (about 4s, auto-advances) ----
 ACTS.s3_morph = done => {
-  stage.classList.add("pick"); act.hidden = false;
-  act.innerHTML = `<canvas id="mf" width="960" height="540"></canvas>`;
-  const g = $("mf").getContext("2d"), NEW = FORMS.glitch.calm.color, OLD = SPEAKERS.glitch.color;
-  let t = 0, last = performance.now(), raf, swapped = false;
-  function step(now) {
-    const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
+  let g, t = 0, swapped = false; const NEW = FORMS.glitch.calm.color, OLD = SPEAKERS.glitch.color;
+  const scene = openScene({ html: `<canvas id="mf" width="960" height="540"></canvas>`, done, step(dt) {
+    t += dt;
     g.globalAlpha = 1; g.fillStyle = "#070b1c"; g.fillRect(0, 0, 960, 540); g.textAlign = "center"; g.textBaseline = "middle";
     if (t < 1.6) { g.globalAlpha = 1 - t / 1.6 * .3; drawShardAlly(g, 480, 250, t * (1 + t * 4), OLD, 3 + t * 2); }                  // old shard spins up and jitters
     else if (t < 2.4) {                                                                 // flash: sparks fly out
@@ -91,40 +88,18 @@ ACTS.s3_morph = done => {
       g.globalAlpha = Math.min(1, t - 2.4); drawTomoeAlly(g, 480, 250, t, NEW, 6);
       g.font = "bold 30px Galmuri11,'Malgun Gothic'"; g.fillStyle = NEW; g.fillText("글리치", 480, 345);
     }
-    if (t > 4.2) { cancelAnimationFrame(raf); act.hidden = true; act.innerHTML = ""; stage.classList.remove("pick"); done(); return; }
-    raf = requestAnimationFrame(step);
-  }
-  raf = requestAnimationFrame(step);
+    if (t > 4.2) scene.close();
+  } });
+  g = $("mf").getContext("2d");
 };
 
 // ---- 동료 카드: 글리치 합류 ----
-ACTS.s3_party = done => {
-  stage.classList.add("pick"); act.hidden = false;
-  act.innerHTML = `<canvas id="pt" width="960" height="540"></canvas>`;
-  const g = $("pt").getContext("2d"), S = SPEAKERS, who = [
-    { x: 150, name: "개체", role: "형태를 고른 자", c: "#9ad0ff", draw: () => { g.save(); g.translate(150, 250); drawShape(g, myShape, 30); g.restore(); } },
-    { x: 380, name: "루미", role: "빠른 추격탄 · 회복", c: S.lumi.color, draw: t => drawBlossom(g, 380, 250, t, S.lumi.color, 2.2) },
-    { x: 610, name: "헥사", role: "느리고 강한 사격 · 방패", c: S.hexa.color, draw: t => drawHexa(g, 610, 250, t, S.hexa.color, 1.5) },
-    { x: 830, name: "글리치", role: "새로운 동료 · 빠르고 강한 사격 · 유대의 빛 = 공격력 상승", c: S.glitch.color, draw: t => drawGlitch(g, 830, 250, t, 3) },
-  ];
-  let t = 0, last = performance.now(), raf, fin = false;
-  const go = () => {
-    if (t < 1.5 || fin) return; fin = true; cancelAnimationFrame(raf); removeEventListener("keydown", key);
-    act.onclick = null; act.hidden = true; act.innerHTML = ""; stage.classList.remove("pick"); done();
-  };
-  const key = e => { if (e.code === "Space" || e.code === "Enter" || e.code === "KeyZ") { e.preventDefault(); go(); } };
-  function step(now) {
-    const dt = Math.min((now - last) / 1000, .05); last = now; t += dt;
-    g.fillStyle = "#070b1c"; g.fillRect(0, 0, 960, 540);
-    g.globalAlpha = Math.min(1, t); g.textAlign = "center"; g.textBaseline = "middle";
-    g.font = "bold 40px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText("동료 합류!", 480, 90);
-    who.forEach((m, i) => {
-      g.globalAlpha = Math.max(0, Math.min(1, t - .3 - i * .35)); m.draw(t);
-      g.font = "bold 26px Galmuri11,'Malgun Gothic'"; g.fillStyle = m.c; g.fillText(m.name, m.x, 345);
-      g.font = "14px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#cfe"; wrap(m.role, 12).forEach((s, k) => g.fillText(s, m.x, 380 + k * 20));
-    });
-    g.globalAlpha = t > 1.5 ? 1 : 0; g.font = "20px Galmuri11,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText("클릭, SPACE 또는 Z로 계속", 480, 490);
-    g.globalAlpha = 1; raf = requestAnimationFrame(step);
-  }
-  act.onclick = go; addEventListener("keydown", key); raf = requestAnimationFrame(step);
-};
+ACTS.s3_party = partyCard({
+  title: "동료 합류!", nameSize: 26, roleSize: 14, wrapAt: 12, hintY: 490,
+  members: () => { const S = SPEAKERS; return [
+    { x: 150, name: "개체", role: "형태를 고른 자", c: "#9ad0ff", draw: g => { g.save(); g.translate(150, 250); drawShape(g, myShape, 30); g.restore(); } },
+    { x: 380, name: "루미", role: "빠른 추격탄 · 회복", c: S.lumi.color, draw: (g, t) => drawBlossom(g, 380, 250, t, S.lumi.color, 2.2) },
+    { x: 610, name: "헥사", role: "느리고 강한 사격 · 방패", c: S.hexa.color, draw: (g, t) => drawHexa(g, 610, 250, t, S.hexa.color, 1.5) },
+    { x: 830, name: "글리치", role: "새로운 동료 · 빠르고 강한 사격 · 유대의 빛 = 공격력 상승", c: S.glitch.color, draw: (g, t) => drawGlitch(g, 830, 250, t, 3) },
+  ]; },
+});

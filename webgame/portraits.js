@@ -250,7 +250,7 @@ function drawScenery(t) {
 function drawBg(t) {
   const dt = Math.min(t - lastBg, 50); lastBg = t;
   bg.clearRect(0, 0, 960, 540);
-  const bare = typeof hushed !== "undefined" && hushed && silenceLayer < 3;   // 침묵 fight, before the sky returns: nothing behind the fight
+  const bare = typeof audio !== "undefined" && audio.hushed && audio.layer < 3;   // 침묵 fight, before the sky returns: nothing behind the fight
   if (bare) return;
   drawScenery(t);
   for (const L of backdropLayers(themeKey, t / 1000)) {         // parallax silhouettes behind the stars (backdrop.js)

@@ -1,6 +1,6 @@
 // Ticket 10: each companion looks different in battle. Body draw helpers are stubbed to nothing, so any difference left is the ally's shots.
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
-const sim = require("./sim.js"), snd = require("./sound.js"), dlg = require("../dialogue.js"), menu = require("../menu.js");
+const sim = require("./sim.js"), snd = { ...require("./sound.js"), ...require("./fx.js") }, dlg = require("../dialogue.js"), menu = require("../menu.js");
 const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPrimitive ? () => 0 : k === "length" ? 0 : stub(), set: () => true, apply: () => stub() });
 
 function shotLog(allyId) {

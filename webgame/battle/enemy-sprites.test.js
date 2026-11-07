@@ -1,6 +1,6 @@
 // Ticket 09: each enemy shape draws its own body in battle, not the glitch shard. Records canvas calls from the real frame loop.
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
-const sim = require("./sim.js"), snd = require("./sound.js"), dlg = require("../dialogue.js"), menu = require("../menu.js");
+const sim = require("./sim.js"), snd = { ...require("./sound.js"), ...require("./fx.js") }, dlg = require("../dialogue.js"), menu = require("../menu.js");
 const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPrimitive ? () => 0 : k === "length" ? 0 : stub(), set: () => true, apply: () => stub() });
 
 // frames of a battle whose enemy has the given shape -> every canvas call/assignment made while drawing, as one string
