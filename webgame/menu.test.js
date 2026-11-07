@@ -6,6 +6,11 @@ test("fixKeys rewrites every Z키 / A키 in a line", () => {
   assert.strictEqual(fixKeys("Z키로 켜고 Z키로 끄고 A키 A키", { fire: "KeyX", swap: "KeyQ" }), "X키로 켜고 X키로 끄고 Q키 Q키");
 });
 
+test("fixKeys also rewrites the bare 'A로' form (stage 2 battle talk), not letters inside words", () => {
+  assert.strictEqual(fixKeys("필요하면 A로 불러 줘!", { fire: "KeyX", swap: "KeyQ" }), "필요하면 Q로 불러 줘!");
+  assert.strictEqual(fixKeys("MAP로 Z로", { fire: "KeyA", swap: "KeyQ" }), "MAP로 A로");
+});
+
 test("fixKeys does not rewrite an already-substituted key (fire rebound to A)", () => {
   assert.strictEqual(fixKeys("Z키 A키", { fire: "KeyA", swap: "KeyQ" }), "A키 Q키");
 });

@@ -30,7 +30,7 @@
     glitch: { kind: "reflect", call: "흥, 도로 가져가!", power: [100, 140, 180, 220, 260] },       // bullets within power px fly back
     keeper: { kind: "clear", call: "정각입니다. 탄막을 정리하겠습니다.", power: [140, 180, 230, 300, 9999] },        // 시계지기: bullets within power px vanish
   };
-  const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, HEAL_IV = [10, 8.5, 7, 6, 5], SWAP_CD = 1.5, REWIND_BACK = 1.5;
+  const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, HEAL_IV = [10, 8.5, 7, 6, 5], SHIELD_CD = [0, 22, 18, 14, 10], SWAP_CD = 1.5, REWIND_BACK = 1.5;
 
   function createBattle(cfg, opts = {}) {
     const rng = opts.rng || Math.random, HITBOX = opts.hitbox == null ? 4 : opts.hitbox, bondBase = opts.bondBase || 0;
@@ -120,7 +120,7 @@
     const hit = d => hurt(Math.round(d * atkK));   // non-bullet damage (zone, laser, touch, split, box) scales with the stage like bullets do
     const wipe = () => { hist = []; rev = null; };   // the field was cleared / rewritten: a rewind must not bring the old bullets back
     function hurt(d) {
-      if (s.shieldOn) { s.shieldOn = false; s.cool[s.allyId].shield = [0, 22, 18, 14, 10][blv()]; s.inv = .6; emit("shieldBlock"); return; }
+      if (s.shieldOn) { s.shieldOn = false; s.cool[s.allyId].shield = SHIELD_CD[blv()]; s.inv = .6; emit("shieldBlock"); return; }
       s.hp -= d; s.inv = 1; emit("playerHurt", { dmg: d });
     }
 
@@ -318,7 +318,8 @@
       step(dt, input = {}) { dt = Math.min(dt, .05); if (!s.over && !s.talk) update(dt, input); const out = ev; ev = []; return out; },
       cooldownRings() {                                                      // display: fill 0..1 per ring, 1 = ready (companion rings follow the one out now)
         const f = (left, total) => total > 0 ? Math.max(0, Math.min(1, 1 - left / total)) : 1, c = s.cool[s.allyId] || { heal: 0, shield: 0, sig: 0 }, lv = blv();
-        return { dash: f(s.dashCd, DASH_CD), heal: f(c.heal, HEAL_IV[lv]), shield: s.shieldOn ? 1 : f(c.shield, [0, 22, 18, 14, 10][lv]), sig: f(c.sig, SIG_CD[lv]) };
+        const k = kit();                                                     // null = this companion has no such ability (yet): the view draws no ring
+        return { dash: f(s.dashCd, DASH_CD), heal: k.heal ? f(c.heal, HEAL_IV[lv]) : null, shield: s.shieldOn ? 1 : k.shield && lv >= SHIELD_LV ? f(c.shield, SHIELD_CD[lv]) : null, sig: SIG[s.allyId] ? f(c.sig, SIG_CD[lv]) : null };
       },
       toggleFire() { s.auto = !s.auto; return s.auto; },
       swap() {                                                               // 교대: hand the support role to the next companion; bond level and gauge are shared

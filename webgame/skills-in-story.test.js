@@ -21,8 +21,9 @@ test("each ally calls its signature move in its own voice", () => {
     b.state.cool[id].sig = 0; calls[id] = b.step(.016, {}).find(x => x.type === "signature").call;
   }
   for (const c of Object.values(calls)) assert.ok(c && c.length > 3);
-  assert.match(calls.keeper, /습니다/, "keeper: formal");
-  assert.doesNotMatch(calls.lumi, /습니다/, "lumi: banmal");
-  assert.match(calls.glitch, /흥|시끄러|[냐다]/, "glitch: gruff");
-  assert.match(calls.hexa, /다|\.\.\./, "hexa: terse");
+  const polite = /(요|니다)[.!?…\s]*$/;                         // a call ending in 요 / 니다 is polite speech
+  assert.match(calls.keeper, /니다[.!?\s]*$/, "keeper: formal, ends in 니다");
+  for (const id of ["lumi", "hexa", "glitch"]) assert.doesNotMatch(calls[id], polite, `${id}: banmal, never ends in 요/니다`);
+  assert.match(calls.glitch, /흥|시끄러/, "glitch: gruff");
+  assert.match(calls.hexa, /[다라][.!?\s]*$/, "hexa: terse plain-form ending");
 });

@@ -168,7 +168,7 @@ function runBattle(cfg, done) {
         v.allies.forEach((id, i) => setTimeout(() => sweep(300 * (1 + i * .25), 2400, 1.1, "sine", .22), i * 120)); noise(.5, .5); break;
       case "rewind": retrigger($("flash"), "on", 250); sweep(1400, 300, .35, "sawtooth", .16); break;   // 되감기: the bullets jump back
       case "bondStart": banner = { txt: `유대 Lv.${v.level}`, age: 0, bond: true }; break;
-      case "signature": if (v.call && s.al) say(v.call, s.al.x, s.al.y - 40, allyCol); banner = { txt: { ward: "수호", blast: "일격", reflect: "반사", clear: "탄막 소거" }[v.kind], age: 0, bond: true }; retrigger($("flash"), "on", 300); sweep(500, 1800, .4, "sine", .2); break;
+      case "signature": if (v.call) { const a = s.al || s.p; say(v.call, a.x, a.y - 40, allyCol); } banner = { txt: { ward: "수호", blast: "일격", reflect: "반사", clear: "탄막 소거" }[v.kind], age: 0, bond: true }; retrigger($("flash"), "on", 300); sweep(500, 1800, .4, "sine", .2); break;
       case "dash": sweep(900, 300, .12, "sawtooth", .12); noise(.08, .15); break;
       case "swap":allyCol = SPEAKERS[v.ally].color; banner = { txt: `교대: ${SPEAKERS[v.ally].name}`, age: 0, bond: true }; sweep(700, 1500, .15, "sine", .2); break;
       case "phase":
@@ -196,6 +196,10 @@ function runBattle(cfg, done) {
         break;
     }
   }
+
+  // cooldown ring (display only): k 0..1, 1 = ready (bright, thick); null = no such ability, nothing drawn
+  const ring = (x, y, r, k, col) => { if (k == null) return; g.save(); g.lineWidth = k >= 1 ? 3 : 2; g.strokeStyle = col; g.shadowColor = col; g.shadowBlur = k >= 1 ? 10 : 0; g.globalAlpha = k >= 1 ? .55 + .35 * Math.abs(Math.sin(s.t * 5)) : .22; g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke();
+    if (k > 0 && k < 1) { g.globalAlpha = .9; g.beginPath(); g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + k * TAU); g.stroke(); } g.restore(); };
 
   function draw() {
     const { p, e, t } = s;
@@ -301,7 +305,7 @@ function runBattle(cfg, done) {
     } else { g.fillStyle = "#fff"; g.fillRect(BOX.x, 168, BOX.w * Math.max(s.eGhost, 0) / s.eMax, 10); g.fillStyle = s.level > 1 ? "#ff3b5c" : "#ffd84f"; g.fillRect(BOX.x, 168, BOX.w * Math.max(s.eHp, 0) / s.eMax, 10); }   // enemy HP bar
     g.font = "bold 16px 'Malgun Gothic'"; g.textAlign = "left"; g.textBaseline = "bottom"; g.fillStyle = SPEAKERS[cfg.speaker].color; g.fillText(SPEAKERS[cfg.speaker].name, BOX.x, 164);
     g.font = "bold 26px 'Malgun Gothic'"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#fff";
-    for (const f of floats) { g.globalAlpha = 1 - f.age / .6; g.fillStyle = f.col || "#fff"; g.fillText(f.txt, f.x, f.y - f.age * 60); }
+    for (const f of floats) { g.globalAlpha = 1 - f.age / .6; g.fillStyle = f.col || "#fff"; const hw = (+g.measureText(f.txt).width || 0) / 2 + 8; g.fillText(f.txt, Math.max(hw, Math.min(960 - hw, f.x)), f.y - f.age * 60); }   // long lines stay inside the canvas
     g.globalAlpha = 1;
     if (s.combo > 2) { g.font = "bold 22px 'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.textAlign = "left"; g.fillText(`${fmtNum(s.combo)} HIT`, BOX.x + BOX.w + 20, 215); }
 
@@ -316,8 +320,6 @@ function runBattle(cfg, done) {
       g.font = "12px 'Malgun Gothic'"; g.fillStyle = "#9ab"; g.fillText("탄을 아슬하게 스치면 충전", BOX.x + BOX.w + 20, 308);
     }
     {                                                                                   // cooldown rings: dash around the player, heal / shield / special around the companion out now; bright + thick when ready
-      const ring = (x, y, r, k, col) => { g.save(); g.lineWidth = k >= 1 ? 3 : 2; g.strokeStyle = col; g.shadowColor = col; g.shadowBlur = k >= 1 ? 10 : 0; g.globalAlpha = k >= 1 ? .55 + .35 * Math.abs(Math.sin(t * 5)) : .22; g.beginPath(); g.arc(x, y, r, 0, TAU); g.stroke();
-        if (k > 0 && k < 1) { g.globalAlpha = .9; g.beginPath(); g.arc(x, y, r, -Math.PI / 2, -Math.PI / 2 + k * TAU); g.stroke(); } g.restore(); };
       const cr = battle.cooldownRings();
       if (s.over !== "lose") ring(p.x, p.y, 25, cr.dash, "#9ad0ff");
       if (s.hasAlly && s.al && s.over !== "lose") { ring(s.al.x, s.al.y, 21, cr.heal, "#7f7"); ring(s.al.x, s.al.y, 26, cr.shield, allyCol || "#4fc3ff"); if (cfg.allies) ring(s.al.x, s.al.y, 31, cr.sig, "#fd6"); }

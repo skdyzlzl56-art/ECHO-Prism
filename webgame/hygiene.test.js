@@ -8,9 +8,10 @@ test("no merge conflict markers left in source", () => {
 });
 
 test("story text uses no male-gendered reference (only 헥사 is male; others are female, see CHARACTERS.md)", () => {
-  // 헥사 is never referred to in the third person today; if that changes, allow-list the line here.
+  // 헥사 is never referred to in the third person today; if that changes, add the exact phrase to ALLOW (removed before matching).
+  const ALLOW = [];
   const male = /소년|청년|남자|사나이|(^|[^가-힣])그(가|는|의|를|에게)(?![가-힣])/m;
-  for (const f of src.filter(f => /(script|story|scenes)\.js$/.test(f))) assert.doesNotMatch(fs.readFileSync(f, "utf8"), male, path.relative(__dirname, f));
+  for (const f of src.filter(f => /(script|story|scenes)\.js$/.test(f))) assert.doesNotMatch(ALLOW.reduce((t, a) => t.split(a).join(""), fs.readFileSync(f, "utf8")), male, path.relative(__dirname, f));
 });
 
 test("story and battle text does not name WASD (A is the swap key; left is arrows only)", () => {
