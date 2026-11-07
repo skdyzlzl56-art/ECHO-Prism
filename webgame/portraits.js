@@ -164,6 +164,7 @@ const THEMES = {
   gallery: { sky: "linear-gradient(#2b2f35,#0c0d10)", rgb: "190,195,205", vx: .1, vy: .3 },            // washed-out grey, slow drifting dust
   clocktower: { sky: "linear-gradient(#3a2d17,#0d0a06)", rgb: "230,200,130", vx: 0, vy: .15 },     // stopped brass hours, dust hanging in the air
   library: { sky: "linear-gradient(#1d2140,#07091a)", rgb: "205,195,235", vx: .05, vy: -.12 },   // ink-blue stacks, pages drifting slowly up
+  core:    { sky: "linear-gradient(#26153f,#06030f)", rgb: "230,210,255", vx: 0, vy: -.3 },   // prism core: violet, light rising like breath
   flee:    { sky: "linear-gradient(#3d0f1c,#0a0306)", rgb: "255,120,130", vx: -22, vy: 0, streak: 5 }, // red alarm sky, stars streak past
 };
 let theme = THEMES.night, warpMs = 0, lastBg = 0;

@@ -168,6 +168,39 @@ test("joint bond light: only when enabled and the bond reaches full; otherwise n
   assert.ok(!go(true, 1).some(v => v.type === "jointLight"), "bond not full yet");
 });
 
+// 페이즈별 규칙: cfg.phaseRules[level] switches colour / rewind / direction rule per phase; no phaseRules = cfg-level options as before
+test("phaseRules: colour rule in phase 0 only, direction rule name on bullets in phase 1 only", () => {
+  const cfg = { ...quiet, hp: 100, cuts: [.5], names: ["a", "b"], phaseRules: [{ colorRule: "#ff4d6d" }, { dirRule: { name: "x" } }],
+    phases: [h => h.aim(.3, 120, 8, { col: "#00ff00" }), h => h.aim(.3, 120, 8, { col: "#00ff00" })] };
+  const b = createBattle(cfg, { rng: seeded(3) }); b.state.auto = false;
+  const hp0 = b.state.hp; run(b, 3); assert.strictEqual(b.state.hp, hp0, "non-red bullets pass in phase 0");
+  assert.ok(b.state.bullets.every(x => !x.nm));
+  b.state.eHp = 40; run(b, .1); assert.strictEqual(b.state.level, 1);
+  run(b, 3); assert.ok(b.state.bullets.length && b.state.bullets.every(x => x.nm === "x"), "phase 1 bullets carry the name");
+  assert.ok(b.state.hp < hp0, "the colour rule is off in phase 1: green bullets hurt");
+});
+
+test("phaseRules: rewind only runs in the phase that asks for it, and restarts its period at the phase change", () => {
+  const cfg = { ...quiet, hp: 100, cuts: [.5], names: ["a", "b"], phaseRules: [{}, { rewind: 3 }], phases: [h => h.rain(.3, 100), h => h.rain(.3, 100)] };
+  const b = createBattle(cfg, { rng: seeded(4) }); b.state.auto = false;
+  assert.ok(!run(b, 8).some(v => v.type === "rewind"), "no rewind in phase 0");
+  b.state.eHp = 40; const t0 = b.state.t; const ev = run(b, 4);
+  assert.strictEqual(ev.filter(v => v.type === "rewind").length, 1, `one rewind within 3-4 s of the phase change (t0 ${t0})`);
+});
+
+test("finale phase: shots deal 0, an ordinary burst cannot kill, and the joint light (bond full) wins", () => {
+  const mk = (bondBase, finale = true) => { const b = createBattle({ ...quiet, hp: 100, cuts: [.5], names: ["a", "b"], ally: "lumi", allies: ["lumi", "hexa"], jointLight: true, phaseRules: [{}, { finale }], phases: [() => {}, () => {}] }, { rng: seeded(5), bondBase }); b.state.auto = true; b.state.eHp = 30; return b; };
+  const b = mk(0); run(b, 3); assert.strictEqual(b.state.eHp, 30, "shots do nothing in the finale"); assert.ok(!b.state.over);
+  b.state.gauge = 100; run(b, .1); assert.ok(b.state.eHp >= 1 && !b.state.over, "bond Lv.1 burst: the enemy lives");
+  const w = mk(3); run(w, 3); w.state.gauge = 100; const ev = run(w, .1);
+  assert.ok(ev.some(v => v.type === "jointLight") && w.state.over === "win", "bond full: joint light wins");
+});
+
+test("clock light (시계의 빛) winds back the swap cooldown; other lights do not", () => {
+  const go = light => { const b = createBattle({ ...quiet, ally: "lumi", allies: ["lumi", "keeper"], kits: { keeper: { cd: 1, dm: 1, heal: 0, shield: 0 } }, lights: { keeper: light }, gauge0: 100 }, { rng: seeded(6) }); b.swap(); b.step(1 / 60); return b.state.swapCd; };
+  assert.ok(go("clock") <= 0 && go("heal") > 0);
+});
+
 // ---- the real stage 1 configs: every phase actually fires, with the player standing still and a huge HP pool ----
 global.SPEAKERS = {}; global.BATTLES = {}; global.ACTS = {}; global.runBattle = () => {};
 require("../stage1/battles.js"); require("../stage2/battles.js");

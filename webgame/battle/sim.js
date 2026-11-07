@@ -30,10 +30,13 @@
       allyId: allies ? allies[0] : cfg.ally, swapCd: 0, surviveLeft: cfg.survive || 0,
     };
     const p = s.p, e = s.e, al = s.al;
+    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
+    // finale: shots deal 0 and only the joint light (bond full, cfg.jointLight) ends the fight.
+    const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr ? pr[k] : cfg[k]; };
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
-    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], spent = new Set(), nextRw = cfg.rewind || 0, uid = 0;
+    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], spent = new Set(), nextRw = rl("rewind") || 0, uid = 0;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -44,7 +47,7 @@
 
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
     const add = (x, y, a, sp, size = 6, o = {}) => {
-      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col, nm: cfg.dirRule && cfg.dirRule.name,   // 방향 규칙: name written on the bullet
+      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col, nm: rl("dirRule") && rl("dirRule").name,   // 방향 규칙: name written on the bullet
         id: uid++, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, age: 0, tr: [] });
       if (!s.over) emit("enemyShot", { size, speed: sp });
     };
@@ -79,7 +82,10 @@
     // 유대의 빛: clears the field, hurts the enemy, heals, and the bond (ally strength) rises one level
     function burst() {
       s.gauge = 0; const was = blv(); bonus++;
-      const lt = light(), dmg = cfg.invuln ? 0 : Math.round((8 + 4 * blv()) * (lt === "power" ? 1.5 : 1)); s.eHp -= dmg; s.bullets = []; s.lasers = []; if (!lt || lt === "heal") s.hp = Math.min(MAX_HP, s.hp + 3);   // invuln: the light still clears the field, it just can't hurt
+      const lt = light(), dmg = cfg.invuln ? 0 : Math.round((8 + 4 * blv()) * (lt === "power" ? 1.5 : 1)); s.bullets = []; s.lasers = []; if (!lt || lt === "heal")   s.hp = Math.min(MAX_HP, s.hp + 3);
+      if (lt === "clock") s.swapCd = 0;                                   // 시계의 빛: the swap cooldown is wound back
+      const joint = cfg.jointLight && blv() >= BOND_MAX;
+      s.eHp = rl("finale") ? (joint ? 0 : Math.max(1, s.eHp - dmg)) : s.eHp - dmg;   // finale: only the joint light can finish
       emit("burst", { dmg, level: blv(), up: blv() > was, light: lt });
       if (cfg.jointLight && blv() >= BOND_MAX) emit("jointLight", { allies: cfg.allies || [cfg.ally] });   // 합동 유대의 빛: bond full, everyone bursts
       if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && shieldT <= 0) s.shieldOn = true;
@@ -137,7 +143,7 @@
       }
       for (const sh of s.shots) { sh.x += sh.vx * dt; sh.y += sh.vy * dt; }
       for (const sh of s.shots) if (sh.y < e.y + 65 && sh.y > e.y - 80 && Math.abs(sh.x - e.x) < E_W) {   // shot lands wherever the enemy is
-        const d = cfg.invuln ? 0 : sh.dmg;                                 // invuln enemy: hits land (ting!) but deal 0
+        const d = cfg.invuln || rl("finale") ? 0 : sh.dmg;                                 // invuln enemy: hits land (ting!) but deal 0
         sh.dead = true; s.eHp -= d; s.combo++; comboT = .5;
         emit("enemyHit", { x: sh.x, y: sh.y, dmg: d, ally: !!sh.ally, combo: s.combo });
       }
@@ -145,7 +151,7 @@
 
       const r = s.eHp / E_MAX, lv2 = cuts.filter(c => r <= c).length;      // each phase has its own pattern
       if (lv2 > s.level) {
-        s.level = lv2; s.bullets = []; s.lasers = []; tm = {}; e.mode = "idle"; e.y = 85; e.dashT = 0;
+        s.level = lv2; s.bullets = []; s.lasers = []; tm = {}; if (cfg.phaseRules) { hist = []; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; } e.mode = "idle"; e.y = 85; e.dashT = 0;
         const lines = cfg.talks && cfg.talks[lv2];
         emit("phase", { level: lv2, name: (cfg.names && cfg.names[lv2]) || "", talk: !!lines });
         if (lines) s.talk = { lines, i: 0 };
@@ -167,9 +173,9 @@
         }
       }
       s.bullets = s.bullets.filter(b => !b.dead && b.y < BOX.y + BOX.h + 20 && b.y > BOX.y - 120 && b.x > BOX.x - 40 && b.x < BOX.x + BOX.w + 40);
-      if (cfg.rewind) {                                                    // 되감기 규칙: every cfg.rewind seconds the bullets jump back to where they were REWIND_BACK s ago
+      if (rl("rewind")) {                                                    // 되감기 규칙: every cfg.rewind seconds the bullets jump back to where they were REWIND_BACK s ago
         hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) }); while (hist[0].t < s.t - REWIND_BACK) hist.shift();
-        if (s.t >= nextRw) { nextRw += cfg.rewind; s.bullets = hist[0].b.filter(b => !spent.has(b.id)); hist = []; emit("rewind"); }   // bullets that already hit are not replayed
+        if (s.t >= nextRw) { nextRw += rl("rewind"); s.bullets = hist[0].b.filter(b => !spent.has(b.id)); hist = []; emit("rewind"); }   // bullets that already hit are not replayed
       }
       for (const l of s.lasers) {
         l.age += dt;
@@ -182,7 +188,7 @@
       }
       s.lasers = s.lasers.filter(l => l.age < l.warn + l.dur + .15);
       if (s.inv <= 0) {
-        const i = s.bullets.findIndex(b => (!cfg.colorRule || b.col === cfg.colorRule) && !(b.nm && dx * b.vx + dy * b.vy > 0) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
+        const i = s.bullets.findIndex(b => (!rl("colorRule") || b.col === rl("colorRule")) && !(b.nm && dx * b.vx + dy * b.vy > 0) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
         if (i >= 0) { const d = s.bullets[i].dmg; spent.add(s.bullets[i].id); s.bullets.splice(i, 1); hurt(d); }
       }
       if (cfg.survive) s.surviveLeft = Math.max(0, cfg.survive - Math.max(0, s.t - 1));   // escape battle: outlast the clock after the 1s grace
