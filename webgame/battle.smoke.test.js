@@ -8,16 +8,16 @@ const sim = require("./battle/sim.js"), dlg = require("./dialogue.js"), menu = r
 const stub = () => new Proxy(function () {}, { get: (_, k) => k === Symbol.toPrimitive ? () => 0 : k === "length" ? 0 : stub(), set: () => true, apply: () => stub() });
 
 function load() {
-  const rafs = [], handlers = {}, MENU = menu.createMenu(dlg.KEYS, { get: () => null, set: () => {} });
+  const rafs = [], handlers = {}, hushLog = [], timers = [], MENU = menu.createMenu(dlg.KEYS, { get: () => null, set: () => {} });
   const ctx = vm.createContext({
     ...sim, ...dlg, fixKeys: menu.fixKeys, keyLabel: menu.keyLabel, MENU, HITBOX: 4, console, Math, Set, Object, Array, String, JSON, Number, Date,
     SPEAKERS: new Proxy({}, { get: (t, k) => t[k] || (t[k] = { name: String(k), color: "#fff", pitch: 200, spin: 1, shape: "bloom", close: 0 }) }),
     $: () => stub(), stage: stub(), act: stub(), bgm: stub(), sweep: () => {}, noise: () => {}, retrigger: () => {}, setPortrait: () => {}, kickPortrait: () => {}, setCast: () => {},
     performance: { now: () => 0 }, requestAnimationFrame: cb => (rafs.push(cb), rafs.length), cancelAnimationFrame: () => {},
-    ACTS: {}, FX: {}, TAU: Math.PI * 2, drawShape: () => {}, myShape: stub(), PLAYER_SHAPES: [stub()], addEventListener: (k, f) => { handlers[k] = f; }, removeEventListener: () => {}, setTimeout: () => 0, localStorage: { getItem: () => null, setItem: () => {} },
+    ACTS: {}, FX: {}, TAU: Math.PI * 2, drawShape: () => {}, myShape: stub(), PLAYER_SHAPES: [stub()], addEventListener: (k, f) => { handlers[k] = f; }, removeEventListener: () => {}, setTimeout: f => (timers.push(f), 0), hush: on => hushLog.push(on), localStorage: { getItem: () => null, setItem: () => {} },
   });
   vm.runInContext(rd("battle.js") + "\n;globalThis.__run = runBattle; globalThis.__bond = BOND;", ctx);
-  return { ctx, rafs, handlers };
+  return { ctx, rafs, handlers, hushLog, timers };
 }
 
 // drive n frames of 1/60 s; every frame must schedule the next one until the battle ends
@@ -45,4 +45,14 @@ test("holding Ctrl (skip) through the last dialogue line keeps the loop alive", 
   drive(rafs, 90);                                                   // past the 1s grace: the first shot lands and the phase talk opens
   handlers.keydown({ code: "ControlLeft", key: dlg.KEYS.skip, repeat: false, preventDefault() {} });
   drive(rafs, 600, 1500);                                            // skip walks through every line; the loop must outlive the last one
+});
+
+test("a silent battle (cfg.silent) hushes all sound while it runs and restores it afterwards", () => {
+  const plain = load(); plain.ctx.__run(cfg(), () => {}); assert.deepEqual(plain.hushLog, []);   // other battles never touch the sound
+  const { ctx, rafs, hushLog, timers } = load(); let done = false;
+  ctx.__run(cfg({ silent: true, invuln: true, survive: 1, hp: 999, cuts: [] }), () => { done = true; });
+  assert.deepEqual(hushLog, [true]);
+  drive(rafs, 200);                                                  // past the 1s grace + the 1s survive clock: win
+  timers.forEach(f => f());                                          // the win outro timer runs end()
+  assert.ok(done); assert.deepEqual(hushLog, [true, false]);
 });
