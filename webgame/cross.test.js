@@ -30,6 +30,13 @@ test("battle configs are structurally valid", () => {
   }
 });
 
+test("GAME OVER draws a dark backdrop (lose only) before the text", () => {
+  const src = rd("battle.js"), i = src.indexOf("if (s.over) {"), blk = src.slice(i, src.indexOf('g.textAlign = "left";', i));
+  const m = blk.match(/if \(s\.over === "lose"\)[^\n]*fillRect\([^\n]*\)/);
+  assert.ok(m, "no lose-only backdrop fillRect");
+  assert.ok(blk.indexOf(m[0]) < blk.indexOf("GAME OVER"), "backdrop must precede text");
+});
+
 test("index.html loads every stage script and every loaded file exists", () => {
   const html = rd("index.html"), srcs = [...html.matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
   for (const s of srcs) assert.ok(fs.existsSync(path.join(__dirname, s)), `missing ${s}`);
