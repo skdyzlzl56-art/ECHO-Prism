@@ -54,7 +54,24 @@
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     for (const id of allies || [cfg.ally]) s.cool[id] = { heal: HEAL_IV[0], shield: 0, sig: 8 };
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
-    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, bonus = 0, started = false, hist = [], rev = null, spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false, dwSide = -1;
+    // one `let` per line: parallel tickets add state here, and a shared line conflicts on every merge
+    let ev = [];
+    let tm = {};
+    let dtc = 0;
+    let ang = 0;
+    let side = 1;
+    let cd = 0;
+    let comboT = 0;
+    let allyCd = 1.2;
+    let bonus = 0;
+    let started = false;
+    let hist = [];
+    let rev = null;
+    let spent = new Set();
+    let nextRw = rl("rewind") || 0;
+    let uid = 0;
+    let slid = false;
+    let dwSide = -1;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -354,6 +371,15 @@
     return { tier: f < .08 ? 0 : f < .2 ? 1 : 2, shakeMs: 150 + 350 * t, shakeAmp: .4 + 1.2 * t, stop: .02 + .14 * t, vignette: .2 + .8 * t };
   };
   const isLowHp = (hp, max) => hp > 0 && hp <= max * .25;
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, GROWTH, BOX: BOX0, moveLook, fmtNum, hitFeel, isLowHp };
-  else { root.createBattle = createBattle; root.GROWTH = GROWTH; root.moveLook = moveLook; root.fmtNum = fmtNum; root.hitFeel = hitFeel; root.isLowHp = isLowHp; }
+  // one name per line: parallel tickets add exports here, and a shared line conflicts on every merge
+  const PUBLIC = {
+    createBattle,
+    GROWTH,
+    moveLook,
+    fmtNum,
+    hitFeel,
+    isLowHp,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = { ...PUBLIC, BOX: BOX0 };
+  else Object.assign(root, PUBLIC);
 })(typeof window !== "undefined" ? window : globalThis);

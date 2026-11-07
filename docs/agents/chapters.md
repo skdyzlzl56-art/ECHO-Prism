@@ -14,6 +14,8 @@ Run `npm test` (all `*.test.js`). `node --test <directory>` does not work on Nod
 ## Merging
 - Run `git diff --check` and `npm test` before committing a merge; commit only when both are green. After resolving a conflict in a test file, check each test still has its closing `});`.
 - Start the next implementer only after the integration branch is green, so its base holds every merged ticket.
+- Right before reporting, an implementer re-reads the integration branch tip and merges it again; a tip that moved after an earlier "clean merge" is the usual source of conflicts.
+- Shared registration lists (`let` state and the exported names in `webgame/battle/sim.js`) take one entry per line, so parallel tickets add lines instead of editing the same one.
 
 ## Keys
 Key names appear in several places: `webgame/dialogue.js` (`KEYS`), `webgame/menu.js` (`fixKeys`, `keyLabel`), `battle.js` hints, story text (`script.js`, `stageN/story.js`, `stageN/scenes.js`). When a key changes, grep for its old name in all of them.
@@ -25,3 +27,9 @@ Generator scripts: `music/stageN_music.py`, notes in `music/README.md`. `music/t
 - Call the `tdd` skill. Done means: the report quotes the failing test output from before the change, then the passing run.
 - Worktrees may lack `.scratch/`; read specs and tickets from the main checkout path.
 - Display effects (flash, banner, sprites in `webgame/battle.js`) cannot be tested headless: list them in the report as unverified in a browser.
+
+## Seeing it run
+Display effects are checkable: serve `webgame/` (`npx http-server webgame` or any static server), open `index.html` with the `chrome-devtools` MCP (`navigate_page`, `take_screenshot`), and start a battle from the stage menu. Report what the screenshot shows; list only what you could not open as unverified.
+
+## Coding standards
+Judgement rules for review: `CODING_STANDARDS.md`.

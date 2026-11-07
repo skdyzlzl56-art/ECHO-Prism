@@ -15,3 +15,6 @@ Single-context: root `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 ### Chapters, tests, music
 
 Run tests with `npm test`. Adding a chapter, generating music, and implementer rules: `docs/agents/chapters.md`.
+
+### Review
+Reviewer rules: `CODING_STANDARDS.md`.
