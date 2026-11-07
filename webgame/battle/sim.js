@@ -84,15 +84,15 @@
       s.gauge = 0; const was = blv(); bonus++;
       const lt = light(), dmg = cfg.invuln ? 0 : Math.round((8 + 4 * blv()) * (lt === "power" ? 1.5 : 1)); s.bullets = []; s.lasers = []; if (!lt || lt === "heal")   s.hp = Math.min(MAX_HP, s.hp + 3);
       if (lt === "clock") s.swapCd = 0;                                   // 시계의 빛: the swap cooldown is wound back
-      const joint = cfg.jointLight && blv() >= BOND_MAX;
-      s.eHp = rl("finale") ? (joint ? 0 : Math.max(1, s.eHp - dmg)) : s.eHp - dmg;   // finale: only the joint light can finish
+      const full = blv() >= BOND_MAX, fin = rl("finale"), joint = cfg.jointLight && full;
+      s.eHp = fin ? (full ? 0 : Math.max(1, s.eHp - dmg)) : s.eHp - dmg;   // finale: only a full-bond burst can finish (with or without cfg.jointLight)
       emit("burst", { dmg, level: blv(), up: blv() > was, light: lt });
-      if (cfg.jointLight && blv() >= BOND_MAX) emit("jointLight", { allies: cfg.allies || [cfg.ally] });   // 합동 유대의 빛: bond full, everyone bursts
+      if (joint && (fin || !(cfg.phaseRules && cfg.phaseRules.some(x => x.finale)))) emit("jointLight", { allies: cfg.allies || [cfg.ally] });   // 합동 유대의 빛: bond full, everyone bursts
       if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && shieldT <= 0) s.shieldOn = true;
     }
 
     function update(dt, input) {
-      const firing = s.auto, spd = firing ? 150 : 210, dx = input.dx || 0, dy = input.dy || 0, n = Math.hypot(dx, dy) || 1, m = 10;
+      const ox = p.x, oy = p.y, firing = s.auto, spd = firing ? 150 : 210, dx = input.dx || 0, dy = input.dy || 0, n = Math.hypot(dx, dy) || 1, m = 10;
       p.x = Math.min(BOX.x + BOX.w - m, Math.max(BOX.x + m, p.x + dx / n * spd * dt));
       p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + dy / n * spd * dt));
       s.t += dt; s.inv -= dt; s.swapCd -= dt; cd -= dt; comboT -= dt; dtc = dt; if (comboT <= 0) s.combo = 0;
@@ -151,7 +151,7 @@
 
       const r = s.eHp / E_MAX, lv2 = cuts.filter(c => r <= c).length;      // each phase has its own pattern
       if (lv2 > s.level) {
-        s.level = lv2; s.bullets = []; s.lasers = []; tm = {}; if (cfg.phaseRules) { hist = []; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; } e.mode = "idle"; e.y = 85; e.dashT = 0;
+        s.level = lv2; s.bullets = []; s.lasers = []; tm = {}; hist = []; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; e.mode = "idle"; e.y = 85; e.dashT = 0;
         const lines = cfg.talks && cfg.talks[lv2];
         emit("phase", { level: lv2, name: (cfg.names && cfg.names[lv2]) || "", talk: !!lines });
         if (lines) s.talk = { lines, i: 0 };
@@ -174,7 +174,8 @@
       }
       s.bullets = s.bullets.filter(b => !b.dead && b.y < BOX.y + BOX.h + 20 && b.y > BOX.y - 120 && b.x > BOX.x - 40 && b.x < BOX.x + BOX.w + 40);
       if (rl("rewind")) {                                                    // 되감기 규칙: every cfg.rewind seconds the bullets jump back to where they were REWIND_BACK s ago
-        hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) }); while (hist[0].t < s.t - REWIND_BACK) hist.shift();
+        if (!hist.length || s.t - hist[hist.length - 1].t >= .05) hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) });   // ponytail: 50ms snapshots, not every frame
+        while (hist[0].t < s.t - REWIND_BACK) hist.shift();
         if (s.t >= nextRw) { nextRw += rl("rewind"); s.bullets = hist[0].b.filter(b => !spent.has(b.id)); hist = []; emit("rewind"); }   // bullets that already hit are not replayed
       }
       for (const l of s.lasers) {
@@ -188,7 +189,7 @@
       }
       s.lasers = s.lasers.filter(l => l.age < l.warn + l.dur + .15);
       if (s.inv <= 0) {
-        const i = s.bullets.findIndex(b => (!rl("colorRule") || b.col === rl("colorRule")) && !(b.nm && dx * b.vx + dy * b.vy > 0) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
+        const i = s.bullets.findIndex(b => (!rl("colorRule") || b.col === rl("colorRule")) && !(b.nm && (p.x - ox) * b.vx + (p.y - oy) * b.vy > 0) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
         if (i >= 0) { const d = s.bullets[i].dmg; spent.add(s.bullets[i].id); s.bullets.splice(i, 1); hurt(d); }
       }
       if (cfg.survive) s.surviveLeft = Math.max(0, cfg.survive - Math.max(0, s.t - 1));   // escape battle: outlast the clock after the 1s grace

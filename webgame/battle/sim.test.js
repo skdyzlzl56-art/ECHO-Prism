@@ -232,3 +232,30 @@ test("stage 1 boss: HP is doubled and has six named phases", () => {
   assert.strictEqual(boss.names.length, 6);
   assert.strictEqual(boss.phases.length, 6);
 });
+
+// ---- code-review fixes ----
+test("rewind: a phase change drops the old history even without phaseRules", () => {
+  const b = still({ hp: 100, cuts: [.5], rewind: 3 }); b.state.bullets.push(drop(BOX.x + 20, BOX.y + 10, 5));
+  run(b, 2); b.state.eHp = 40; run(b, 1.3);                               // phase change at ~2s, rewind due at 3s
+  assert.strictEqual(b.state.level, 1); assert.strictEqual(b.state.bullets.length, 0, "no bullets from before the phase change");
+});
+
+test("direction rule: pinned against the wall gives no immunity", () => {
+  const b = still({ dirRule: { name: "동쪽" } }); b.state.p.x = BOX.x + BOX.w - 10;
+  const bl = bul(b.state.p, 0, "#f00"); bl.vx = 120; bl.nm = "동쪽"; b.state.bullets.push(bl);
+  run(b, .05, { dx: 1 });
+  assert.strictEqual(b.state.maxHp - b.state.hp, 4);
+});
+
+test("jointLight event fires only in the finale phase when phaseRules has one", () => {
+  const b = createBattle({ ...quiet, hp: 100, cuts: [.5], names: ["a", "b"], ally: "lumi", allies: ["lumi", "hexa"], jointLight: true, phaseRules: [{}, { finale: true }], phases: [() => {}, () => {}] }, { rng: seeded(5), bondBase: 3 });
+  b.state.gauge = 100;
+  assert.ok(!run(b, .1).some(v => v.type === "jointLight"), "phase 0: ordinary burst");
+  assert.ok(!b.state.over);
+});
+
+test("finale without jointLight: a full-bond burst still ends it (no soft-lock)", () => {
+  const b = createBattle({ ...quiet, hp: 100, cuts: [.5], names: ["a", "b"], ally: "lumi", allies: ["lumi", "hexa"], phaseRules: [{}, { finale: true }], phases: [() => {}, () => {}] }, { rng: seeded(5), bondBase: 3 });
+  b.state.eHp = 30; run(b, 1); b.state.gauge = 100; run(b, .1);
+  assert.strictEqual(b.state.over, "win");
+});
