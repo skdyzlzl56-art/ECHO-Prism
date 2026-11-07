@@ -31,25 +31,25 @@
       allyId: allies ? allies[0] : cfg.ally, swapCd: 0, dashT: 0, dashCd: 0, dashDir: null, lastIn: null, surviveLeft: cfg.survive || 0,
     };
     const p = s.p, e = s.e, al = s.al;
-    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
+    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
     // finale: shots deal 0 and only the joint light (bond full, cfg.jointLight) ends the fight.
     const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr ? pr[k] : cfg[k]; };
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
-    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], spent = new Set(), nextRw = rl("rewind") || 0, uid = 0;
+    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
     // bullet colour = the battle colour's hue; saturation / lightness set by pattern kind so patterns read apart at a glance
     const hue = (() => { const n = parseInt(col.slice(1), 16), r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255, mx = Math.max(r, g, b), mn = Math.min(r, g, b); if (mx === mn) return 0; const d = mx - mn; return 60 * (mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4); })();
-    const TONE = { rain: [.45, .5], wall: [.55, .84], wave: [.9, .58], aim: [1, .62], aimFan: [1, .77], fan: [.85, .5], ring: [.6, .72], side: [.3, .62], spiral: [1, .44] };   // [saturation, lightness]
+    const TONE = { rain: [.45, .5], wall: [.55, .84], wave: [.9, .58], aim: [1, .62], aimFan: [1, .77], fan: [.85, .5], ring: [.6, .72], side: [.3, .62], spiral: [1, .44], bounce: [.75, .66], stall: [.95, .8], homing: [.7, .38] };   // [saturation, lightness]
     const C = (k, o) => ({ col: `hsl(${hue},${TONE[k][0] * 100}%,${TONE[k][1] * 100}%)`, ...o });
 
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
     const add = (x, y, a, sp, size = 6, o = {}) => {
       s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col, nm: rl("dirRule") && rl("dirRule").name,   // 방향 규칙: name written on the bullet
-        id: uid++, hp: o.hp, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, age: 0, tr: [] });
+        id: uid++, hp: o.hp, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, bn: o.bn || 0, stall: o.stall, home: o.home, age: 0, tr: [] });
       if (!s.over) emit("enemyShot", { size, speed: sp });
     };
     const laser = (x, y, a, w, warn, dur) => { s.lasers.push({ x, y, a, w, warn, dur, age: 0, ping: false, boom: false }); };
@@ -75,6 +75,10 @@
         const c0 = C("rain", o).col, st = o.states || [{ vx: 0, vy: 0, col: c0 }, { vx: 90, vy: 0, col: `hsl(${(hue + 180) % 360},100%,70%)` }];
         add(p.x, BOX.y + 40, 0, 0, size, { col: st[0].col }); const b = s.bullets[s.bullets.length - 1]; b.tg = st; b.st = 0;
       }),
+      // new motions: bounce (reflects off the side walls bn times), stall (stops at t for d s, then leaves at speed sp), homing (steers toward the player for t s)
+      bounce: (iv, sp = 170, size = 6, o) => every("bn", iv, () => add(e.x, e.y + 55, Math.PI / 2 + (rng() < .5 ? -.8 : .8), sp, size, C("bounce", { bn: 3, ...o }))),
+      stall: (iv, sp = 130, size = 6, o) => every("st", iv, () => add(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), sp, size, C("stall", { stall: { t: .5, d: .6, sp: sp * 2 }, ...o }))),
+      homing: (iv, sp = 130, size = 6, o) => every("hm", iv, () => add(e.x, e.y + 55, Math.PI / 2, sp, size, C("homing", { home: { t: 1.2, w: 1.6 }, ...o }))),
       laser: (iv, aimed, o = {}) => every("l", iv, () => {                                // telegraphed beam: aimed at the player, or a straight drop
         if (aimed) laser(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), o.w || 26, o.warn || 1, o.dur || .5);
         else laser(rng() < .6 ? p.x : BOX.x + 20 + rng() * (BOX.w - 40), e.y + 55, Math.PI / 2, o.w || 34, o.warn || 1, o.dur || .5);
@@ -103,6 +107,13 @@
       s.lastIn = dx || dy ? { dx: dx / n, dy: dy / n } : null; s.dashCd -= dt;
       const dashing = s.dashT > 0, vx = dashing ? s.dashDir.dx * DASH_D / DASH_T : dx / n * spd, vy = dashing ? s.dashDir.dy * DASH_D / DASH_T : dy / n * spd;
       if (dashing) { s.dashT -= dt; s.inv = Math.max(s.inv, .02); }                  // 대시: untouchable while it lasts
+      const br = rl("boxRule");   // 판 규칙: the box slides about its home spot and drags the player; the arena walls stay put, and being carried into one hurts
+      if (br) {
+        const nx = BOX0.x + br.amp * Math.sin(TAU * s.t / br.period), carried = p.x + nx - BOX.x, wall = Math.min(BOX0.x + BOX0.w - m, Math.max(BOX0.x + m, carried));
+        BOX.x = nx; p.x = wall;
+        if (wall !== carried && s.inv <= 0) hurt(br.dmg || 4);
+        slid = true;
+      } else if (slid) { BOX.x = BOX0.x; slid = false; }   // the rule ended with the phase: the box settles home
       p.x = Math.min(BOX.x + BOX.w - m, Math.max(BOX.x + m, p.x + vx * dt));
       p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + vy * dt));
       s.t += dt; s.inv -= dt; s.swapCd -= dt; cd -= dt; comboT -= dt; dtc = dt; if (comboT <= 0) s.combo = 0;
@@ -181,9 +192,14 @@
         b.age += dt;
         if (b.sa) { b.y += b.vy * dt; b.x = b.bx + b.sa * Math.sin(b.sf * b.age + b.ph); }
         else {
+          if (b.home && b.age < b.home.t) { const cur = Math.atan2(b.vy, b.vx), t = Math.atan2(p.y - b.y, p.x - b.x), d = Math.atan2(Math.sin(t - cur), Math.cos(t - cur)), a = cur + Math.max(-b.home.w * dt, Math.min(b.home.w * dt, d)), v = Math.hypot(b.vx, b.vy); b.vx = Math.cos(a) * v; b.vy = Math.sin(a) * v; }
+          const st = b.stall;
+          if (st && !b.sg && b.age > st.t) { b.sg = 1; b.sa0 = Math.atan2(b.vy, b.vx); b.vx = b.vy = 0; }
+          else if (st && b.sg === 1 && b.age > st.t + st.d) { b.sg = 2; b.vx = Math.cos(b.sa0) * st.sp; b.vy = Math.sin(b.sa0) * st.sp; }
           if (b.w) { const c = Math.cos(b.w * dt), sn = Math.sin(b.w * dt), vx = b.vx * c - b.vy * sn; b.vy = b.vx * sn + b.vy * c; b.vx = vx; }
           if (b.acc) { const k = Math.max(.2, 1 + b.acc * dt); b.vx *= k; b.vy *= k; }
           b.x += b.vx * dt; b.y += b.vy * dt;
+          if (b.bn > 0 && (b.x < BOX.x || b.x > BOX.x + BOX.w)) { b.bn--; b.vx = -b.vx; b.x = Math.min(BOX.x + BOX.w, Math.max(BOX.x, b.x)); }
         }
         b.tr.push({ x: b.x, y: b.y }); if (b.tr.length > 5) b.tr.shift();
         if (b.split && b.age > b.split.t) {                                // heavy orb bursts into a ring

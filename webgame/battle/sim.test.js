@@ -233,6 +233,27 @@ test("stage 1 boss: HP is doubled and has six named phases", () => {
   assert.strictEqual(boss.phases.length, 6);
 });
 
+// 판 규칙: cfg.boxRule = { amp, period, dmg }; the box slides sideways, drags the player along, and pinning against the fixed wall hurts
+test("box rule: the box slides periodically and drags the player with it", () => {
+  const b = still({ boxRule: { amp: 60, period: 4 } });
+  const x0 = b.state.p.x; run(b, 1);                                      // quarter period: box at its far right
+  assert.ok(Math.abs(b.state.BOX.x - (BOX.x + 60)) < 2, `box.x ${b.state.BOX.x}`);
+  assert.ok(Math.abs(b.state.p.x - (x0 + 60)) < 2, "player carried along");
+  run(b, 2); assert.ok(Math.abs(b.state.BOX.x - (BOX.x - 60)) < 2, "and back the other way");
+});
+
+test("box rule: pinned against the fixed wall hurts", () => {
+  const b = still({ boxRule: { amp: 60, period: 4, dmg: 3 } });
+  b.state.p.x = BOX.x + BOX.w - 10; const ev = run(b, 1);                 // dragged right into the wall
+  assert.ok(ev.some(v => v.type === "playerHurt" && v.dmg === 3));
+  assert.ok(b.state.p.x <= BOX.x + BOX.w - 10 + 1e-9, "never carried past the wall");
+});
+
+test("box rule: without the option the box stays fixed and nothing pins", () => {
+  const b = still({}); b.state.p.x = BOX.x + BOX.w - 10; const ev = run(b, 3);
+  assert.strictEqual(b.state.BOX.x, BOX.x); assert.ok(!ev.some(v => v.type === "playerHurt"));
+});
+
 // ---- code-review fixes ----
 test("rewind: a phase change drops the old history even without phaseRules", () => {
   const b = still({ hp: 100, cuts: [.5], rewind: 3 }); b.state.bullets.push(drop(BOX.x + 20, BOX.y + 10, 5));
@@ -342,6 +363,39 @@ test("breakable bullet: player shots wear it down and break it; unbroken it stil
   const c = createBattle(cfg, { rng: seeded(4) }); c.state.auto = false; run(c, 1.6);
   const k = c.state.bullets.find(x => x.hp); k.x = c.state.p.x; k.y = c.state.p.y; k.vy = 0;
   run(c, .05); assert.ok(c.state.hp < 100);
+});
+
+// ---- bullets motion (ticket 04) ----
+const track = (b, secs) => { const out = []; for (let t = 0; t < secs; t += 1 / 60) { b.step(1 / 60, {}); const x = b.state.bullets.find(v => v.id === 0); if (x) out.push({ ...x }); } return out; };
+const one = fn => { const b = createBattle({ ...quiet, phases: [h => { if (!b.state.bullets.length && b.state.t < 1.2) fn(h); }] }, { rng: seeded(1) }); b.state.auto = false; return b; };
+
+test("bounce bullet reflects off the box wall and stays inside", () => {
+  const b = one(h => h.bounce(.01, 200, 6));
+  const tr = track(b, 3);
+  assert.ok(tr.length > 60, "bullet lives");
+  assert.ok(tr.some((x, i) => i && Math.sign(x.vx) !== Math.sign(tr[i - 1].vx)), "vx flipped");
+  assert.ok(tr.every(x => x.x >= BOX.x - 1 && x.x <= BOX.x + BOX.w + 1), "never leaves sideways");
+});
+
+test("stall bullet stops, then leaves faster than it came", () => {
+  const b = one(h => h.stall(.01, 100, 6));
+  const tr = track(b, 3), sp = x => Math.hypot(x.vx, x.vy);
+  assert.ok(tr.some(x => sp(x) === 0), "paused");
+  assert.ok(sp(tr[tr.length - 1]) > 150, "accelerated after the pause");
+});
+
+test("homing bullet bends toward the player, then flies straight", () => {
+  const b = one(h => h.homing(.01, 150, 6));
+  b.state.p.x = BOX.x + 20;                                               // enemy is at EX (right), player far left
+  const tr = track(b, 2.5);
+  assert.ok(tr[tr.length - 1].vx < tr[0].vx - 20, "turned left");
+  const a = tr[tr.length - 10], z = tr[tr.length - 1];
+  assert.ok(Math.abs(a.vx - z.vx) < 1e-6 && Math.abs(a.vy - z.vy) < 1e-6, "no longer steering");
+});
+
+test("each new motion has its own tone", () => {
+  const cols = ["bounce", "stall", "homing"].map(k => { const b = one(h => h[k](.01, 100, 6)); run(b, 1.1); return b.state.bullets[0].col; });
+  assert.strictEqual(new Set(cols).size, 3);
 });
 
 test("the box is battle state: moving it moves the player's limits and the bullet cull", () => {
