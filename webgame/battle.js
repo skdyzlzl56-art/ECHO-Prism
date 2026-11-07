@@ -67,24 +67,25 @@ function runBattle(cfg, done) {
   const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX, lv: BOND.lv, xp: BOND.xp }), s = battle.state, BOX = s.BOX;
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
-  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, talkN = 0, last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0;
+  let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0;
 
   const say = (txt, x, y, c = "#9ad0ff") => floats.push({ x, y, age: 0, txt, col: c });
   const toggle = () => { const on = battle.toggleFire(); sweep(on ? 500 : 400, on ? 900 : 200, .08, "square", .1); };   // 사격 ON/OFF
   const advTalk = () => {                                               // first press finishes the typing, the next goes to the next line
-    if (talkN < s.talk.lines[s.talk.i].t.length) talkN = 99; else { battle.advance(); talkN = 0; if (!s.talk) setPortrait(SPEAKERS[cfg.speaker]); }
+    if (typer.press(s.talk.lines[s.talk.i].t.length)) nextLine();
   };
+  const nextLine = () => { battle.advance(); typer.reset(); if (!s.talk) setPortrait(SPEAKERS[cfg.speaker]); };
   const press = () => s.talk ? advTalk() : toggle();
   const kd = ev => {
-    keys[ev.code] = true;
+    keys[ev.code] = true; if (ev.key === KEYS.skip) keys.skip = true;
     if (ev.code.startsWith("Arrow") || ev.code === "Space") ev.preventDefault();
     if (ev.repeat) return;
-    if (s.talk) { if (ev.code === "Space" || ev.code === "Enter" || ev.code === "KeyZ") advTalk(); }
+    if (s.talk) { if (KEYS.advance.includes(ev.code)) advTalk(); }
     else if (ev.code === "KeyZ") toggle();
     else if (ev.code === "KeyA") battle.swap();                                  // 교대
     else if (ev.code === "KeyX") battle.dash();                                  // 대시
   };
-  const ku = ev => { keys[ev.code] = false; };
+  const ku = ev => { keys[ev.code] = false; if (ev.key === KEYS.skip) keys.skip = false; };
   const cleanup = () => {
     $("portrait").style.visibility = ""; setCast(null);cancelAnimationFrame(raf); bgm.stop(); removeEventListener("keydown", kd); removeEventListener("keyup", ku);
     act.onclick = act.onmousedown = null;
@@ -144,7 +145,7 @@ function runBattle(cfg, done) {
         if (cfg.fade) { quiet = Math.max(.15, 1 - cfg.fade * v.level); bgm.vol(quiet); }   // each phase swallows more of the sound
         if (v.name) { banner = { txt: v.name, age: 0, level: v.level }; sweep(300, 900, .35, "sawtooth", .18); }
         if (!v.start) { noise(.3, .5); sweep(100, 600, .5, "sawtooth", .25); retrigger($("flash"), "on", 600); retrigger(stage, "shake", 500); }
-        if (v.talk) talkN = 0;
+        if (v.talk) typer.reset();
         break;
       case "laserWarn": charge(v.warn || 1, 1, 110); break;
       case "laserFire": boom(1.2, 70); sweep(1500, 60, .9, "sawtooth", .3 * quiet); break;
@@ -282,8 +283,8 @@ function runBattle(cfg, done) {
       g.fillStyle = "rgba(0,0,0,.7)"; g.fillRect(0, 0, 960, 540);
       g.fillStyle = "#0b1026"; g.fillRect(60, 400, 840, 120); g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(60, 400, 840, 120);
       g.textAlign = "left"; g.textBaseline = "top"; g.font = "bold 24px 'Malgun Gothic'"; g.fillStyle = sp.color; g.fillText(sp.name, 84, 414);
-      g.font = "28px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText(L.t.slice(0, talkN | 0), 84, 456);
-      if (talkN >= L.t.length) { g.textAlign = "right"; g.fillText("▼", 880, 480); }
+      g.font = "28px 'Malgun Gothic'"; g.fillStyle = "#fff"; g.fillText(L.t.slice(0, typer.pos | 0), 84, 456);
+      if (typer.pos >= L.t.length) { g.textAlign = "right"; g.fillText("▼", 880, 480); }
       g.textBaseline = "middle";
     }
     if (s.over) {
@@ -298,7 +299,7 @@ function runBattle(cfg, done) {
   function frame(now) {
     const dt = Math.min((now - last) / 1000, .05); last = now;
     $("portrait").style.visibility = s.talk ? "visible" : "hidden";                     // the enemy body is drawn on the field; the portrait only shows while someone talks
-    if (s.talk) { talkN += dt * 25 * talkRate(keys.KeyX); setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
+    if (s.talk) { typer.add(dt * 25, keys[KEYS.fast], s.talk.lines[s.talk.i].t.length); if (keys.skip && typer.hold(dt, s.talk.lines[s.talk.i].t.length)) nextLine(); setPortrait(SPEAKERS[s.talk.lines[s.talk.i].who]); setCast([...new Set(s.talk.lines.map(l => l.who))].map(w => SPEAKERS[w])); }
     else {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };

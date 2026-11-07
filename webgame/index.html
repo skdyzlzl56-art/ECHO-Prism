@@ -54,10 +54,11 @@
 </div>
 <script src="script.js"></script>
 <script src="portraits.js"></script>
+<script src="dialogue.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const CHAR_MS = 45;
-let ac, idx = -1, busy = false, timer, full = "", pos = 0, speaker;
+let ac, idx = -1, busy = false, timer, full = "", speaker, typer = createTyper();
 
 function blip(freq) {
   const o = ac.createOscillator(), g = ac.createGain();
@@ -104,7 +105,7 @@ function show(i) {
   if (line.rename) speaker.name = line.rename;   // reveal a speaker's real name from this line on
   $("name").textContent = speaker.name;
   setPortrait(speaker);
-  full = line.text; pos = 0; $("text").textContent = ""; $("next").hidden = true;
+  full = line.text; typer.reset(); $("text").textContent = ""; $("next").hidden = true;
   const fx = FX[line.fx];
   if (fx) { busy = true; play(fx); setTimeout(() => { busy = false; timer = setInterval(tick, CHAR_MS); }, fx.wait); }
   else timer = setInterval(tick, CHAR_MS);
@@ -112,13 +113,13 @@ function show(i) {
 
 let xHeld = false;                  // hold X: type faster (does not advance the line)
 function tick() {
-  pos = Math.min(full.length, pos + talkRate(xHeld)); const ch = full[pos - 1];
+  typer.add(1, xHeld, full.length); const pos = typer.pos, ch = full[pos - 1];
   $("text").textContent = full.slice(0, pos);
   if (ch.trim() && !/[.,!?…]/.test(ch)) { blip(speaker.pitch); pulsePortrait(); } // sound + pulse only on spoken chars
   if (pos >= full.length) finish();
 }
 
-function finish() { clearInterval(timer); timer = null; $("text").textContent = full; $("next").hidden = false; }
+function finish() { typer.pos = full.length; clearInterval(timer); timer = null; $("text").textContent = full; $("next").hidden = false; }
 
 // background music: audio/bgm_<name>.ogg, seamless loop. Web Audio buffer; <audio> fallback (e.g. opened via file://)
 const bgm = (() => {
@@ -159,21 +160,21 @@ function next() {
 function advance() {
   if (!ac) { ac = new AudioContext(); $("start").remove(); }
   if (busy || acting) return;            // effect or scene playing, no dialogue input
-  if (timer) return finish();            // skip typing
+  if (!typer.press(full.length)) return finish();   // first press completes the typing
   next();
 }
 
 // hold Ctrl: fast-forward dialogue (stops at scenes/effects, which block input anyway)
 let ctrl = false;
-addEventListener("keydown", e => { if (e.code === "KeyX") xHeld = true; });
-addEventListener("keyup", e => { if (e.code === "KeyX") xHeld = false; });
+addEventListener("keydown", e => { if (e.code === KEYS.fast) xHeld = true; });
+addEventListener("keyup", e => { if (e.code === KEYS.fast) xHeld = false; });
 addEventListener("blur", () => { xHeld = false; });
-addEventListener("keydown", e => { if (e.key === "Control") ctrl = true; });
-addEventListener("keyup", e => { if (e.key === "Control") ctrl = false; });
+addEventListener("keydown", e => { if (e.key === KEYS.skip) ctrl = true; });
+addEventListener("keyup", e => { if (e.key === KEYS.skip) ctrl = false; });
 addEventListener("blur", () => { ctrl = false; });
 setInterval(() => {
   if (!ctrl || !ac || busy || acting || idx >= SCRIPT.length) return;
-  if (timer) finish(); else next();
+  if (typer.hold(.09, full.length)) next(); else if (timer) finish();
 }, 90);
 
 $("stage").onclick = advance;

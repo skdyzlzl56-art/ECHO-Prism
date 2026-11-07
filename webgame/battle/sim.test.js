@@ -1,6 +1,6 @@
 // Headless tests for the battle rules. Run: node --test webgame/battle
 const test = require("node:test"), assert = require("node:assert");
-const { createBattle, BOX, talkRate } = require("./sim.js");
+const { createBattle, BOX } = require("./sim.js");
 
 // seeded rng (mulberry32) so every run is the same
 const seeded = a => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
@@ -318,8 +318,7 @@ test("move motion stretches along travel and eases back to normal when stopped",
   assert.ok(Math.abs(look.sx - 1) < .01 && Math.abs(look.sy - 1) < .01, `restored ${look.sx} ${look.sy}`);
 });
 
-test("holding X types dialogue much faster, and never advances the line", () => {
-  assert.ok(talkRate(true) >= 3 * talkRate(false), "fast typing is at least 3x");
+test("fast input never advances a dialogue line", () => {
   const b = createBattle(quiet, { rng: seeded(1) }); b.state.talk = { lines: [{ who: "x", t: "abc" }, { who: "x", t: "def" }], i: 0 };
   b.step(1, { dx: 0, dy: 0, fast: true }); assert.strictEqual(b.state.talk.i, 0, "X alone does not go to the next line");
 });
