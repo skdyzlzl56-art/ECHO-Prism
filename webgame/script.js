@@ -5,6 +5,10 @@ const SPEAKERS = {
   glitch: { name: "글리치", pitch: 90,  spin: 1.0, shape: "shard", color: "#ff3b5c", close: 0 }, // 날카롭고 폭력적인 균열
 };
 
+// Story-driven look changes: a script line `form: { who, to }` (stage3 s3_morph) switches SPEAKERS[who] to FORMS[who][to]; menu.js replayState restores it on load.
+const FORMS = { glitch: { calm: { shape: "orb", color: "#ffb347" } } };   // 글리치 after joining: rounded, warm
+const applyForm = (who, to) => Object.assign(SPEAKERS[who], FORMS[who][to]);
+
 // Player shapes (개체의 도형). path(c, r) only builds the outline; caller fills/strokes.
 const TAU = Math.PI * 2;
 const poly = (c, n, r, rot = -Math.PI / 2) => { for (let i = 0; i < n; i++) c.lineTo(Math.cos(rot + i * TAU / n) * r, Math.sin(rot + i * TAU / n) * r); c.closePath(); };

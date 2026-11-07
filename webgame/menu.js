@@ -90,8 +90,8 @@
   };
   // what lines 0..idx-1 left behind (not stored): speaker renames, background theme, music
   const replayState = (script, idx) => {
-    const r = { renames: {}, theme: undefined, bgm: undefined };
-    for (const l of script.slice(0, idx)) { if (l.rename) r.renames[l.who] = l.rename; if (l.theme) r.theme = l.theme; if (l.bgm) r.bgm = l.bgm; }
+    const r = { renames: {}, forms: {}, theme: undefined, bgm: undefined };
+    for (const l of script.slice(0, idx)) { if (l.rename) r.renames[l.who] = l.rename; if (l.form) r.forms[l.form.who] = l.form.to; if (l.theme) r.theme = l.theme; if (l.bgm) r.bgm = l.bgm; }
     return r;
   };
 

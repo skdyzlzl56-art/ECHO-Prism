@@ -76,7 +76,10 @@ const CHAR_MS = 45;
 let ac, idx = -1, busy = false, timer, full = "", speaker, typer = createTyper();
 // volume menu: every sound goes through one gain per kind ("bgm" | "sfx"); MENU.vol is 0..1 and applies at once
 const buses = {};
-const out = k => { if (!buses[k]) { buses[k] = ac.createGain(); buses[k].gain.value = MENU.vol[k]; buses[k].connect(ac.destination); } return buses[k]; };
+let hushed = false;                                           // battle with 침묵: every bus and the <audio> fallback read 0 until hush(false)
+const mv = k => hushed ? 0 : MENU.vol[k];
+const hush = on => { hushed = on; for (const k in buses) buses[k].gain.value = mv(k); bgm.sync(); };
+const out = k => { if (!buses[k]) { buses[k] = ac.createGain(); buses[k].gain.value = mv(k); buses[k].connect(ac.destination); } return buses[k]; };
 
 function blip(freq) {
   const o = ac.createOscillator(), g = ac.createGain();
@@ -115,6 +118,7 @@ function play(fx) {
   if (fx.flash) retrigger($("flash"), "on", 600);
   if (fx.shake) retrigger($("stage"), "shake", 500);
   if (fx.warp) warp(fx.warp);
+  if (fx.ripple) ripple();
   if (fx.shout) { $("shout").textContent = fx.shout; retrigger($("shout"), "on", fx.wait); }
 }
 
@@ -157,12 +161,12 @@ const bgm = (() => {
       s.connect(g).connect(out("bgm")); s.start(); cur = { s, g };
     } catch {
       if (name !== n) return;
-      const a = new Audio(`audio/bgm_${n}.ogg`); a.loop = true; a.volume = (VOL[n] ?? .25) * MENU.vol.bgm; a.play().catch(() => {}); cur = { a };
+      const a = new Audio(`audio/bgm_${n}.ogg`); a.loop = true; a.volume = (VOL[n] ?? .25) * mv("bgm"); a.play().catch(() => {}); cur = { a };
     }
   }
   let kk = 1;
-  const sync = () => { if (cur && cur.a) cur.a.volume = Math.min(1, (VOL[name] ?? .25) * kk * MENU.vol.bgm); };
-  const vol = k => { kk = k; if (!cur || !name) return; const v = (VOL[name] ?? .25) * k; if (cur.g) cur.g.gain.setTargetAtTime(v, ac.currentTime, .4); else cur.a.volume = Math.min(1, v * MENU.vol.bgm); };   // k = 0..1 of the track's normal volume
+  const sync = () => { if (cur && cur.a) cur.a.volume = Math.min(1, (VOL[name] ?? .25) * kk * mv("bgm")); };
+  const vol = k => { kk = k; if (!cur || !name) return; const v = (VOL[name] ?? .25) * k; if (cur.g) cur.g.gain.setTargetAtTime(v, ac.currentTime, .4); else cur.a.volume = Math.min(1, v * mv("bgm")); };   // k = 0..1 of the track's normal volume
   return { play, stop, vol, sync };
 })();
 
@@ -224,7 +228,7 @@ addEventListener("keydown", e => {
     }
   }
   e.preventDefault(); e.stopImmediatePropagation();
-  for (const k in MENU.vol) { if (buses[k]) buses[k].gain.value = MENU.vol[k]; }   // volume page: applies to playing sound at once
+  for (const k in MENU.vol) { if (buses[k]) buses[k].gain.value = mv(k); }   // volume page: applies to playing sound at once
   bgm.sync();                                                                      // <audio> fallback has no bus
   $("menu").hidden = !MENU.open; $("menu").innerHTML = MENU.open ? menuHtml(MENU) : "";
 }, true);
@@ -259,6 +263,7 @@ try {
     const r = replayState(SCRIPT, sv.idx + (direct ? 1 : 0));
     Object.assign(BOND, sv.bond); idx = direct ? sv.idx : Math.min(sv.idx, SCRIPT.length - 1) - 1;
     for (const w in r.renames) SPEAKERS[w].name = r.renames[w];
+    for (const w in r.forms) applyForm(w, r.forms[w]);
     if (r.theme) setTheme(r.theme);
     myShape = PLAYER_SHAPES.find(s => s.id === load()) || myShape;
     resumeBgm = r.bgm;

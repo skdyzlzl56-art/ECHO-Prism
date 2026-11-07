@@ -13,6 +13,7 @@
 //   ally: "lumi",                       optional companion; strength grows with the bond (유대), see BOND
 //   allies: ["lumi", "hexa"],           optional: A swaps the companion (교대); each has its own kit, bond is shared (see KIT in sim.js)
 //   invuln, survive: 30,                escape battle: hits deal 0 (팅) and surviving 30s wins; bgm: null = silence, beat = heartbeat
+//   silent: true,                       no bgm and no sound effects at all for the whole fight (restored afterwards)
 //   fade: .2,                           each phase turns the bgm / enemy-shot volume down by this much
 //   playerHp, winText, ew, gauge0 }
 // Controls: arrows (+W/S/D) move, Z toggles shooting (ON at start), A swaps companion, Space/Enter/Z/click advance dialogue.
@@ -74,7 +75,9 @@ function runBattle(cfg, done) {
   stage.classList.add("battle"); act.hidden = false; setPortrait(SPEAKERS[cfg.speaker]);
   act.innerHTML = `<canvas id="ar" width="960" height="540"></canvas>`;
   const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX, lv: BOND.lv, xp: BOND.xp }), s = battle.state, BOX = s.BOX;
+  const ALLY_SHOT = { hexa: 6, glitch: 3, keeper: 4 };                              // ally bullet = n-gon (lumi: dot), so companions read apart by their shots too
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
+  if (cfg.silent) hush(true);
   let quiet = 1, beatT = 0, lastTing = 0;                                                // quiet: enemy-shot volume x (silence eats sound); beatT: heartbeat clock
   let trail = [], floats = [], fx = [], banner = null, burstFx = 0, hitFlash = 0, typer = createTyper(), last = performance.now(), raf, look = { sx: 1, sy: 1, rot: 0 }, wake = [], prevP = null, lastShot = 0, lastBig = 0, lastGraze = 0, stopT = 0, vigT = 0;
 
@@ -97,7 +100,7 @@ function runBattle(cfg, done) {
   };
   const ku = ev => { keys[ev.code] = false; if (ev.key === KEYS.skip) keys.skip = false; };
   const cleanup = () => {
-    $("portrait").style.visibility = ""; setCast(null);cancelAnimationFrame(raf); bgm.stop(); removeEventListener("keydown", kd); removeEventListener("keyup", ku);
+    $("portrait").style.visibility = ""; setCast(null);cancelAnimationFrame(raf); bgm.stop(); if (cfg.silent) hush(false); removeEventListener("keydown", kd); removeEventListener("keyup", ku);
     act.onclick = act.onmousedown = null;
   };
   const end = () => { cleanup(); act.hidden = true; act.innerHTML = ""; stage.classList.remove("battle"); done(); };
@@ -252,12 +255,12 @@ function runBattle(cfg, done) {
     }
     g.restore();
     g.shadowBlur = 12;                                                                  // player shots fly out of the box
-    for (const sh of s.shots) { g.fillStyle = sh.ally ? allyCol : "#cff"; g.shadowColor = sh.ally ? allyCol : "#4fc3ff"; if (sh.ally) { g.beginPath(); g.arc(sh.x, sh.y, 5, 0, TAU); g.fill(); } else g.fillRect(sh.x - 2.5, sh.y - 9, 5, 18); }
+    for (const sh of s.shots) { g.fillStyle = sh.ally ? allyCol : "#cff"; g.shadowColor = sh.ally ? allyCol : "#4fc3ff"; if (sh.ally) { g.beginPath(); const n = ALLY_SHOT[s.allyId]; if (n) for (let j = 0; j < n; j++) g.lineTo(sh.x + Math.cos(j * TAU / n + .5) * 7, sh.y + Math.sin(j * TAU / n + .5) * 7); else g.arc(sh.x, sh.y, 5, 0, TAU); g.fill(); } else g.fillRect(sh.x - 2.5, sh.y - 9, 5, 18); }
     g.shadowBlur = 0;
     if (s.al) {                                                                         // companion: blossom that grows with the bond
       const lv = s.bondLv, al = s.al;
       if (s.allyId === "hexa") drawHexa(g, al.x, al.y, t, allyCol, .55 + .1 * lv);          // guardian: pulsing hexagons (scenes.js)
-      else if (s.allyId === "glitch") drawShardAlly(g, al.x, al.y, t, allyCol, .8 + .12 * lv);   // fallen crack: jittering shard (stage3/scenes.js)
+      else if (s.allyId === "glitch" && SPEAKERS.glitch.shape === "shard") drawShardAlly(g, al.x, al.y, t, allyCol, .8 + .12 * lv);   // fallen crack: jittering shard (stage3/scenes.js)
       else if (s.allyId === "keeper") drawGearAlly(g, al.x, al.y, t, allyCol, .8 + .12 * lv);   // freed clock keeper: ticking gear (stage4/scenes.js)
       else {
         g.save(); g.translate(al.x, al.y); g.scale(1 + .15 * lv, 1 + .15 * lv); g.strokeStyle = allyCol; g.shadowColor = allyCol; g.shadowBlur = 14 + 4 * lv; g.lineWidth = 2;

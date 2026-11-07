@@ -5,7 +5,7 @@
 // The name "에코" is never spoken here; only "메아리" is hinted. Chapter 6 gives it.
 
 FX.stage5 = { shout: "STAGE 5", flash: 1, warp: "library", shake: 1, wait: 2200, sfx: () => { sweep(220, 660, 1.6, "sine", .3); sweep(330, 110, 1.6, "triangle", .15); } };
-FX.name = { shout: "NAME", flash: 1, wait: 1500, sfx: () => { sweep(500, 1500, 1, "sine", .25); sweep(250, 750, 1, "triangle", .2); } };
+FX.name = { shout: "NAME", flash: 1, ripple: 1, wait: 1500, sfx: () => { sweep(500, 1500, 1, "sine", .25); sweep(250, 750, 1, "triangle", .2); } };
 
 const STAGE5 = [
   // ---- 1. 도착 ----
