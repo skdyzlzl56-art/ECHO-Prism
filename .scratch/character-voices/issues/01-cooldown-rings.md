@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 대시 쿨타임 원이 주인공 주위에 표시되고 차오른다
 - [ ] 회복·방패·특수기 원이 곁에 있는 보조 캐릭터 주위에 표시된다 (교대하면 새 캐릭터 기준)

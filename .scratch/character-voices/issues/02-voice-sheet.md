@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 모든 등장 캐릭터에 성별, 말투 규칙, 예시 대사 3줄이 있다
 - [ ] 헥사 외 전원이 여성으로 명시된다

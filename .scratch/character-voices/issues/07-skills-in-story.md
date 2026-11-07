@@ -4,7 +4,7 @@
 
 **Blocked by:** 01-cooldown-rings, 03-dialogue-stage1-2, 04-dialogue-stage3, 05-dialogue-stage4, 06-dialogue-stage5-6
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 첫 전투 안내가 대시 원과 보조 원을 설명한다
 - [ ] 동료별 특수기 호출 대사가 전투 중 나온다

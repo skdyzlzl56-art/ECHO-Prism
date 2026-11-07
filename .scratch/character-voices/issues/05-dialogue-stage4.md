@@ -4,7 +4,7 @@
 
 **Blocked by:** 02-voice-sheet
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] stage4 대사가 말투 시트와 일치하고 지칭이 성별에 맞다
 - [ ] 합류 장면이 특수기를 소개한다

@@ -4,7 +4,7 @@
 
 **Blocked by:** 02-voice-sheet
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] stage5·stage6 대사가 말투 시트와 일치하고 지칭이 성별에 맞다
 - [ ] 이름 공개 시점과 엔딩 마지막 대사는 바뀌지 않는다
