@@ -5,13 +5,13 @@ const run = (b, secs, input = {}) => { for (let t = 0; t < secs; t += 1 / 60) b.
 const quiet = { hp: 1e6, playerHp: 1e6, phases: [() => {}], names: [] };
 const mk = () => createBattle({ ...quiet, ally: "lumi", allies: ["lumi", "hexa"] }, { rng: () => .5, bondBase: 1 });
 
-test("dash ring is full when ready, empties on dash, refills in 1.5s", () => {
+test("dash ring is full when ready, empties on dash, refills in 2.2s", () => {
   const b = mk();
   assert.strictEqual(b.cooldownRings().dash, 1);
   run(b, .1, { dx: 1 }); assert.ok(b.dash());
   assert.ok(b.cooldownRings().dash < .1);
-  run(b, .75, { dx: 1 }); assert.ok(Math.abs(b.cooldownRings().dash - .5) < .1, `${b.cooldownRings().dash}`);
-  run(b, 1, { dx: 1 }); assert.strictEqual(b.cooldownRings().dash, 1);
+  run(b, 1.1, { dx: 1 }); assert.ok(Math.abs(b.cooldownRings().dash - .5) < .1, `${b.cooldownRings().dash}`);
+  run(b, 1.3, { dx: 1 }); assert.strictEqual(b.cooldownRings().dash, 1);
 });
 
 test("heal/sig rings follow the companion out now; swapping switches to the other's timers", () => {
@@ -39,6 +39,6 @@ test("abilities the companion lacks (or has not unlocked) report null, not a rea
 
 test("shield ring fills on the real cooldown after a block", () => {
   const b = createBattle({ ...quiet, ally: "hexa", allies: ["hexa", "lumi"] }, { rng: () => .5, bondBase: 1 });
-  b.state.shieldOn = false; b.state.cool.hexa.shield = 11;      // bond 1 cooldown is 22s
+  b.state.shieldOn = false; b.state.cool.hexa.shield = 14;      // bond 1 cooldown is 28s
   assert.ok(Math.abs(b.cooldownRings().shield - .5) < .01, `${b.cooldownRings().shield}`);
 });

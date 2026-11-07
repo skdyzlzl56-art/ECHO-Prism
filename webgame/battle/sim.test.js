@@ -73,7 +73,7 @@ test("swap (교대): cooldown, bond shared, kits differ (lumi heals / hexa shiel
   run(b, 1.7); assert.ok(s.shieldOn, "hexa's shield grows in"); assert.strictEqual(s.bondLv, 2, "bond is kept");
   b.swap(); assert.strictEqual(s.allyId, "lumi"); assert.strictEqual(s.shieldOn, false, "shield leaves with hexa");
   const single = createBattle({ ...quiet, ally: "lumi" }, { rng: seeded(6), bondBase: 2 });
-  assert.ok(!single.swap() && single.state.shieldOn, "a lone ally keeps the old all-round kit");
+  assert.ok(!single.swap() && !single.state.shieldOn, "a lone Lumi has no shield either");
 });
 
 test("swap cycles 4 allies in order, keeps cooldown, and bond is one shared value", () => {
@@ -323,7 +323,7 @@ test("dash (X): moves ~120px in the input direction, stays in the box, needs inp
   b.step(1 / 60, { dx: 1, dy: 0 }); const x0 = b.state.p.x;
   assert.ok(b.dash(), "dash fires"); run(b, .3);
   assert.ok(Math.abs(b.state.p.x - x0 - 120) < 15, `moved ${b.state.p.x - x0}`);
-  assert.ok(!b.dash(), "cooldown"); run(b, 1.5); b.step(1 / 60, { dx: -1 });
+  assert.ok(!b.dash(), "cooldown"); run(b, 2.2); b.step(1 / 60, { dx: -1 });
   assert.ok(b.dash(), "ready again after cooldown");
   b = mk(); run(b, 1.1, { dx: -1 }); b.dash(); run(b, .3, { dx: -1 });
   assert.ok(b.state.p.x >= BOX.x, "never leaves the box");

@@ -1,88 +1,47 @@
 // Stage 3 non-battle scenes: painting restoration (s3_explore) and the party card (s3_party).
 // Needs (stage1/scenes.js): drawBlossom, drawHexa, drawFairy, wrap. Globals: $, sweep, noise, retrigger, stage, act, myShape, drawShape, TAU, SPEAKERS, BOND.
 
-const PAINTS = [   // x, y, restored colours, memory shown when restored
-  { x: 210, y: 330, c: ["#3a6fd8", "#9ad0ff"], mem: "새벽의 바다. 파도가 오기 전부터 물빛을 알아보던 누군가의 눈." },
-  { x: 480, y: 270, c: ["#ff7a45", "#ffd36b"], mem: "옥상의 석양. 부르는 사람 없이도 올라가 앉던 자리." },
-  { x: 750, y: 350, c: ["#ff6fa8", "#ffe4a0"], mem: "웃는 얼굴 하나. 아무도 앞에 없는데, 누군가 앞에 있다고 믿으며 그린." },
-];
-
-ACTS.s3_explore = done => {
-  stage.classList.add("pick"); act.hidden = false;
-  act.innerHTML = `<canvas id="ex" width="960" height="540"></canvas>`;
-  const g = $("ex").getContext("2d"), keys = {}, FL = { x: 30, y: 210, w: 900, h: 250 };
-  const pics = PAINTS.map(o => ({ ...o, lit: 0, ch: 0 }));
-  const blots = Array.from({ length: 3 }, (_, i) => ({ x: 200 + i * 250, y: 260 + i * 40, vx: i % 2 ? 110 : -110, vy: 70 + i * 20, r: 13 }));
-  const p = { x: 90, y: 340 }, lu = { x: 50, y: 340 }, fa = { x: 120, y: 310 };
-  let t = 0, last = performance.now(), raf, msg = null, inv = 0, fin = false;
-  const kd = e => { keys[e.code] = true; if (e.code.startsWith("Arrow") || e.code === "Space") e.preventDefault(); };
-  const ku = e => { keys[e.code] = false; };
-  const end = () => {
-    cancelAnimationFrame(raf); removeEventListener("keydown", kd); removeEventListener("keyup", ku);
-    BOND.base = Math.max(BOND.base, 2);                                                // restoring the colours together = bond Lv.2 at least
-    act.hidden = true; act.innerHTML = ""; stage.classList.remove("pick"); done();
-  };
-  const hurt = () => {                                                                 // a grey blot: the colour you were gathering fades again
-    if (inv > 0) return; inv = 1.2; for (const o of pics) if (!o.lit) o.ch = 0;
-    noise(.15, .6); sweep(300, 80, .25, "square", .3); retrigger($("flash"), "on", 300); retrigger(stage, "shake", 300);
-    msg = { s: "잿빛 얼룩에 닿았다! 모아 둔 색이 바랬다.", age: 3.8 };
-  };
-  function update(dt) {
-    const dx = (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft || keys.KeyA ? 1 : 0);
-    const dy = (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0), n = Math.hypot(dx, dy) || 1;
-    inv -= dt;
-    if (!fin) { p.x = Math.min(FL.x + FL.w - 14, Math.max(FL.x + 14, p.x + dx / n * 190 * dt)); p.y = Math.min(FL.y + FL.h - 14, Math.max(FL.y + 14, p.y + dy / n * 190 * dt)); }
-    lu.x += (p.x - 46 - lu.x) * Math.min(1, dt * 4); lu.y += (p.y + 6 - lu.y) * Math.min(1, dt * 4);
-    fa.x += (p.x + 30 - fa.x) * Math.min(1, dt * 5); fa.y += (p.y - 34 - fa.y) * Math.min(1, dt * 5);
-    if (!fin) for (const b of blots) {
-      b.x += b.vx * dt; b.y += b.vy * dt;
-      if (b.x < FL.x + b.r || b.x > FL.x + FL.w - b.r) { b.vx *= -1; b.x = Math.min(FL.x + FL.w - b.r, Math.max(FL.x + b.r, b.x)); }
-      if (b.y < FL.y + b.r || b.y > FL.y + FL.h - b.r) { b.vy *= -1; b.y = Math.min(FL.y + FL.h - b.r, Math.max(FL.y + b.r, b.y)); }
-      if (Math.hypot(b.x - p.x, b.y - p.y) < b.r + 9) hurt();
+// 화랑: 긴 복도(화면 3배)를 걸으며 잿빛 그림 세 점의 색을 되살린다. 얼룩에 닿으면 체력이 줄고, 대화는 아래 상자 (explore.js). 그림은 벽(위)에, 서는 자리는 바닥(아래)에 있어 대화창에 가려지지 않는다.
+ACTS.s3_explore = done => runExplore({
+  worldW: 3200, bond: 2, label: "그림", hint: "이동: 방향키 · 그림 앞 바닥에 서 있으면 색이 돌아와요 · 잿빛 얼룩을 피하세요!",
+  floor: { bg: "#14171c", fill: "#23282f", stroke: "#4a5360" },
+  spots: [
+    { x: 800, y: 300, c: ["#3a6fd8", "#9ad0ff"], mem: "새벽의 바다. 파도가 오기 전부터 물빛을 알아보던 누군가의 눈." },
+    { x: 1650, y: 330, c: ["#ff7a45", "#ffd36b"], mem: "옥상의 석양. 부르는 사람 없이도 올라가 앉던 자리." },
+    { x: 2500, y: 290, c: ["#ff6fa8", "#ffe4a0"], mem: "웃는 얼굴 하나. 아무도 앞에 없는데, 누군가 앞에 있다고 믿으며 그린." },
+  ],
+  door: null, wisps: { n: 6, color: "#9aa5b1", speed: 100 }, beams: false,
+  talks: [
+    { x: 150, who: "voice", text: "여기가 화랑이에요. 벽에 걸린 그림마다 누군가의 기억이 들어 있었어요." },
+    { x: 450, who: "lumi", text: "그림들이 전부 잿빛이야... 색이 있던 자리가 텅 비어 버렸어." },
+    { x: 650, who: "hexa", text: "......얼룩이 떠다닌다. 닿으면 모아 둔 색이 바랜다. 조심해라." },
+    { x: 1050, who: "voice", text: "빈 액자들은 아직 주인을 기다리는 거예요. 그림이 돌아오면 같이 채워질지도 몰라요." },
+    { x: 1300, who: "lumi", text: "화가는 왜 색을 지웠을까? 그림을 이렇게나 좋아했는데..." },
+    { x: 1500, who: "hexa", text: "......그린 이의 손이 떨린 흔적이 있다. 지운 것이 아니라 숨긴 것일지도 모른다." },
+    { x: 1950, who: "voice", text: "남은 색이 아주 희미하게 느껴져요. 그림 앞에 서서 가만히 기다려 주세요." },
+    { x: 2250, who: "lumi", text: "바닥에 물감 얼룩이 있어! 발자국도... 누가 여기서 오래 서 있었나 봐." },
+    { x: 2800, who: "hexa", text: "......끝이 가깝다. 마지막 그림이 가장 오래 걸릴지도 모른다." },
+  ],
+  allLit: [{ who: null, text: "세 점의 그림에 색이 돌아왔다. 벽 끝에서 누군가의 기척이 느껴진다." }],
+  revive: { who: "voice", text: "괜찮아요? 마지막으로 색을 되살린 그림 곁으로 돌아왔어요. 천천히 다시 가요." },
+  hurtLine: { who: "lumi", text: "많이 다쳤어! 그림 하나를 되살리면 힘이 조금 돌아와!" },
+  wall(g, t, cam, spots) {                                                             // back wall (y 70-190): frames hang here, well above the dialogue box
+    g.fillStyle = "#1b1f26"; g.fillRect(30, 70, 3140, 120);
+    for (let x = 100; x < 3200; x += 120) { g.fillStyle = "#14171c"; g.fillRect(x, 70, 6, 120); }
+    for (let x = 340; x < 3100; x += 420) { g.fillStyle = "#2d333b"; g.fillRect(x - 40, 95, 80, 60); g.strokeStyle = "#566070"; g.lineWidth = 3; g.strokeRect(x - 40, 95, 80, 60); }   // empty frames
+    for (const o of spots) {
+      const r = o.lit ? Math.min(1, o.lit * 1.5) : 0, y = 130;
+      g.fillStyle = "#3a3f47"; g.fillRect(o.x - 60, y - 45, 120, 90);
+      if (r) { const gr = g.createLinearGradient(o.x, y - 45, o.x, y + 45); gr.addColorStop(0, o.c[0]); gr.addColorStop(1, o.c[1]); g.globalAlpha = r; g.fillStyle = gr; g.fillRect(o.x - 60, y - 45, 120, 90); g.globalAlpha = 1; }
+      g.strokeStyle = r ? "#ffe9a8" : "#7c8591"; g.lineWidth = 4; g.strokeRect(o.x - 60, y - 45, 120, 90);
     }
-    pics.forEach((o, i) => {
-      if (o.lit) { o.lit += dt; return; }
-      o.ch = Math.hypot(o.x - p.x, o.y - p.y) < 56 && inv <= 0 ? Math.min(1, o.ch + dt / 1.3) : Math.max(0, o.ch - dt * .7);
-      if (o.ch >= 1) {
-        o.lit = .001; sweep(520 + i * 160, 1040 + i * 320, .6, "sine", .16); msg = { s: o.mem, age: 0 };
-        if (pics.every(q => q.lit)) { fin = true; setTimeout(end, 1800); }
-      }
-    });
-    if (msg && (msg.age += dt) > 5.5) msg = null;
-  }
-  function draw() {
-    g.fillStyle = "#14171c"; g.fillRect(0, 0, 960, 540);
-    g.fillStyle = "#23282f"; g.fillRect(FL.x, FL.y, FL.w, FL.h); g.strokeStyle = "#4a5360"; g.lineWidth = 2; g.strokeRect(FL.x, FL.y, FL.w, FL.h);
-    for (const o of pics) {                                                           // frames: grey until restored, then colour blooms
-      const r = o.lit ? Math.min(1, o.lit * 1.5) : 0, y = 120;
-      g.fillStyle = "#3a3f47"; g.fillRect(o.x - 60, y - 40, 120, 90);
-      if (r) { const gr = g.createLinearGradient(o.x, y - 40, o.x, y + 50); gr.addColorStop(0, o.c[0]); gr.addColorStop(1, o.c[1]); g.globalAlpha = r; g.fillStyle = gr; g.fillRect(o.x - 60, y - 40, 120, 90); g.globalAlpha = 1; }
-      g.strokeStyle = r ? "#ffe9a8" : "#7c8591"; g.lineWidth = 4; g.strokeRect(o.x - 60, y - 40, 120, 90);
-      if (!o.lit) {
-        g.strokeStyle = "rgba(220,230,240,.25)"; g.lineWidth = 2; g.setLineDash([6, 8]); g.beginPath(); g.arc(o.x, o.y, 56, 0, TAU); g.stroke(); g.setLineDash([]);
-        if (o.ch > 0) { g.strokeStyle = o.c[1]; g.lineWidth = 5; g.shadowColor = o.c[1]; g.shadowBlur = 14; g.beginPath(); g.arc(o.x, o.y, 56, -Math.PI / 2, -Math.PI / 2 + TAU * o.ch); g.stroke(); g.shadowBlur = 0; }
-      }
-    }
-    for (const b of blots) {                                                          // grey blots: spinning diamonds
-      g.save(); g.translate(b.x, b.y); g.rotate(t * 2); g.fillStyle = "#9aa5b1"; g.shadowColor = "#cfd8e0"; g.shadowBlur = 12;
-      g.beginPath(); g.moveTo(0, -b.r - 4); g.lineTo(b.r * .7, 0); g.lineTo(0, b.r + 4); g.lineTo(-b.r * .7, 0); g.closePath(); g.fill(); g.restore();
-    }
-    drawBlossom(g, lu.x, lu.y, t, SPEAKERS.lumi.color);
-    drawFairy(g, fa.x, fa.y, t, SPEAKERS.voice.color);
-    if (inv <= 0 || Math.floor(inv * 12) % 2) { g.save(); g.translate(p.x, p.y); drawShape(g, myShape, 13); g.restore(); }
-    g.font = "bold 22px Pretendard,'Malgun Gothic'"; g.fillStyle = "#fff"; g.textAlign = "left"; g.textBaseline = "top";
-    g.fillText(`그림 ${pics.filter(o => o.lit).length} / 3`, 30, 24);
-    g.font = "16px Pretendard,'Malgun Gothic'"; g.fillStyle = "#9ad0ff"; g.fillText("이동: 방향키 · 그림 앞에 서 있으면 색이 돌아와요 · 잿빛 얼룩을 피하세요!", 30, 56);
-    if (msg) {
-      g.globalAlpha = Math.max(0, Math.min(1, (5.5 - msg.age) * 2, msg.age * 4 + .2));
-      g.fillStyle = "#0b1026"; g.fillRect(60, 84, 840, 110); g.strokeStyle = "#fff"; g.lineWidth = 4; g.strokeRect(60, 84, 840, 110);
-      g.font = "22px Pretendard,'Malgun Gothic'"; g.fillStyle = "#ffe9a8"; wrap(msg.s, 36).slice(0, 3).forEach((s, i) => g.fillText(s, 84, 100 + i * 32));
-      g.globalAlpha = 1;
-    }
-  }
-  function step(now) { const dt = Math.min((now - last) / 1000, .05); last = now; t += dt; update(dt); draw(); raf = requestAnimationFrame(step); }
-  addEventListener("keydown", kd); addEventListener("keyup", ku); raf = requestAnimationFrame(step);
-};
+  },
+  drawSpot(g, o, t) {                                                                   // ring on the floor in front of the picture
+    if (o.lit) return;
+    g.strokeStyle = "rgba(220,230,240,.25)"; g.lineWidth = 2; g.setLineDash([6, 8]); g.beginPath(); g.arc(o.x, o.y, 56, 0, TAU); g.stroke(); g.setLineDash([]);
+    if (o.ch > 0) { g.strokeStyle = o.c[1]; g.lineWidth = 5; g.shadowColor = o.c[1]; g.shadowBlur = 14; g.beginPath(); g.arc(o.x, o.y, 56, -Math.PI / 2, -Math.PI / 2 + TAU * o.ch); g.stroke(); g.shadowBlur = 0; }
+  },
+}, done);
 
 function drawShardAlly(g, x, y, t, col, k = 1) {                                        // 글리치 look: jittering shard
   g.save(); g.translate(x, y); g.rotate(t * .8); g.scale(k, k); g.strokeStyle = col; g.shadowColor = col; g.shadowBlur = 14; g.lineWidth = 2.5;

@@ -15,7 +15,7 @@
   const TAU = Math.PI * 2, BOX0 = { x: 330, y: 190, w: 300, h: 260 }, EX = 480, E_R = 26, BOND_MAX = 4;
   // companion kits when cfg.allies lets the player swap (교대): cd = shot interval x, dm = shot damage x, heal / shield = abilities.
   // A single cfg.ally keeps the old all-round companion (KIT.all).
-  const KIT = { all: { cd: 1, dm: 1, heal: 1, shield: 1 }, lumi: { cd: .8, dm: 1, heal: 1, shield: 0 }, hexa: { cd: 1.6, dm: 2, heal: 0, shield: 1 } };
+  const KIT = { all: { cd: 1, dm: 1, heal: 1.5, shield: 0 }, lumi: { cd: .8, dm: 1, heal: 1.5, shield: 0 }, hexa: { cd: 1.6, dm: 2, heal: 0, shield: 1 } };
   // Growth curves. Player level (display Lv.) adds HP at battle start and shot damage; stage scales enemy HP and bullet damage (index = stage - 1);
   // ally: per bond level 0..4 shot interval, shots per volley and damage. Ally dps stays 1.5 -> 7.5, under the player's own 8.3 (growth.test.js).
   const GROWTH = {
@@ -24,13 +24,13 @@
     ally: { cd: [1.3, 1.05, .9, .8, .8], hits: [1, 1, 2, 2, 2], dmg: [2, 2.5, 2, 2.5, 3] },
   };
     // Signature moves (cfg.allies only): the ally out fires its own move when cool[id].sig runs out. power by bond level 0..4.
-  const SIG_CD = [18, 16, 14, 12, 10], SIG = {
-    lumi: { kind: "ward", call: "내 등불 뒤로 숨어!", power: [1, 1.5, 2, 2.5, 3] },   // invulnerable for power s
+  const SIG_CD = [24, 21, 18, 16, 13], SIG = {
+    lumi: { kind: "mend", call: "내 등불로 낫게 해 줄게!", power: [3, 4, 5, 6, 8] },   // heals power hp (no shield / invulnerability for Lumi)
     hexa: { kind: "blast", call: "......비켜라. 일격이다.", power: [6, 9, 12, 15, 18] },                  // damage to the enemy
     glitch: { kind: "reflect", call: "흥, 도로 가져가!", power: [100, 140, 180, 220, 260] },       // bullets within power px fly back
     keeper: { kind: "clear", call: "정각입니다. 탄막을 정리하겠습니다.", power: [140, 180, 230, 300, 9999] },        // 시계지기: bullets within power px vanish
   };
-  const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 1.5, HEAL_IV = [10, 8.5, 7, 6, 5], SHIELD_CD = [0, 22, 18, 14, 10], SWAP_CD = 1.5, REWIND_BACK = 1.5;
+  const XP_PHASE = 20, XP_LV = 100, DASH_T = .2, DASH_D = 120, DASH_CD = 2.2, HEAL_IV = [13, 11, 9.5, 8, 7], SHIELD_CD = [0, 28, 23, 19, 14], SWAP_CD = .5, REWIND_BACK = 1.5;
 
   function createBattle(cfg, opts = {}) {
     const rng = opts.rng || Math.random, HITBOX = opts.hitbox == null ? 4 : opts.hitbox, bondBase = opts.bondBase || 0;
@@ -222,11 +222,11 @@
           for (let i = 0; i < n; i++) { const aa = a + (i ? .12 : n > 1 ? -.12 : 0); s.shots.push({ x: al.x, y: al.y, vx: Math.cos(aa) * 460, vy: Math.sin(aa) * 460, dmg, ally: true }); }
           emit("allyShot");
         }
-        const me = s.cool[s.allyId], ha = lv >= 3 ? 3 : 2;
+        const me = s.cool[s.allyId], ha = Math.round((lv >= 3 ? 3 : 2) * (kit().heal || 1));
         if (me.heal <= 0) { me.heal = HEAL_IV[lv]; if (kit().heal && s.hp < MAX_HP) { s.hp = Math.min(MAX_HP, s.hp + ha); emit("heal", { amount: ha }); } }
         if (allies && SIG[s.allyId] && me.sig <= 0 && s.t > 1) {            // signature move: a different action per companion, stronger with the bond
           const g = SIG[s.allyId], pw = g.power[lv]; me.sig = SIG_CD[lv];
-          if (g.kind === "ward") s.inv = Math.max(s.inv, pw);
+          if (g.kind === "mend") { s.hp = Math.min(MAX_HP, s.hp + pw); emit("heal", { amount: pw }); }
           else if (g.kind === "blast") s.eHp = cfg.invuln ? s.eHp : rl("finale") ? Math.max(1, s.eHp - pw) : s.eHp - pw;
           else if (g.kind === "reflect") for (const b of s.bullets) { if (Math.hypot(b.x - p.x, b.y - p.y) <= pw) { b.vx = -b.vx; b.vy = -b.vy; b.acc = 0; b.w = 0; b.home = null; } wipe(); }
           else { s.bullets = s.bullets.filter(b => Math.hypot(b.x - p.x, b.y - p.y) > pw); wipe(); }
