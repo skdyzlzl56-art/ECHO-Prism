@@ -1,5 +1,5 @@
 // Stage 6 non-battle scene: the ending (s6_title). Motion-graphic credits roll over drifting rings, then the scene fades out to black and reloads to the title.
-// Click / SPACE / Enter / Z skips ahead to the fade-out (a fresh load shows the start screen).
+// Holding click / SPACE / Enter / Z rolls the credits faster (no skip); release returns to normal speed. A fresh load shows the start screen.
 // Globals: $, stage, act.
 
 ACTS.s6_title = done => {
@@ -19,14 +19,12 @@ ACTS.s6_title = done => {
     <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:22px;animation:creditsRoll ${roll}s linear forwards">
       ${credit.map(([t, px], i) => `<div class="cr-line" style="font-size:${px}px;font-weight:bold;min-height:${px || 24}px;animation-delay:${i * .35}s">${t}</div>`).join("")}</div>
     <div id="fadeout" style="position:absolute;inset:0;background:#000;opacity:0;animation:fadeOut ${fade}s ease-in ${roll}s forwards"></div></div>`;
-  let fin = false, skipped = false;
+  let fin = false;
   const go = () => { if (fin) return; fin = true; location.reload(); };
-  const skip = () => {                                                              // jump to the fade-out now, then reload when it has finished
-    if (skipped) return; skipped = true;
-    const f = $("fadeout"); if (f) { f.style.animation = `fadeOut 1s ease-in forwards`; }
-    setTimeout(go, 1000);
-  };
-  const key = e => { if (e.code === "Space" || e.code === "Enter" || e.code === "KeyZ") { e.preventDefault(); skip(); } };
-  setTimeout(() => { act.onclick = skip; addEventListener("keydown", key); }, 1500);
-  setTimeout(go, (roll + fade + 1) * 1000);                                         // the fade has finished: back to the title
+  const rate = r => { if (act.getAnimations) for (const a of act.getAnimations({ subtree: true })) a.playbackRate = r; };   // credits keep their order, just faster
+  const fast = e => { if (e.type === "keydown" && !(e.code === "Space" || e.code === "Enter" || e.code === "KeyZ")) return; if (e.type === "keydown") e.preventDefault(); rate(6); };
+  const slow = () => rate(1);
+  setTimeout(() => { act.onmousedown = fast; act.onmouseup = act.onmouseleave = slow; addEventListener("keydown", fast); addEventListener("keyup", slow); }, 1000);   // hold click / Space / Enter / Z = credits roll faster, release = normal speed
+  setTimeout(go, (roll + fade + 1) * 1000);                                         // normal speed: the fade has finished, back to the title
+  setTimeout(() => { const f = $("fadeout"); if (f && f.getAnimations) f.getAnimations().forEach(a => a.finished.then(go)); }, 0);   // fast speed: reload as soon as the fade is done
 };
