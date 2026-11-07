@@ -6,7 +6,7 @@
 
 **Status:** resolved
 
-- [ ] `node --test webgame/battle` 전체 통과
+- [ ] `npm test` 전체 통과
 - [ ] 모든 챕터의 BGM 키·화자·장면이 존재함을 검사
 - [ ] GLOSSARY.md·CHARACTERS.md가 구현과 일치
 - [ ] 직접 플레이 체크리스트를 `.scratch/chapters-3-6/playtest.md`에 작성 (가림 문제, 음악 취향, 난이도)
