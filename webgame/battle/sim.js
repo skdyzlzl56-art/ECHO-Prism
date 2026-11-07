@@ -24,7 +24,7 @@
     const BOX = { ...BOX0 };   // the box is battle state: move s.BOX and everything follows
     const cx = BOX.x + BOX.w / 2, allies = cfg.allies, SHIELD_LV = allies ? 1 : 2;   // a shield-bearer swapped in guards from bond Lv.1
     const s = {
-      BOX, t: 0, hp: MAX_HP, maxHp: MAX_HP, eHp: E_MAX, eMax: E_MAX, level: 0, lv: opts.lv || 1, xp: opts.xp || 0, phaseName: "", over: null, auto: true, inv: 0, combo: 0,
+      BOX, t: 0, hp: MAX_HP, maxHp: MAX_HP, eHp: E_MAX, eMax: E_MAX, eGhost: E_MAX, pGhost: MAX_HP, level: 0, lv: opts.lv || 1, xp: opts.xp || 0, phaseName: "", over: null, auto: true, inv: 0, combo: 0,
       p: { x: cx, y: BOX.y + BOX.h * .75 }, e: { x: EX, y: 85, mode: "idle", tt: 0, dashT: 0, lx: EX },     // enemy mode: idle | warn | dive | back
       al: cfg.ally ? { x: BOX.x - 38, y: BOX.y + BOX.h * .75 } : null,
       bullets: [], lasers: [], zones: [], shots: [], gauge: cfg.gauge0 || 0, bondLv: 0, shieldOn: false, talk: null, hasAlly: !!cfg.ally,
@@ -37,7 +37,7 @@
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
     const light = () => cfg.lights && cfg.lights[s.allyId];   // bond-light effect of the ally out now: heal | shield | power (no cfg.lights = the old all-round light)
     s.shieldOn = !!(cfg.ally && bondBase >= SHIELD_LV && kit().shield);
-    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false, dwSide = -1;
+    let ev = [], tm = {}, dtc = 0, ang = 0, side = 1, cd = 0, comboT = 0, allyCd = 1.2, healT = 0, shieldT = 0, bonus = 0, started = false, hist = [], rev = null, spent = new Set(), nextRw = rl("rewind") || 0, uid = 0, slid = false, dwSide = -1;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -109,6 +109,13 @@
       if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && shieldT <= 0) s.shieldOn = true;
     }
 
+    const gT = {}, gP = {};   // ghost hp bar: the white chunk waits .6s after the latest hit, then drains at 40% of max per second
+    function trail(k, v, max, dt) {
+      if (v < (gP[k] ?? s[k])) gT[k] = .6;
+      gP[k] = v;
+      if (v >= s[k]) s[k] = v;
+      else if ((gT[k] -= dt) <= 0) s[k] = Math.max(v, s[k] - max * .4 * dt);
+    }
     function update(dt, input) {
       // 조작 반전 규칙 / 판 분할 규칙: cycles of `period` s; the last `warn` s of each cycle is the warning, the first `dur` s the effect
       const ir = rl("invertRule"), sr = rl("splitRule"), cyc = r => { const c = s.t % r.period; return c >= r.period - r.warn ? "warn" : c < r.dur && s.t >= r.period ? "on" : null; };
@@ -199,14 +206,14 @@
       const r = s.eHp / E_MAX, lv2 = cuts.filter(c => r <= c).length;      // each phase has its own pattern
       if (lv2 > s.level) {
         s.level = lv2; s.xp += XP_PHASE; if (s.xp >= XP_LV) { s.xp -= XP_LV; s.lv++; }   // exp per phase broken; level is display only
-        s.bullets = []; s.lasers = []; s.zones = []; tm = {}; hist = []; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; e.mode = "idle"; e.y = 85; e.dashT = 0;
+        s.bullets = []; s.lasers = []; s.zones = []; tm = {}; hist = []; rev = null; nextRw = rl("rewind") ? s.t + rl("rewind") : 0; e.mode = "idle"; e.y = 85; e.dashT = 0;
         const lines = cfg.talks && cfg.talks[lv2];
         emit("phase", { level: lv2, name: (cfg.names && cfg.names[lv2]) || "", talk: !!lines });
         if (lines) s.talk = { lines, i: 0 };
       }
 
-      if (s.t > 1 && !s.talk && (e.mode === "idle" || e.mode === "warn")) cfg.phases[Math.min(s.level, cfg.phases.length - 1)](h);   // 1s grace; the enemy rests its guns while diving
-      for (const b of s.bullets) {
+      if (s.t > 1 && !s.talk && !rev && (e.mode === "idle" || e.mode === "warn")) cfg.phases[Math.min(s.level, cfg.phases.length - 1)](h);   // 1s grace; the enemy rests its guns while diving
+      for (const b of rev ? [] : s.bullets) {                              // bullets stand still in the sim while a rewind replays them
         b.age += dt; if (b.life && b.age > b.life) b.dead = true;
         if (b.gr) b.r = b.r0 * (1 + (b.gr - 1) * Math.min(1, b.age / b.split.t));
         if (b.sa) { b.y += b.vy * dt; b.x = b.bx + b.sa * Math.sin(b.sf * b.age + b.ph); }
@@ -227,10 +234,20 @@
         }
       }
       s.bullets = s.bullets.filter(b => !b.dead && b.y < BOX.y + BOX.h + 20 && b.y > BOX.y - 120 && b.x > BOX.x - 40 && b.x < BOX.x + BOX.w + 40);
-      if (rl("rewind")) {                                                    // 되감기 규칙: every cfg.rewind seconds the bullets jump back to where they were REWIND_BACK s ago
-        if (!hist.length || s.t - hist[hist.length - 1].t >= .05) hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) });   // ponytail: 50ms snapshots, not every frame
-        while (hist[0].t < s.t - REWIND_BACK) hist.shift();
-        if (s.t >= nextRw) { nextRw += rl("rewind"); s.bullets = hist[0].b.filter(b => !spent.has(b.id)); hist = []; emit("rewind"); }   // bullets that already hit are not replayed
+      if (rl("rewind")) {                                                    // 되감기 규칙: every cfg.rewind seconds the bullets fly back along their path for REWIND_BACK s
+        if (rev) {
+          const sn = rev.snaps, tgt = sn[sn.length - 1].t - (s.t - rev.t0);
+          if (tgt <= sn[0].t) { s.bullets = sn[0].b.filter(b => !spent.has(b.id)); rev = null; }   // arrived at the spot of REWIND_BACK s ago
+          else {
+            let k = sn.length - 2; while (k > 0 && sn[k].t > tgt) k--;
+            const a = sn[k], c = sn[k + 1], f = (tgt - a.t) / (c.t - a.t), cm = new Map(c.b.map(b => [b.id, b]));
+            s.bullets = a.b.filter(b => !spent.has(b.id)).map(b => { const n = cm.get(b.id); return n ? { ...b, x: b.x + (n.x - b.x) * f, y: b.y + (n.y - b.y) * f } : { ...b }; });   // lerp between 50ms snapshots
+          }
+        } else {
+          if (!hist.length || s.t - hist[hist.length - 1].t >= .05) hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) });   // ponytail: 50ms snapshots, not every frame
+          while (hist[0].t < s.t - REWIND_BACK) hist.shift();
+          if (s.t >= nextRw) { nextRw += rl("rewind"); hist.push({ t: s.t, b: s.bullets.map(b => ({ ...b, tr: b.tr.slice() })) }); if (hist.length > 1) rev = { snaps: hist, t0: s.t }; hist = []; emit("rewind"); }
+        }
       }
       for (const l of s.lasers) {
         l.age += dt;
@@ -252,6 +269,7 @@
         if (i >= 0) { const d = s.bullets[i].dmg; spent.add(s.bullets[i].id); s.bullets.splice(i, 1); hurt(d); }
       }
       if (cfg.survive) s.surviveLeft = Math.max(0, cfg.survive - Math.max(0, s.t - 1));   // escape battle: outlast the clock after the 1s grace
+      trail("eGhost", s.eHp, E_MAX, dt); trail("pGhost", s.hp, MAX_HP, dt);
       if (s.hp <= 0) { s.over = "lose"; emit("lose"); }
       else if (s.eHp <= 0 || (cfg.survive && s.surviveLeft <= 0)) { s.over = "win"; s.bullets = []; s.lasers = []; s.zones = []; emit("win"); }
       s.bondLv = blv(); s.phaseName = (cfg.names && cfg.names[s.level]) || "";
@@ -284,6 +302,9 @@
     return look;
   }
 
-  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook };
-  else { root.createBattle = createBattle; root.moveLook = moveLook; }
+  // every number drawn on screen goes through this: 3 significant figures (>= 100 stays whole), no 3.5999999
+  const fmtNum = x => Math.abs(x) < 1e-3 ? "0" : Math.abs(x) >= 100 ? String(Math.round(x)) : String(+x.toPrecision(3));
+
+  if (typeof module !== "undefined" && module.exports) module.exports = { createBattle, BOX: BOX0, moveLook, fmtNum };
+  else { root.createBattle = createBattle; root.moveLook = moveLook; root.fmtNum = fmtNum; }
 })(typeof window !== "undefined" ? window : globalThis);
