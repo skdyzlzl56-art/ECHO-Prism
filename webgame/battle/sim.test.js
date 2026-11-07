@@ -364,11 +364,11 @@ test("exp is a start value: a retry built from it loses the battle's gains, a ne
   assert.deepStrictEqual([next.state.lv, next.state.xp], [1, 70]);
 });
 
-test("move motion flattens along travel (and leans ahead) and eases back to normal when stopped", () => {
+test("move motion stretches along travel, thinner across it (and leans ahead) and eases back to normal when stopped", () => {
   const { moveLook } = require("./sim.js");
   const look = { sx: 1, sy: 1, rot: 0, lead: 0 };
   for (let i = 0; i < 30; i++) moveLook(look, 210, 0, 1 / 60);
-  assert.ok(look.sx < .8 && look.sy > 1.1 && look.lead > 2, `flattened ${look.sx} ${look.sy} ${look.lead}`);
+  assert.ok(look.sx > 1.3 && look.sy < .8 && look.lead > 2, `stretched ${look.sx} ${look.sy} ${look.lead}`);
   assert.ok(Math.abs(look.rot) < 1e-9, "stretch axis follows travel direction");
   for (let i = 0; i < 90; i++) moveLook(look, 0, 0, 1 / 60);
   assert.ok(Math.abs(look.sx - 1) < .01 && Math.abs(look.sy - 1) < .01 && look.lead < .05, `restored ${look.sx} ${look.sy}`);
