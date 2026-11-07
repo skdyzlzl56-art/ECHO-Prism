@@ -90,8 +90,16 @@ function drawShardAlly(g, x, y, t, col, k = 1) {                                
   g.fillStyle = "#fff"; g.beginPath(); g.arc(0, 0, 2.5, 0, TAU); g.fill(); g.restore();
 }
 
-function drawGlitch(g, x, y, t, k) {                                                    // current look: jagged shard, or (after s3_morph) soft blossom
-  if (SPEAKERS.glitch.shape === "shard") drawShardAlly(g, x, y, t, SPEAKERS.glitch.color, k); else drawBlossom(g, x, y, t, SPEAKERS.glitch.color, k * .75);
+function drawTomoeAlly(g, x, y, t, col, k = 1) {                                        // 글리치 new look: three crescent blades circling a sharp core, a crackle of lightning
+  g.save(); g.translate(x, y); g.scale(k, k); g.strokeStyle = g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 14; g.lineWidth = 2.5;
+  for (let i = 0; i < 3; i++) { const a = t * 2.2 + i * TAU / 3; g.beginPath(); g.arc(Math.cos(a) * 11, Math.sin(a) * 11, 6, a + 1, a + 4.6); g.stroke(); }
+  g.beginPath(); g.moveTo(0, -7); g.lineTo(4, 0); g.lineTo(0, 7); g.lineTo(-4, 0); g.closePath(); g.fill();
+  g.lineWidth = 1.2; g.beginPath(); g.moveTo(-18, -2); for (let j = 1; j <= 4; j++) g.lineTo(-18 + j * 9, (Math.random() - .5) * 10); g.stroke();
+  g.restore();
+}
+
+function drawGlitch(g, x, y, t, k) {                                                    // current look: jagged shard, or (after s3_morph) crescent blades
+  if (SPEAKERS.glitch.shape === "shard") drawShardAlly(g, x, y, t, SPEAKERS.glitch.color, k); else drawTomoeAlly(g, x, y, t, SPEAKERS.glitch.color, k);
 }
 
 // ---- 변신: 글리치의 각진 파편이 부서졌다가 따뜻한 새 모습으로 다시 모인다 (about 4s, auto-advances) ----
@@ -109,7 +117,7 @@ ACTS.s3_morph = done => {
       for (let k = 0; k < 14; k++) { const a = k * TAU / 14, r = 20 + (t - 1.6) * 420; g.beginPath(); g.moveTo(480 + Math.cos(a) * r, 250 + Math.sin(a) * r); g.lineTo(480 + Math.cos(a) * (r + 30), 250 + Math.sin(a) * (r + 30)); g.stroke(); }
     } else {
       if (!swapped) { swapped = true; applyForm("glitch", "calm"); }
-      g.globalAlpha = Math.min(1, t - 2.4); drawBlossom(g, 480, 250, t, NEW, 3);
+      g.globalAlpha = Math.min(1, t - 2.4); drawTomoeAlly(g, 480, 250, t, NEW, 6);
       g.font = "bold 30px 'Malgun Gothic'"; g.fillStyle = NEW; g.fillText("글리치", 480, 345);
     }
     if (t > 4.2) { cancelAnimationFrame(raf); act.hidden = true; act.innerHTML = ""; stage.classList.remove("pick"); done(); return; }

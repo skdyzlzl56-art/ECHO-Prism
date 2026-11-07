@@ -43,7 +43,7 @@ test("stages 1-6 stay clearable: kill time and hits-to-die are in range", () => 
     assert.strictEqual(c.stage, st, `${k} has stage`);
     const dps = (GROWTH.shotDmg(lv) / .12 + (c.ally ? A.hits[bond] * A.dmg[bond] / A.cd[bond] : 0)) * .5;   // half the shots land
     const secs = c.hp * GROWTH.stage.hp[st - 1] / dps, hits = ((c.playerHp || 20) + GROWTH.playerHp(lv)) / Math.round(4 * GROWTH.stage.atk[st - 1]);
-    assert.ok(secs >= 15 && secs <= 150, `${k} kill time ${secs.toFixed(0)}s at Lv.${lv}`);
+    assert.ok(secs >= 15 && secs <= 260, `${k} kill time ${secs.toFixed(0)}s at Lv.${lv}`);
     assert.ok(hits >= 4, `${k} survives ${hits} hits`);
     xp += 20 * (c.cuts || [.75, .5, .25]).length;
   }

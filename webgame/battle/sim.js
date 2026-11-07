@@ -153,9 +153,9 @@
       if ((!lt || lt === "shield") && blv() >= SHIELD_LV && kit().shield && !s.shieldOn && s.cool[s.allyId].shield <= 0) s.shieldOn = true;
     }
 
-    const gT = {}, gP = {};   // ghost hp bar: the white chunk waits .6s after the latest hit, then drains at 40% of max per second
+    const gT = {}, gP = {};   // ghost hp bar: the white chunk waits 1s after the first hit (later hits don't extend it), then drains at 40% of max per second
     function trail(k, v, max, dt) {
-      if (v < (gP[k] ?? s[k])) gT[k] = .6;
+      if (v < (gP[k] ?? s[k]) && !(gT[k] > 0)) gT[k] = 1;
       gP[k] = v;
       if (v >= s[k]) s[k] = v;
       else if ((gT[k] -= dt) <= 0) s[k] = Math.max(v, s[k] - max * .4 * dt);
@@ -363,7 +363,7 @@
   }
 
   // every number drawn on screen goes through this: 3 significant figures (>= 100 stays whole), no 3.5999999
-  const fmtNum = x => Math.abs(x) < 1e-3 ? "0" : Math.abs(x) >= 100 ? String(Math.round(x)) : String(+x.toPrecision(3));
+  const fmtNum = x => String(Math.abs(x) >= 100 ? Math.round(x) : Math.round(x * 10) / 10 || 0);   // at most one decimal
 
   // damage -> hit feedback: tier 0/1/2 (weak/medium/strong) by the share of max hp lost, strengths rise smoothly up to a 40% hit
   const hitFeel = (dmg, max) => {

@@ -11,7 +11,7 @@ const PARTY4 = { ...PARTY3, allies: ["lumi", "hexa", "glitch", "keeper"], kits: 
 
 // ---- 1) 째깍이 무리: 되감기 규칙 입문 (5초마다 탄이 되감긴다) ----
 BATTLES.s4_ticks = { stage: 4,
-  ...PARTY3, speaker: "tick", hp: 280, bgm: "battle", color: "#d6b46a", rewind: 5, cuts: [.5], playerHp: 24,
+  ...PARTY3, speaker: "tick", hp: 450, bgm: "battle", color: "#d6b46a", rewind: 5, cuts: [.5], playerHp: 24,
   names: ["째깍이 「한 걸음 앞」", "째깍이 「같은 자리」"],
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "sway", amp: 80, spd: 1.1, dash: 9 }],
   phases: [
@@ -27,7 +27,7 @@ ACTS.s4_ticks = done => runBattle(BATTLES.s4_ticks, done);
 
 // ---- 2) 시계지기: 4페이즈. 되감기마다 같은 궤적을 한 번 더 지나간다 ----
 BATTLES.s4_keeper = { stage: 4,
-  ...PARTY3, speaker: "keeper", hp: 560, bgm: "s4_boss", color: "#e0b86a", rewind: 5, cuts: [.75, .5, .25], playerHp: 26, ew: 90,
+  ...PARTY3, speaker: "keeper", hp: 900, bgm: "s4_boss", color: "#e0b86a", rewind: 5, cuts: [.75, .5, .25], playerHp: 26, ew: 90,
   winText: "시간이 흐른다!",
   names: ["시계지기 「정각의 종」", "시계지기 「되풀이되는 오후」", "시계지기 「멈춘 초침」", "시계지기 「마지막 한 분」"],
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 }, { x: "sway", amp: 90, spd: 1.3, dash: 6.5 }],
@@ -48,7 +48,7 @@ ACTS.s4_keeper = done => runBattle(BATTLES.s4_keeper, done);
 
 // ---- 3) 풀려난 시간: 동료 4명으로 A키 교대를 체험하는 마무리 전투 ----
 BATTLES.s4_exit = { stage: 4,
-  ...PARTY4, speaker: "tick", hp: 300, bgm: "battle", color: "#e0b86a", rewind: 5, cuts: [.5], playerHp: 24,
+  ...PARTY4, speaker: "tick", hp: 480, bgm: "battle", color: "#e0b86a", rewind: 5, cuts: [.5], playerHp: 24,
   winText: "시계가 다시 움직인다!",
   names: ["째깍이 「밀려드는 시간」", "째깍이 「쏟아지는 오후」"],
   moves: [{ x: "sway", amp: 70, spd: 1 }, { x: "chase", speed: 85, dash: 9 }],

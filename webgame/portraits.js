@@ -103,6 +103,15 @@ function shard(t, col) {
   }
 }
 
+// Cold & proud (글리치 after joining): three crescent blades circling a sharp crimson core, a crackle of lightning that flares while talking.
+function tomoe(t, col) {
+  c.strokeStyle = c.fillStyle = col; c.shadowColor = col; c.shadowBlur = 24 + 12 * kick; c.lineWidth = 7;
+  for (let i = 0; i < 3; i++) { const a = ph / 450 + i * Math.PI * 2 / 3; c.beginPath(); c.arc(Math.cos(a) * 62, Math.sin(a) * 62, 36, a + 1, a + 4.6); c.stroke(); }
+  c.beginPath(); c.moveTo(0, -46); c.lineTo(22, 0); c.lineTo(0, 46); c.lineTo(-22, 0); c.closePath(); c.globalAlpha = .85; c.fill(); c.globalAlpha = 1;
+  c.lineWidth = 2; c.strokeStyle = "#fff";
+  for (let k = 0; k < 2; k++) { const n = Math.floor(t / 90) + k * 7; c.beginPath(); c.moveTo(-110, (rnd(n) - .5) * 40); for (let j = 1; j <= 8; j++) c.lineTo(-110 + j * 28, (rnd(n * 3 + j) - .5) * (40 + 60 * talk)); c.stroke(); }
+}
+
 // Guide fairy: a small glowing body hovering, four translucent wings that flutter (faster while talking), falling stardust.
 function fairy(t, col) {
   const bob = Math.sin(ph / 420) * 12, flap = Math.sin(ph / 70) * (.12 + .1 * talk);
@@ -184,7 +193,7 @@ function wave(t, col) {
   c.globalAlpha = 1; c.fillStyle = col; c.beginPath(); c.arc(-110, -40, 5, 0, 7); c.fill();
 }
 
-const SHAPES = { orb, prism, rings, bloom, shard, fairy, easel, gear, page, book, wave };
+const SHAPES = { orb, prism, rings, bloom, shard, tomoe, fairy, easel, gear, page, book, wave };
 
 // Starfield background
 const bg = document.getElementById("bg").getContext("2d"), stageEl = document.getElementById("stage");
@@ -216,6 +225,11 @@ function drawBg(t) {
     bg.lineTo(960, 540); bg.closePath(); bg.fill();
   }
   bg.globalAlpha = 1;
+  if (isIndoor(themeKey)) {                                     // room: ceiling beam, hanging lamps, skirting line at the floor (outdoors has none)
+    bg.fillStyle = `rgb(${theme.rgb})`; bg.globalAlpha = .1; bg.fillRect(0, 0, 960, 34); bg.fillRect(0, 512, 960, 28);
+    bg.globalAlpha = .07; for (let x = 120; x < 960; x += 240) { bg.fillRect(x, 34, 2, 40); bg.beginPath(); bg.arc(x + 1, 80, 9, 0, 7); bg.fill(); }
+    bg.globalAlpha = 1;
+  }
   if (rippleMs >= 0) {
     rippleMs += dt; bg.lineWidth = 3;
     for (const R of rippleRings(rippleMs / 1000)) { bg.strokeStyle = `rgba(${theme.rgb},${R.alpha})`; bg.beginPath(); bg.arc(480, 270, R.r, 0, Math.PI * 2); bg.stroke(); }

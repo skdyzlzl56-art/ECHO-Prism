@@ -8,7 +8,7 @@ const PARTY = { ally: "lumi", allies: ["lumi", "hexa"] };
 
 // ---- 1) 소리 없는 파편: 침묵에 먹힌 균열 조각 ----
 BATTLES.s2_mooks = { stage: 2,
-  ...PARTY, speaker: "fragment", hp: 220, bgm: "battle", color: "#7fb8d6", cuts: [.5], playerHp: 24,
+  ...PARTY, speaker: "fragment", hp: 350, bgm: "battle", color: "#7fb8d6", cuts: [.5], playerHp: 24,
   names: ["균열 「무음의 파편」", "균열 「가라앉는 종소리」"],
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "chase", speed: 85, dash: 9 }],
   phases: [
@@ -21,7 +21,7 @@ ACTS.s2_mooks = done => runBattle(BATTLES.s2_mooks, done);
 
 // ---- 2) 침묵: 페이즈가 오를수록 BGM과 탄 소리가 줄어든다 (fade). 체력을 0으로 만들 수 있다 ----
 BATTLES.s2_silence = { stage: 2,
-  ...PARTY, speaker: "silence", hp: 560, bgm: "s2_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90, fade: .2,
+  ...PARTY, speaker: "silence", hp: 900, bgm: "s2_boss", color: "#9fb4c7", cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90, fade: .2,
   phaseRules: [{}, {}, { splitRule: { period: 12, warn: 2, dur: 4 } }, { invertRule: { period: 12, warn: 2, dur: 4 } }, {}],   // 3: 판 분할, 4: 입력 반전
   winText: "쓰러뜨렸다...?",
   names: ["침묵 「소거」", "침묵 「잔향 지우기」", "침묵 「이름 삼키기」", "침묵 「빛의 소멸」", "침묵 「완전한 고요」"],

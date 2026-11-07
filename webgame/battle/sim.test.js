@@ -226,9 +226,9 @@ test("stage 2: 침묵 can be beaten once (5 phases), but the flee battle cannot 
   assert.strictEqual(b.state.eHp, flee.hp); assert.strictEqual(b.state.over, "win");
 });
 
-test("stage 1 boss: HP is doubled and has six named phases", () => {
+test("stage 1 boss: HP is ~1.6x the doubled base and has six named phases", () => {
   const boss = global.BATTLES.s1_boss;
-  assert.strictEqual(boss.hp, 460);
+  assert.strictEqual(boss.hp, 740);
   assert.strictEqual(boss.names.length, 6);
   assert.strictEqual(boss.phases.length, 6);
 });

@@ -32,3 +32,12 @@ test("ambient warp pulses between 0 and a faint cap", () => {
   const v = Array.from({ length: 400 }, (_, i) => ambientWarp(i / 4));
   assert.ok(Math.max(...v) > .1 && Math.max(...v) <= .35 && Math.min(...v) === 0);
 });
+
+test("indoor stages (gallery, clocktower, atelier, library, core) read as rooms; the rest as outdoors", () => {
+  const { isIndoor } = require("./backdrop.js");
+  for (const th of ["gallery", "clocktower", "atelier", "library", "core"]) assert.ok(isIndoor(th), th);
+  for (const th of ["night", "lantern", "silence", "flee"]) assert.ok(!isIndoor(th), th);
+  const kinds = th => backdropLayers(th, 0).map(L => L.kind);
+  for (const th of ["gallery", "clocktower", "atelier", "library", "core"]) assert.ok(kinds(th).every(k => k === "pillar" || k === "shelf"), th);
+  for (const th of ["night", "lantern", "silence", "flee"]) assert.ok(kinds(th).every(k => k !== "pillar" && k !== "shelf"), th);
+});

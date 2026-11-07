@@ -6,7 +6,7 @@ const SPEAKERS = {
 };
 
 // Story-driven look changes: a script line `form: { who, to }` (stage3 s3_morph) switches SPEAKERS[who] to FORMS[who][to]; menu.js replayState restores it on load.
-const FORMS = { glitch: { calm: { shape: "orb", color: "#ffb347" } } };   // 글리치 after joining: rounded, warm
+const FORMS = { glitch: { calm: { shape: "tomoe", color: "#e0203c" } } };   // 글리치 after joining: three crescent blades round a cold crimson core (red kept)
 const applyForm = (who, to) => Object.assign(SPEAKERS[who], FORMS[who][to]);
 
 // Player shapes (개체의 도형). path(c, r) only builds the outline; caller fills/strokes.

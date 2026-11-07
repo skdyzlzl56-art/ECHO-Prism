@@ -7,7 +7,7 @@ SPEAKERS.scrap = { name: "쪽지", pitch: 330, spin: 1.4, shape: "page", color: 
 
 // ---- 1) 쪽지 무리: 보통 전투 ----
 BATTLES.s5_pages = { stage: 5,
-  ...PARTY4, speaker: "scrap", hp: 260, bgm: "battle", color: "#c9c0a8", cuts: [.5], playerHp: 24,
+  ...PARTY4, speaker: "scrap", hp: 420, bgm: "battle", color: "#c9c0a8", cuts: [.5], playerHp: 24,
   names: ["쪽지 「찢어진 낱장」", "쪽지 「흩날리는 문장」"],
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "chase", speed: 85, dash: 9 }],
   phases: [
@@ -20,7 +20,7 @@ ACTS.s5_pages = done => runBattle(BATTLES.s5_pages, done);
 
 // ---- 2) 색인 서랍: 방향 규칙 입문. 탄에 「책」이 적혀 있다 ----
 BATTLES.s5_index = { stage: 5,
-  ...PARTY4, speaker: "scrap", hp: 260, bgm: "battle", color: "#b8b4d8", dirRule: { name: "책" }, cuts: [.5], playerHp: 22,
+  ...PARTY4, speaker: "scrap", hp: 420, bgm: "battle", color: "#b8b4d8", dirRule: { name: "책" }, cuts: [.5], playerHp: 22,
   winText: "이름을 읽었다!",
   names: ["쪽지 「첫 번째 색인」", "쪽지 「엇갈린 색인」"],
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "sway", amp: 80, spd: 1.1, dash: 9 }],
@@ -37,7 +37,7 @@ ACTS.s5_index = done => runBattle(BATTLES.s5_index, done);
 
 // ---- 3) 사서: 4페이즈. 모든 탄에 「이름」이 적혀 있다 (방향 규칙) ----
 BATTLES.s5_librarian = { stage: 5,
-  ...PARTY4, speaker: "librarian", hp: 580, bgm: "s5_boss", color: "#a9b8e0", dirRule: { name: "이름" }, cuts: [.75, .5, .25], playerHp: 28, ew: 90,
+  ...PARTY4, speaker: "librarian", hp: 930, bgm: "s5_boss", color: "#a9b8e0", dirRule: { name: "이름" }, cuts: [.75, .5, .25], playerHp: 28, ew: 90,
   winText: "이름이 풀려난다!",
   names: ["사서 「조용히 해 주십시오」", "사서 「대출 중」", "사서 「열람 금지」", "사서 「마지막 장」"],
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 }, { x: "sway", amp: 90, spd: 1.3, dash: 6.5 }],

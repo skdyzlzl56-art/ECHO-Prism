@@ -13,7 +13,7 @@ function shotLog(allyId) {
     $: id => id === "ar" ? { getContext: () => rec } : stub(), stage: stub(), act: stub(), bgm: stub(), sweep: () => {}, noise: () => {}, retrigger: () => {}, setPortrait: () => {}, kickPortrait: () => {}, setCast: () => {},
     performance: { now: () => 0 }, requestAnimationFrame: cb => (rafs.push(cb), rafs.length), cancelAnimationFrame: () => {},
     ACTS: {}, FX: {}, TAU: Math.PI * 2, drawShape: () => {}, myShape: stub(), PLAYER_SHAPES: [stub()], addEventListener: () => {}, removeEventListener: () => {}, setTimeout: () => 0, localStorage: { getItem: () => null, setItem: () => {} },
-    drawHexa: () => {}, drawShardAlly: () => {}, drawGearAlly: () => {},
+    drawHexa: () => {}, drawGlitch: () => {}, drawGearAlly: () => {},
   });
   vm.runInContext(fs.readFileSync(path.join(__dirname, "../battle.js"), "utf8") + "\n;globalThis.__run = runBattle;", ctx);
   ctx.__run({ speaker: "e", hp: 600, cuts: [.5], playerHp: 99, color: "#fff", names: ["a", "b"], moves: [{ x: "sway" }], phases: [h => h.rain(.5)], talks: {},

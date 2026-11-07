@@ -10,7 +10,7 @@ SPEAKERS.hexa = { name: "헥사", pitch: 110, spin: 0.7, shape: "rings", color: 
 
 // ---- 1) 균열 조각 무리: 루미를 구한다 (루미는 아직 동료가 아님) ----
 BATTLES.s1_fragments = { stage: 1,
-  speaker: "fragment", hp: 160, bgm: "battle", color: "#ff7a9a", cuts: [.5],
+  speaker: "fragment", hp: 260, bgm: "battle", color: "#ff7a9a", cuts: [.5],
   names: ["균열 「조각의 장벽」", "균열 「파도치는 파편」"],
   moves: [{ x: "sway", amp: 60, spd: 1 }, { x: "chase", speed: 80, dash: 10 }],
   phases: [
@@ -23,7 +23,7 @@ ACTS.s1_fragments = done => runBattle(BATTLES.s1_fragments, done);
 
 // ---- 2) 문지기 헥사: 루미가 곁에서 돕는다. 무거운 구슬(size 12~14)일수록 소리도 크고 길다 ----
 BATTLES.s1_boss = { stage: 1,
-  speaker: "hexa", hp: 460, bgm: "s1_boss", color: "#ffb347", cuts: [.83, .66, .5, .33, .16],
+  speaker: "hexa", hp: 740, bgm: "s1_boss", color: "#ffb347", cuts: [.83, .66, .5, .33, .16],
   phaseRules: [{}, {}, { boxRule: { amp: 40, period: 6 } }, {}, {}, {}],   // 3페이즈: 판이 미끄러진다
   ally: "lumi", playerHp: 24, ew: 90, winText: "해방!",
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 },

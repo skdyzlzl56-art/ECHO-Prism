@@ -21,3 +21,9 @@ test("after the event glitch is shown in the new form; before it, not", () => {
   assert.notStrictEqual(D.SPEAKERS.glitch.shape, old.shape);
   assert.strictEqual(D.SPEAKERS.glitch.name, old.name);
 });
+test("the new form is its own crimson shape, not a recycled one", () => {
+  const f = D.FORMS.glitch.calm, [r, g, b] = [1, 3, 5].map(i => parseInt(f.color.slice(i, i + 2), 16));
+  assert.strictEqual(f.shape, "tomoe");
+  assert.ok(r > 150 && r > g * 3 && r > b * 3, "still red");
+  assert.ok(/function tomoe\(/.test(rd("portraits.js")) && /function drawTomoeAlly\(/.test(rd("stage3/scenes.js")));
+});

@@ -9,3 +9,9 @@ test("fmtNum shows 3 significant figures, no float noise", () => {
   assert.strictEqual(fmtNum(1234.5), "1235");
   assert.strictEqual(fmtNum(-0.0000001), "0");
 });
+
+test("fmtNum shows one decimal at most (3.9469999 -> 3.9)", () => {
+  assert.strictEqual(fmtNum(3.9469999), "3.9");
+  assert.strictEqual(fmtNum(2), "2");
+  assert.strictEqual(fmtNum(99.96), "100");
+});

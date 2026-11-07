@@ -27,7 +27,7 @@ const BOND = { base: 0, lv: 1, xp: 0 };   // lv/xp: level and exp, kept on a win
 
 // ---- 첫 전투: 글리치 ----
 BATTLES.glitch = {
-  speaker: "glitch", hp: 320, bgm: "battle", color: "#ff3b5c",
+  speaker: "glitch", hp: 510, bgm: "battle", color: "#ff3b5c",
   names: ["균열 「떨어지는 장벽」", "균열 「겨냥하는 파편」", "균열 「광란의 부채」", "균열 「붕괴의 나선」"],
   moves: [{ x: "sway", amp: 40, spd: .8 }, { x: "sway", amp: 80, spd: 1 }, { x: "sway", amp: 90, spd: 1.2, dash: 9 }, { x: "chase", speed: 70, dash: 7 }],
   phases: [
@@ -138,7 +138,7 @@ function runBattle(cfg, done) {
         hitFlash = .08; kickPortrait();
         if (v.dmg) { const f = 450 + Math.min(v.combo, 16) * 40; sweep(f, f * 1.6, .08, "square", .13); noise(.04, .2); }
         else { const n = performance.now(); if (n - lastTing > 80) { lastTing = n; sweep(2600, 2500, .3, "sine", .22); sweep(3900, 3800, .2, "sine", .1); } }   // 팅! it can't be hurt
-        say(v.dmg ? "-" + v.dmg : "0", v.x + (Math.random() - .5) * 30, v.y - 10, v.dmg ? (v.ally ? allyCol : "#fff") : "#8fa3b5");
+        say(v.dmg ? "-" + fmtNum(v.dmg) : "0", v.x + (Math.random() - .5) * 30, v.y - 10, v.dmg ? (v.ally ? allyCol : "#fff") : "#8fa3b5");
         fx.push({ x: v.x, y: v.y, age: 0 });                                              // round burst
         for (let i = 0; i < 5; i++) { const a = Math.random() * TAU, sp = 80 + Math.random() * 140; fx.push({ x: v.x, y: v.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, age: 0, sp: true }); }
         break;
@@ -159,7 +159,7 @@ function runBattle(cfg, done) {
       case "shieldReady": sweep(500, 1200, .3, "sine", .12); break;
       case "heal": say("+" + v.amount, s.p.x, s.p.y - 20, allyCol); sweep(600, 1400, .25, "sine", .12); break;
       case "burst":
-        burstFx = 1; say(v.dmg ? "-" + v.dmg : "0", s.e.x, s.e.y + 40, v.dmg ? allyCol : "#8fa3b5"); if (!v.dmg) sweep(2600, 2500, .5, "sine", .25); say("+3", s.p.x, s.p.y - 20, allyCol);
+        burstFx = 1; say(v.dmg ? "-" + fmtNum(v.dmg) : "0", s.e.x, s.e.y + 40, v.dmg ? allyCol : "#8fa3b5"); if (!v.dmg) sweep(2600, 2500, .5, "sine", .25); say("+3", s.p.x, s.p.y - 20, allyCol);
         sweep(400, 2000, .8, "sine", .3); sweep(200, 1000, .8, "triangle", .2); noise(.3, .4); retrigger($("flash"), "on", 600);
         banner = { txt: v.up ? `유대 Lv.${v.level}! 지원이 강해졌다` : "유대의 빛!", age: 0, bond: true };
         break;
@@ -270,7 +270,7 @@ function runBattle(cfg, done) {
     if (s.al) {                                                                         // companion: blossom that grows with the bond
       const lv = s.bondLv, al = s.al;
       if (s.allyId === "hexa") drawHexa(g, al.x, al.y, t, allyCol, .55 + .1 * lv);          // guardian: pulsing hexagons (scenes.js)
-      else if (s.allyId === "glitch" && SPEAKERS.glitch.shape === "shard") drawShardAlly(g, al.x, al.y, t, allyCol, .8 + .12 * lv);   // fallen crack: jittering shard (stage3/scenes.js)
+      else if (s.allyId === "glitch") drawGlitch(g, al.x, al.y, t, .8 + .12 * lv);   // shard before s3_morph, crescent blades after (stage3/scenes.js)
       else if (s.allyId === "keeper") drawGearAlly(g, al.x, al.y, t, allyCol, .8 + .12 * lv);   // freed clock keeper: ticking gear (stage4/scenes.js)
       else {
         g.save(); g.translate(al.x, al.y); g.scale(1 + .15 * lv, 1 + .15 * lv); g.strokeStyle = allyCol; g.shadowColor = allyCol; g.shadowBlur = 14 + 4 * lv; g.lineWidth = 2;
