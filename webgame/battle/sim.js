@@ -48,7 +48,7 @@
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
     const add = (x, y, a, sp, size = 6, o = {}) => {
       s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: size >= 10 ? 6 : 4, col: o.col || col, nm: rl("dirRule") && rl("dirRule").name,   // 방향 규칙: name written on the bullet
-        id: uid++, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, age: 0, tr: [] });
+        id: uid++, hp: o.hp, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, age: 0, tr: [] });
       if (!s.over) emit("enemyShot", { size, speed: sp });
     };
     const laser = (x, y, a, w, warn, dur) => { s.lasers.push({ x, y, a, w, warn, dur, age: 0, ping: false, boom: false }); };
@@ -68,6 +68,7 @@
         for (let x = BOX.x + 8; x < BOX.x + BOX.w; x += 22) if (Math.abs(x - gap) > 42) add(x, BOX.y - 12, Math.PI / 2, sp, size, C("wall", o));
       }),
       wave: (iv, sp = 85, size = 6, o = {}) => every("v", iv, () => { for (let i = 0; i < 5; i++) add(BOX.x + 30 + i * (BOX.w - 60) / 4, BOX.y - 12, Math.PI / 2, sp, size, { ...C("wave", o), sa: 38, sf: 3, ph: i * .9 }); }),
+      breakable: (iv, sp = 40, size = 14, o = {}) => every("k", iv, () => add(p.x, BOX.y - 12, Math.PI / 2, sp, size, { ...C("rain", o), hp: o.hp || 5 })),   // big bullet that player/ally shots wear down; hp 0 = gone
       laser: (iv, aimed, o = {}) => every("l", iv, () => {                                // telegraphed beam: aimed at the player, or a straight drop
         if (aimed) laser(e.x, e.y + 55, Math.atan2(p.y - e.y - 55, p.x - e.x), o.w || 26, o.warn || 1, o.dur || .5);
         else laser(rng() < .6 ? p.x : BOX.x + 20 + rng() * (BOX.w - 40), e.y + 55, Math.PI / 2, o.w || 34, o.warn || 1, o.dur || .5);
@@ -145,7 +146,11 @@
         if (s.gauge >= 100) burst();
       }
       for (const sh of s.shots) { sh.x += sh.vx * dt; sh.y += sh.vy * dt; }
-      for (const sh of s.shots) if (sh.y < e.y + 65 && sh.y > e.y - 80 && Math.abs(sh.x - e.x) < E_W) {   // shot lands wherever the enemy is
+      for (const sh of s.shots) for (const b of s.bullets) if (b.hp > 0 && !b.dead && !sh.dead && Math.hypot(b.x - sh.x, b.y - sh.y) < b.r + 4) {   // breakable bullet absorbs the shot
+        sh.dead = true; b.hp -= sh.dmg;
+        if (b.hp <= 0) { b.dead = true; emit("break", { x: b.x, y: b.y }); }
+      }
+      for (const sh of s.shots) if (!sh.dead && sh.y < e.y + 65 && sh.y > e.y - 80 && Math.abs(sh.x - e.x) < E_W) {   // shot lands wherever the enemy is
         const d = cfg.invuln || rl("finale") ? 0 : sh.dmg;                                 // invuln enemy: hits land (ting!) but deal 0
         sh.dead = true; s.eHp -= d; s.combo++; comboT = .5;
         emit("enemyHit", { x: sh.x, y: sh.y, dmg: d, ally: !!sh.ally, combo: s.combo });

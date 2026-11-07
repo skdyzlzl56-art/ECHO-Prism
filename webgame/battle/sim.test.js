@@ -262,7 +262,7 @@ test("finale without jointLight: a full-bond burst still ends it (no soft-lock)"
 
 test("dash (X): moves ~120px in the input direction, stays in the box, needs input and cooldown", () => {
   const mk = () => { const b = createBattle({ ...quiet }, { rng: seeded(9) }); b.state.auto = false; return b; };
-  let b = mk(); run(b, 1.1);
+  let b = mk(); run(b, 1.6);
   assert.ok(!b.dash(), "no movement input -> no dash");
   b.step(1 / 60, { dx: 1, dy: 0 }); const x0 = b.state.p.x;
   assert.ok(b.dash(), "dash fires"); run(b, .3);
@@ -275,7 +275,7 @@ test("dash (X): moves ~120px in the input direction, stays in the box, needs inp
 });
 
 test("dash grants invulnerability to bullets and the enemy body; hits resume afterwards", () => {
-  const b = createBattle({ ...quiet }, { rng: seeded(9) }); const s = b.state; s.auto = false; run(b, 1.1);
+  const b = createBattle({ ...quiet }, { rng: seeded(9) }); const s = b.state; s.auto = false; run(b, 1.6);
   b.step(1 / 60, { dx: 1 }); s.p.x = 480; s.p.y = 400; assert.ok(b.dash());
   s.bullets.push({ id: 1, x: s.p.x + 40, y: s.p.y, vx: 0, vy: 0, r: 8, tr: [], dmg: 5, age: 1 });
   s.e.mode = "dive"; s.e.x = s.p.x; s.e.y = s.p.y;
@@ -321,4 +321,25 @@ test("move motion stretches along travel and eases back to normal when stopped",
 test("fast input never advances a dialogue line", () => {
   const b = createBattle(quiet, { rng: seeded(1) }); b.state.talk = { lines: [{ who: "x", t: "abc" }, { who: "x", t: "def" }], i: 0 };
   b.step(1, { dx: 0, dy: 0, fast: true }); assert.strictEqual(b.state.talk.i, 0, "X alone does not go to the next line");
+});
+
+test("breakable bullet: player shots wear it down and break it; unbroken it still hurts", () => {
+  const cfg = { ...quiet, hp: 1e6, playerHp: 100, phases: [h => h.breakable(.5, 40, 14, { hp: 3 })] };
+  const b = createBattle(cfg, { rng: seeded(4) });
+  b.state.auto = false;
+  run(b, 1.6);
+  const big = b.state.bullets.find(x => x.hp);
+  assert.ok(big && big.hp === 3, "a breakable bullet with hp 3 was spawned");
+  big.x = b.state.p.x; big.y = b.state.p.y - 80; big.vx = 0; big.vy = 0;    // park it right above the player
+  b.state.shots.push({ x: big.x, y: big.y + 20, vx: 0, vy: -300, dmg: 1 });
+  run(b, .1);
+  assert.strictEqual(big.hp, 2, "a hit wears it down");
+  b.state.shots.push({ x: big.x, y: big.y + 20, vx: 0, vy: -300, dmg: 2, ally: true });
+  const ev = run(b, .1);
+  assert.ok(ev.some(v => v.type === "break"), "break event");
+  assert.ok(!b.state.bullets.includes(big), "it is gone at 0 hp");
+  // not broken: it keeps hurting
+  const c = createBattle(cfg, { rng: seeded(4) }); c.state.auto = false; run(c, 1.6);
+  const k = c.state.bullets.find(x => x.hp); k.x = c.state.p.x; k.y = c.state.p.y; k.vy = 0;
+  run(c, .05); assert.ok(c.state.hp < 100);
 });
