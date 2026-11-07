@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 옵션이 꺼진 전투의 동작은 변하지 않는다
 - [ ] 주기가 지나면 되감기 이벤트가 나오고 탄 위치가 이전 상태로 재현된다 (시드 고정 테스트)

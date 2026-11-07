@@ -4,7 +4,7 @@
 
 **Blocked by:** 06, 08, 10, 13
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `node --test webgame/battle` 전체 통과
 - [ ] 모든 챕터의 BGM 키·화자·장면이 존재함을 검사

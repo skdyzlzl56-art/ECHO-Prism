@@ -4,7 +4,7 @@
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 스테이지 2 끝에서 챕터 3 첫 줄로 끊김 없이 이어진다
 - [ ] 대사 약 150줄, 전투 2~3개, 탐색 장면 1개

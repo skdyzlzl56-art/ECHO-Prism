@@ -4,7 +4,7 @@
 
 **Blocked by:** 09, 11
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 챕터 5 끝에서 챕터 6으로 이어진다
 - [ ] 결전 페이즈마다 색·되감기·방향 규칙 중 하나가 쓰이고 마지막은 합동 유대의 빛

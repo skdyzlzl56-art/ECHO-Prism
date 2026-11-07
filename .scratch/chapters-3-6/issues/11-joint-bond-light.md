@@ -4,7 +4,7 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 옵션 없는 전투의 동작은 변하지 않는다
 - [ ] 옵션이 켜지고 유대가 가득 차면 합동 효과 이벤트가 나온다 (헤드리스 테스트)

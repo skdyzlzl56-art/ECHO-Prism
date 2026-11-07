@@ -4,7 +4,7 @@
 
 **Blocked by:** 03, 05
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 챕터 3 끝에서 챕터 4로 이어진다
 - [ ] 대사 약 150줄, 전투 2~3개

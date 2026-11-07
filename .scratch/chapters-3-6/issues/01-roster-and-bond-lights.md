@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 동료 목록이 4명이어도 X키가 순서대로 순환하고 쿨타임이 유지된다
 - [ ] 유대 레벨(상한 4)과 게이지가 교대해도 하나의 값으로 이어진다

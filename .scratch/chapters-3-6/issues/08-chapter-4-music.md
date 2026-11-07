@@ -4,7 +4,7 @@
 
 **Blocked by:** 07
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 필드·보스 ogg 연결
 - [ ] music/README.md 갱신

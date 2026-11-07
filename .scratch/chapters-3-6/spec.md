@@ -1,4 +1,4 @@
-Status: ready-for-agent
+Status: resolved
 
 # 챕터 3~6 (미술관 · 시계탑 · 도서관 · 프리즘 코어)
 

@@ -4,7 +4,7 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 필드·보스 ogg가 오디오 폴더에 있고 챕터 3 스크립트의 bgm 키로 전환된다
 - [ ] music/README.md에 곡 설명 추가

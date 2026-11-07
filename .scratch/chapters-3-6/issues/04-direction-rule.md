@@ -4,7 +4,7 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 옵션이 꺼진 전투의 동작은 변하지 않는다
 - [ ] 같은 방향 이동 시 피해 없음, 아니면 피해 있음 (헤드리스 테스트)

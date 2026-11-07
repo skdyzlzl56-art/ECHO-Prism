@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] 옵션이 꺼진 전투의 동작은 변하지 않는다
 - [ ] 옵션이 켜지면 지정한 색의 탄에만 피해가 들어간다 (헤드리스 테스트)
