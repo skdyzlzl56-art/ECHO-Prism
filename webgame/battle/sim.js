@@ -19,7 +19,7 @@
   // Growth curves. Player level (display Lv.) adds HP at battle start and shot damage; stage scales enemy HP and bullet damage (index = stage - 1);
   // ally: per bond level 0..4 shot interval, shots per volley and damage. Ally dps stays 1.5 -> 7.5, under the player's own 8.3 (growth.test.js).
   const GROWTH = {
-    playerHp: lv => Math.floor((lv - 1) * .75), shotDmg: lv => Math.round((1 + .06 * (lv - 1)) * 10) / 10,
+    playerHp: lv => Math.floor((lv - 1) * .75), shotDmg: lv => Math.round((2 + .12 * (lv - 1)) * 10) / 10,   // twice the hit, half the fire rate (SHOT_CD .24): same dps,
     stage: { hp: [1, 1.1, 1.2, 1.3, 1.4, 1.5], atk: [1, 1, 1.1, 1.2, 1.2, 1.3] },
     ally: { cd: [1.3, 1.05, .9, .8, .8], hits: [1, 1, 2, 2, 2], dmg: [2, 2.5, 2, 2.5, 3] },
   };
@@ -213,7 +213,7 @@
         if (e.mode !== "idle" && s.inv <= 0 && Math.hypot(e.x - p.x, e.y - p.y) < E_R + HITBOX + 6) hit(6);   // touching the enemy hurts
       }
 
-      if (firing && cd <= 0) { cd = .12; s.shots.push({ x: p.x, y: p.y - 12, vx: 0, vy: -560, dmg: GROWTH.shotDmg(s.lv) }); emit("playerShot"); }
+      if (firing && cd <= 0) { cd = .24; s.shots.push({ x: p.x, y: p.y - 12, vx: 0, vy: -560, dmg: GROWTH.shotDmg(s.lv) }); emit("playerShot"); }
       if (cfg.ally) {                                                      // companion: strength follows the bond level
         const lv = blv();
         al.y += (p.y - al.y) * Math.min(1, dt * 3); allyCd -= dt; for (const c of Object.values(s.cool)) { c.heal = Math.max(0, c.heal - dt); c.shield = Math.max(0, c.shield - dt); c.sig = Math.max(0, c.sig - dt); }
