@@ -1,4 +1,4 @@
-// Data check for stage 5 (and the whole script so far) + the direction-rule battles. Run: node --test webgame/stage5/stage5.test.js
+// Data check for stage 5 (and the whole script so far). Run: node --test webgame/stage5/stage5.test.js
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
 const { createBattle } = require("../battle/sim.js");
 const dir = path.join(__dirname, ".."), rd = f => fs.readFileSync(path.join(dir, f), "utf8");
@@ -37,8 +37,7 @@ test("stage 5 boss and practice fight use the page rule (no direction rule), and
   for (const id of ["s5_pages", "s5_index", "s5_librarian"]) {
     const cfg = D.BATTLES[id]; assert.ok(bgms.has(cfg.bgm), id); assert.strictEqual(cfg.phases.length, cfg.names.length, id);
     assert.strictEqual(cfg.allies.length, 4, id);
-    assert.strictEqual(cfg.dirRule, undefined, id);
-    assert.ok(!(cfg.phaseRules || []).some(r => r.dirRule || r.darkRule), id);
+    assert.ok(!(cfg.phaseRules || []).some(r => r.darkRule), id);
   }
   assert.strictEqual(D.BATTLES.s5_pages.pageRule, undefined);
   const periods = id => D.BATTLES[id].phaseRules.map(r => r.pageRule.period);
@@ -50,7 +49,6 @@ test("stage 5 boss and practice fight use the page rule (no direction rule), and
     const b = createBattle({ ...D.BATTLES[id], playerHp: 1e6, hp: 1e6, talks: {} }, { rng: Math.random }); b.state.auto = false;
     const ev = []; for (let t = 0; t < 12; t += 1 / 60) ev.push(...b.step(1 / 60, {}));
     assert.ok(ev.some(v => v.type === "pageWarn") && ev.some(v => v.type === "pageTurn"), id);
-    assert.ok(b.state.bullets.every(x => !x.nm), id);
   }
   const text = JSON.stringify([D.BATTLES.s5_index.talks, D.BATTLES.s5_librarian.talks, D.BATTLES.s5_librarian.names]);
   assert.ok(!/방향|가는 쪽|같은 방향|탄에 「/.test(text), "no direction-rule wording left");

@@ -208,7 +208,6 @@ function runBattle(cfg, done) {
       if (b.det && b.hp > 0) { g.save(); g.globalAlpha = (.3 + .25 * Math.sin(t * 9)) * vis; g.strokeStyle = "#ff5a5a"; g.lineWidth = 2; g.setLineDash([6, 6]); g.beginPath(); g.arc(b.x, b.y, b.det, 0, TAU); g.stroke(); g.restore(); }   // bomb: the blast radius
       if (b.hp > 0) { g.globalAlpha = vis; g.strokeStyle = "#fff"; g.lineWidth = 2; g.beginPath(); g.arc(b.x, b.y, b.r + 3, 0, TAU); g.stroke(); g.fillStyle = "#fff"; g.font = "bold 11px sans-serif"; g.textAlign = "center"; g.fillText(fmtNum(b.hp), b.x, b.y + 4); g.fillStyle = b.col; }   // breakable: white ring + hp
       if (b.tg) { g.globalAlpha = vis; g.strokeStyle = "#fff"; g.lineWidth = 2; g.setLineDash(b.st % 2 ? [] : [4, 4]); g.beginPath(); g.arc(b.x, b.y, b.r + 3, 0, TAU); g.stroke(); g.setLineDash([]); }   // toggle: dashed ring = state 0, solid = state 1 (plus colour per state)
-      if (b.nm) { g.save(); g.globalAlpha = vis; g.font = "11px Galmuri11,'Malgun Gothic'"; g.textAlign = "center"; g.fillStyle = "#fff"; g.fillText(b.nm, b.x, b.y - b.r - 4); g.restore(); }   // 방향 규칙: name written on the bullet
     }
     if (vfx.burst > 0) {                                                                  // 유대의 빛: a ring of light sweeping out from the player
       g.globalAlpha = vfx.burst * .8; g.strokeStyle = allyCol; g.lineWidth = 6; g.shadowColor = allyCol; g.shadowBlur = 20;
