@@ -70,3 +70,29 @@ test("every act in the story is a battle or a scene that exists (a typo would on
   for (const a of acts) assert.ok(D.BATTLES[a] || scenes.has(a), `act "${a}" is neither a BATTLES entry nor an ACTS scene`);
   for (const b in D.BATTLES) assert.ok(!scenes.has(b), `${b} is both a battle and a scene`);
 });
+
+// talks[] is keyed by the 0-based phase level (talks[0] plays before the first pattern)
+test("talks keys are reachable phase levels, and a phase that adds a rule announces it", () => {
+  for (const [k, b] of Object.entries(D.BATTLES)) {
+    for (const key of Object.keys(b.talks || {})) assert.ok(+key < b.phases.length, `${k}: talks[${key}] is unreachable (${b.phases.length} phases)`);
+    (b.phaseRules || []).forEach((pr, i) => {
+      const prev = i ? b.phaseRules[i - 1] : {};
+      const added = Object.keys(pr).filter(r => r !== "finale" && JSON.stringify(pr[r]) !== JSON.stringify(prev[r]));
+      if (added.length && i) assert.ok(b.talks && b.talks[i], `${k}: phase ${i} adds ${added} but talks[${i}] is empty`);
+    });
+  }
+});
+
+test("pageRule and darkRule values are real numbers; the page warning leaves time to reach the farthest strip", () => {
+  const pos = ["period", "warn", "dur", "dmg", "width"], BOX_W = 300, SPEED = 150, REACT = .25;
+  for (const [k, b] of Object.entries(D.BATTLES)) {
+    for (const o of [b, ...(b.phaseRules || [])]) {
+      if (o.pageRule) {
+        for (const f of pos) assert.ok(Number.isFinite(o.pageRule[f]) && o.pageRule[f] > 0, `${k}: pageRule.${f}`);
+        assert.ok(o.pageRule.warn + o.pageRule.dur < o.pageRule.period, `${k}: warn+dur must fit in the period`);
+        assert.ok(o.pageRule.warn >= (BOX_W * 2 / 3 - o.pageRule.width / 2) / SPEED + REACT, `${k}: pageRule warn ${o.pageRule.warn}s is too short to cross the box`);
+      }
+      if (o.darkRule) assert.ok(Number.isFinite(o.darkRule.radius) && o.darkRule.radius > 0, `${k}: darkRule.radius`);
+    }
+  }
+});

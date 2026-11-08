@@ -52,6 +52,7 @@ test("stage 5 boss and practice fight use the page rule (no direction rule), and
   }
   const text = JSON.stringify([D.BATTLES.s5_index.talks, D.BATTLES.s5_librarian.talks, D.BATTLES.s5_librarian.names]);
   assert.ok(!/방향|가는 쪽|같은 방향|탄에 「/.test(text), "no direction-rule wording left");
+  for (const l of D.STAGE5) assert.ok(!/방향|같이 움직|거슬러|따라가는 법|탄의 흐름/.test(l.text || ""), `story still teaches the direction rule: ${l.text}`);
 });
 
 test("stage 5 has its own music: librarian boss uses s5_boss and no stage 5 line uses stage 2 tracks", () => {

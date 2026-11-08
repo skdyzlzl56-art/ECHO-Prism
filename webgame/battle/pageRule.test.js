@@ -26,3 +26,10 @@ test("page rule: off without the option, and phaseRules switch it per phase", ()
   const c = still({}); c.state.p.x = BOX.x + 5; assert.ok(!run(c, 6).some(v => v.type === "playerHurt") && !c.state.page);
   const d = still({ phaseRules: [{}, { pageRule: cfg.pageRule }] }); run(d, 6); assert.ok(!d.state.page);
 });
+
+test("page rule: layered on a sliding box, the strip stays inside the box", () => {
+  const b = still({ boxRule: { amp: 40, period: 6 }, pageRule: { period: 4, warn: 1, dur: 1.5, dmg: 3, width: 60 } });
+  let seen = 0;
+  for (let t = 0; t < 30; t += 1 / 60) { b.step(1 / 60, {}); const pg = b.state.page; if (pg) { seen++; assert.ok(pg.x - 30 >= b.BOX.x - 1 && pg.x + 30 <= b.BOX.x + b.BOX.w + 1, `t=${t.toFixed(1)} strip ${pg.x} outside box ${b.BOX.x}`); } }
+  assert.ok(seen > 60);
+});

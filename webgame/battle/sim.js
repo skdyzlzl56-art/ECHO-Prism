@@ -179,9 +179,10 @@
       const pr = rl("pageRule");   // 쪽 넘김: a narrow safe strip (one of 3 slots) shown in the warning, live for `dur` s, outside it hurts
       if (pr) {
         const ph = cyc(pr), w = pr.width || 70;
-        if (ph === "warn" && !(s.page && !s.page.active)) { pageSlot = (pageSlot + 1 + Math.floor(rng() * 2)) % 3; s.page = { x: BOX.x + BOX.w * (pageSlot + .5) / 3, w, active: false }; emit("pageWarn", { x: s.page.x }); }
+        if (ph === "warn" && !(s.page && !s.page.active)) { pageSlot = (pageSlot + 1 + Math.floor(rng() * 2)) % 3; s.page = { slot: pageSlot, x: 0, w, active: false }; s.page.x = BOX.x + BOX.w * (pageSlot + .5) / 3; emit("pageWarn", { x: s.page.x }); }
         else if (ph === "on" && s.page && !s.page.active) { s.page.active = true; emit("pageTurn", { x: s.page.x }); }
         else if (!ph) s.page = null;
+        if (s.page) s.page.x = BOX.x + BOX.w * (s.page.slot + .5) / 3;   // the strip rides with the box when boxRule is layered
         if (s.page && s.page.active && s.inv <= 0 && Math.abs(p.x - s.page.x) > s.page.w / 2) hit(pr.dmg || 4);
       } else s.page = null;
       const firing = s.auto, spd = firing ? 150 : 210, sg = s.inverted ? -1 : 1, dx = sg * (input.dx || 0), dy = sg * (input.dy || 0), n = Math.hypot(dx, dy) || 1, m = 10;
