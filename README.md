@@ -4,7 +4,7 @@
 
 ## ▶ 플레이
 
-**https://skdyzlzl56-art.github.io/webgame/**
+**https://skdyzlzl56-art.github.io/ECHO-Prism/**
 
 | 타이틀 | 플레이 화면 |
 |---|---|
