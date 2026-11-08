@@ -25,7 +25,7 @@ test("battle bgm files and speakers exist; script bgm/speakers exist", () => {
 });
 
 test("battle configs are structurally valid", () => {
-  const RULES = ["colorRule", "rewind", "boxRule", "invertRule", "splitRule", "pageRule", "darkRule", "finale"];
+  const RULES = ["colorRule", "rewind", "boxRule", "invertRule", "splitRule", "gravityRule", "stillRule", "darkRule", "finale"];
   for (const [k, b] of Object.entries(D.BATTLES)) {
     if (b.cuts && b.phases) assert.strictEqual(b.phases.length, b.cuts.length + 1, `${k}: phases must be cuts+1`);
     for (const pr of b.phaseRules || []) {
@@ -83,15 +83,13 @@ test("talks keys are reachable phase levels, and a phase that adds a rule announ
   }
 });
 
-test("pageRule and darkRule values are real numbers; the page warning leaves time to reach the farthest strip", () => {
-  const pos = ["period", "warn", "dur", "dmg", "width"], BOX_W = 300, SPEED = 150, REACT = .25;
+test("gravityRule, stillRule and darkRule values are real numbers; the warnings leave time to react; gravity is always weaker than walking", () => {
+  const WALK = 150, MIN_WARN = 1.2, fin = (k, r, fs) => { for (const f of fs) assert.ok(Number.isFinite(r[f]) && r[f] > 0, `${k}: ${f}`); assert.ok(r.warn >= MIN_WARN, `${k}: warn ${r.warn}s is too short to react`); assert.ok(r.warn + r.dur <= r.period, `${k}: warn+dur must fit in the period`); };
   for (const [k, b] of Object.entries(D.BATTLES)) {
     for (const o of [b, ...(b.phaseRules || [])]) {
-      if (o.pageRule) {
-        for (const f of pos) assert.ok(Number.isFinite(o.pageRule[f]) && o.pageRule[f] > 0, `${k}: pageRule.${f}`);
-        assert.ok(o.pageRule.warn + o.pageRule.dur < o.pageRule.period, `${k}: warn+dur must fit in the period`);
-        assert.ok(o.pageRule.warn >= (BOX_W * 2 / 3 - o.pageRule.width / 2) / SPEED + REACT, `${k}: pageRule warn ${o.pageRule.warn}s is too short to cross the box`);
-      }
+      if (o.gravityRule) { fin(`${k} gravityRule`, o.gravityRule, ["period", "warn", "dur", "pull"]); assert.ok(o.gravityRule.pull < WALK * .75, `${k}: pull ${o.gravityRule.pull} must stay well under walking speed ${WALK}`); }
+      if (o.stillRule) fin(`${k} stillRule`, o.stillRule, ["period", "warn", "dur", "dmg"]);
+      if (o.gravityRule || o.stillRule) assert.ok(!(o.gravityRule && o.stillRule) && !((o.gravityRule || o.stillRule) && o.invertRule), `${k}: gravity / still never share a phase with each other or with invertRule`);
       if (o.darkRule) assert.ok(Number.isFinite(o.darkRule.radius) && o.darkRule.radius > 0, `${k}: darkRule.radius`);
     }
   }
