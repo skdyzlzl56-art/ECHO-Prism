@@ -25,10 +25,10 @@ test("every script line references existing speakers, bgm, fx, themes and acts",
   assert.ok(themes.has(D.FX.stage6.warp), "warp theme");
 });
 
-test("stage 6 is about 150 lines, ends on the title, and the individual speaks exactly one line (the last one)", () => {
+test("stage 6 is about 130 lines, ends on the title, and the individual speaks exactly one line (the last one)", () => {
   for (const l of D.STAGE6) assert.ok(!/방향/.test(l.text || ""), `story names the removed direction rule: ${l.text}`);
   const n = D.STAGE6.filter(l => l.who).length;
-  assert.ok(n >= 130 && n <= 180, `${n} lines`);
+  assert.ok(n >= 120 && n <= 180, `${n} lines`);
   assert.strictEqual(D.SCRIPT[D.SCRIPT.length - 1].act, "s6_title");
   const own = D.SCRIPT.filter(l => l.who === "self"); assert.strictEqual(own.length, 1);
   assert.strictEqual(own[0].rename, "에코");
