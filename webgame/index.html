@@ -8,7 +8,8 @@
   @font-face{font-family:Galmuri11;src:url(fonts/Galmuri11.woff2) format("woff2");font-weight:400;font-display:swap}   /* UI: battle HUD, name tag, prompts (quiple/galmuri, OFL) */
   @font-face{font-family:Galmuri11;src:url(fonts/Galmuri11-Bold.woff2) format("woff2");font-weight:700;font-display:swap}
   html,body{margin:0;height:100%;background:#0b1026;font-family:Galmuri11,"Malgun Gothic",sans-serif;user-select:none}
-  #stage{position:relative;max-width:960px;height:100vh;max-height:540px;margin:auto;top:50%;transform:translateY(-50%);
+  #fit{position:fixed;left:50%;top:50%;width:960px;height:540px;transform:translate(-50%,-50%) scale(var(--k,1))}   /* the 960x540 stage is scaled to fit any screen */
+  #stage{position:relative;width:960px;height:540px;
     background:linear-gradient(#1b2a5a,#0b1026);overflow:hidden;cursor:pointer}
   #portrait{position:absolute;left:50%;bottom:150px;width:300px;height:300px;transform:translateX(-50%)}
   #box{position:absolute;left:0;right:0;bottom:0;height:140px;--c:#fff;background:linear-gradient(#0a0f2ae6,#050818f2);border-top:2px solid color-mix(in srgb,var(--c) 70%,transparent);
@@ -28,7 +29,7 @@
   #shout.on{display:block;animation:pop .7s ease-out}
   @keyframes pop{0%{transform:scale(2.5);opacity:0}15%{transform:scale(1);opacity:1}100%{transform:scale(1.05);opacity:1}}
   #stage.shake{animation:sh var(--ms,.5s) linear}
-  @keyframes sh{0%,100%{transform:translateY(-50%)}20%{transform:translate(calc(-14px*var(--a,1)),-50%)}40%{transform:translate(calc(14px*var(--a,1)),calc(-50% + 4px*var(--a,1)))}60%{transform:translate(calc(-10px*var(--a,1)),calc(-50% - 4px*var(--a,1)))}80%{transform:translate(calc(10px*var(--a,1)),-50%)}}
+  @keyframes sh{0%,100%{transform:none}20%{transform:translate(calc(-14px*var(--a,1)),0)}40%{transform:translate(calc(14px*var(--a,1)),calc(4px*var(--a,1)))}60%{transform:translate(calc(-10px*var(--a,1)),calc(-4px*var(--a,1)))}80%{transform:translate(calc(10px*var(--a,1)),0)}}
   #vig{position:absolute;inset:0;opacity:0;pointer-events:none;box-shadow:inset 0 0 120px 30px #e00}
   #start{position:absolute;inset:0;display:flex;align-items:center;padding-bottom:70px;box-sizing:border-box;justify-content:center;text-align:center;z-index:30;background:linear-gradient(#222d6e 0%,#5d3f97 52%,#e8806f 88%,#ffc796 100%);color:#fff;font-size:24px}
   #start h1{font-size:72px;letter-spacing:10px;margin:0 0 20px;filter:drop-shadow(0 0 16px #b9a5ff);animation:glow 4s ease-in-out 2s infinite}
@@ -68,10 +69,17 @@
   .pick #box,.pick #portrait,.battle #box{display:none}
   .title #portrait{z-index:31;bottom:auto;left:0;top:0;transform:none;width:960px;height:540px;pointer-events:none}   /* title: one fairy wanders the whole stage (portraits.js titleScene) */
   .battle #portrait{z-index:6;bottom:auto;left:0;top:100px;transform:none;width:960px;height:300px}  /* full-width strip above the dialogue box; portraits.js draws the cast side by side */
+  #pad{display:none;position:fixed;inset:0;pointer-events:none;z-index:50;touch-action:none}
+  @media (pointer:coarse){#pad{display:block}}
+  #dpad{position:absolute;left:14px;bottom:14px;width:150px;height:150px;border-radius:50%;background:#ffffff1a;border:2px solid #ffffff44;pointer-events:auto;touch-action:none}
+  #dpad i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px;border-radius:50%;background:#ffffff44}
+  #btns{position:absolute;right:14px;bottom:14px;display:grid;grid-template-columns:repeat(2,68px);gap:10px}
+  #btns b{height:68px;border-radius:50%;background:#ffffff1f;border:2px solid #ffffff55;color:#fff;font:700 16px Galmuri11,sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;user-select:none;text-align:center;line-height:1.1}
+  #btns b.on,#dpad.on{background:#4fc3ff66}
 </style>
 </head>
 <body>
-<div id="stage">
+<div id="fit"><div id="stage">
   <canvas id="bg" width="960" height="540"></canvas>
   <canvas id="portrait"></canvas>
   <div id="box"><div id="name"></div><span id="text"></span><span id="next" hidden>▼</span></div>
@@ -81,7 +89,8 @@
   <div id="act" hidden></div>
   <div id="menu" hidden></div>
   <div id="start"><div><h1><span style="--i:0;--c:#8fe6ff">E</span><span style="--i:1;--c:#b4f0ff">C</span><span style="--i:2;--c:#ffffff">H</span><span style="--i:3;--c:#ffe3f6">O</span><span style="--i:4">&nbsp;</span><span style="--i:5;--c:#ffc4ee">P</span><span style="--i:6;--c:#ffd9b0">R</span><span style="--i:7;--c:#fff1a0">I</span><span style="--i:8;--c:#d8f5b0">S</span><span style="--i:9;--c:#9fe8ff">M</span></h1><i class="spec"></i><div id="sub">......들리나요? 아직 꺼지지 않았군요.</div><p>클릭하여 시작</p></div></div>
-</div>
+</div></div>
+<div id="pad"><div id="dpad"><i></i></div><div id="btns"><b data-k="dash">대시</b><b data-k="fire">사격<br>확인</b><b data-k="swap">교대</b><b data-k="menu">메뉴</b></div></div>
 <script src="script.js"></script>
 <script src="battle/backdrop.js"></script>
 <script src="portraits.js"></script>
@@ -166,6 +175,31 @@ addEventListener("keydown", e => {
   audio.syncVolumes();                                                             // volume page: applies to playing sound at once
   $("menu").hidden = !MENU.open; $("menu").innerHTML = MENU.open ? menuHtml(MENU) : "";
 }, true);
+</script>
+<script>
+// screen fit + touch pad: the pad sends the same key events as a keyboard, so every scene works unchanged
+const fit = () => document.getElementById("fit").style.setProperty("--k", Math.min(innerWidth / 960, innerHeight / 540));
+addEventListener("resize", fit); fit();
+{
+  const send = (type, code) => dispatchEvent(new KeyboardEvent(type, { code, key: code, bubbles: true, cancelable: true }));
+  const code = k => k === "menu" ? "KeyC" : MENU.keys[k];
+  for (const b of document.querySelectorAll("#btns b")) {
+    let c = null;
+    b.onpointerdown = e => { e.preventDefault(); b.setPointerCapture(e.pointerId); c = code(b.dataset.k); b.classList.add("on"); send("keydown", c); };
+    b.onpointerup = b.onpointercancel = () => { if (!c) return; b.classList.remove("on"); send("keyup", c); c = null; };
+  }
+  const pad = document.getElementById("dpad"), dirs = { ArrowLeft: 0, ArrowRight: 0, ArrowUp: 0, ArrowDown: 0 };
+  const set = (k, on) => { if (!!dirs[k] !== on) { dirs[k] = on ? 1 : 0; send(on ? "keydown" : "keyup", k); } };
+  const aim = e => {
+    const r = pad.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2), dead = r.width * .14, t = r.width * .12;
+    set("ArrowLeft", x < -dead && -x > Math.abs(y) * .45 - t); set("ArrowRight", x > dead && x > Math.abs(y) * .45 - t);
+    set("ArrowUp", y < -dead && -y > Math.abs(x) * .45 - t); set("ArrowDown", y > dead && y > Math.abs(x) * .45 - t);
+    pad.firstChild.style.transform = `translate(${Math.max(-40, Math.min(40, x))}px,${Math.max(-40, Math.min(40, y))}px)`;
+  };
+  pad.onpointerdown = e => { e.preventDefault(); pad.setPointerCapture(e.pointerId); pad.classList.add("on"); aim(e); };
+  pad.onpointermove = e => { if (pad.classList.contains("on")) aim(e); };
+  pad.onpointerup = pad.onpointercancel = () => { pad.classList.remove("on"); pad.firstChild.style.transform = ""; for (const k in dirs) set(k, false); };
+}
 </script>
 <script src="game.js"></script>
 <script src="battle/sim.js"></script>

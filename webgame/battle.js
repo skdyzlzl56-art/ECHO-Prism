@@ -336,6 +336,7 @@ function runBattle(cfg, done) {
     else {
       setCast(null);
       const input = { dx: (keys.ArrowRight || keys.KeyD ? 1 : 0) - (keys.ArrowLeft ? 1 : 0), dy: (keys.ArrowDown || keys.KeyS ? 1 : 0) - (keys.ArrowUp || keys.KeyW ? 1 : 0) };
+      if (keys[MENU.keys.dash] && (input.dx || input.dy)) battle.dash();                // 대시 키를 누른 채 이동하면 그 방향으로 대시 (쿨다운 끝나면 자동 재발동)
       if (!vfx.frozen(dt)) for (const v of battle.step(dt, input)) onEvent(v);           // hit-stop: the world freezes for a moment after a heavy hit
       if (prevP && dt > 0) moveLook(look, (s.p.x - prevP.x) / dt, (s.p.y - prevP.y) / dt, dt);   // display only: reads the position, never writes it
       for (wk += dt * 60; wk >= 1; wk--) {                                               // wake ticks at 60 steps/s whatever the frame rate
