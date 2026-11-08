@@ -1,7 +1,7 @@
 # Chapters, music, and implementer checklist
 
 ## Add a chapter
-Copy `webgame/stage6/` as the template (newest, has every rule). Each `webgame/stageN/` holds `battles.js` (BATTLES + ACTS, party spread from the previous chapter's `PARTYn`), `story.js` (lines appended to SCRIPT), optional `scenes.js`, and `stageN.test.js` (speakers/bgm/fx/theme/act exist, line count 130–180). Then:
+Copy `webgame/stage6/` as the template (newest, has every rule). Each `webgame/stageN/` holds `battles.js` (BATTLES only: index.html makes each one an ACTS scene of the same name; party spread from the previous chapter's `PARTYn`), `story.js` (lines appended to SCRIPT), optional `scenes.js`, and `stageN.test.js` (speakers/bgm/fx/theme/act exist, line count 130–180). Then:
 - Add every file as a `<script>` in `webgame/index.html`. `webgame/cross.test.js` fails if one is missing.
 - New battle rules are options on the battle config, read in `webgame/battle/sim.js`. Configs without the option must behave as before.
 

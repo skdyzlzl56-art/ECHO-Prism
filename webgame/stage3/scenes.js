@@ -3,32 +3,32 @@
 
 // 화랑: 긴 복도(화면 3배)를 걸으며 잿빛 그림 세 점의 색을 되살린다. 얼룩에 닿으면 체력이 줄고, 대화는 아래 상자 (explore.js). 그림은 벽(위)에, 서는 자리는 바닥(아래)에 있어 대화창에 가려지지 않는다.
 ACTS.s3_explore = done => runExplore({
-  worldW: 3200, bond: 2, label: "그림", hint: "이동: 방향키 · 그림 앞 바닥에 서 있으면 색이 돌아와요 · 잿빛 얼룩을 피하세요!",
+  worldW: 16000, bond: 2, hexa: true, label: "그림", hint: "이동: 방향키 · 그림 앞 바닥에 서 있으면 색이 돌아와요 · 잿빛 얼룩을 피하세요!",
   floor: { bg: "#14171c", fill: "#23282f", stroke: "#4a5360" },
   spots: [
-    { x: 800, y: 300, c: ["#3a6fd8", "#9ad0ff"], mem: "새벽의 바다. 파도가 오기 전부터 물빛을 알아보던 누군가의 눈." },
-    { x: 1650, y: 330, c: ["#ff7a45", "#ffd36b"], mem: "옥상의 석양. 부르는 사람 없이도 올라가 앉던 자리." },
-    { x: 2500, y: 290, c: ["#ff6fa8", "#ffe4a0"], mem: "웃는 얼굴 하나. 아무도 앞에 없는데, 누군가 앞에 있다고 믿으며 그린." },
+    { x: 4000, y: 300, c: ["#3a6fd8", "#9ad0ff"], mem: "새벽의 바다. 파도가 오기 전부터 물빛을 알아보던 누군가의 눈." },
+    { x: 8250, y: 330, c: ["#ff7a45", "#ffd36b"], mem: "옥상의 석양. 부르는 사람 없이도 올라가 앉던 자리." },
+    { x: 12500, y: 290, c: ["#ff6fa8", "#ffe4a0"], mem: "웃는 얼굴 하나. 아무도 앞에 없는데, 누군가 앞에 있다고 믿으며 그린." },
   ],
-  door: null, wisps: { n: 6, color: "#9aa5b1", speed: 100 }, beams: false,
+  door: null, wisps: { n: 40, color: "#9aa5b1", speed: 100 }, beams: false, barrage: { every: 1.9, n: 5, speed: 150 },
   talks: [
-    { x: 150, who: "voice", text: "여기가 화랑이에요. 벽에 걸린 그림마다 누군가의 기억이 들어 있었어요." },
-    { x: 450, who: "lumi", text: "그림들이 전부 잿빛이야... 색이 있던 자리가 텅 비어 버렸어." },
-    { x: 650, who: "hexa", text: "......얼룩이 떠다닌다. 닿으면 모아 둔 색이 바랜다. 조심해라." },
-    { x: 1050, who: "voice", text: "빈 액자들은 아직 주인을 기다리는 거예요. 그림이 돌아오면 같이 채워질지도 몰라요." },
-    { x: 1300, who: "lumi", text: "화가는 왜 색을 지웠을까? 그림을 이렇게나 좋아했는데..." },
-    { x: 1500, who: "hexa", text: "......그린 이의 손이 떨린 흔적이 있다. 지운 것이 아니라 숨긴 것일지도 모른다." },
-    { x: 1950, who: "voice", text: "남은 색이 아주 희미하게 느껴져요. 그림 앞에 서서 가만히 기다려 주세요." },
-    { x: 2250, who: "lumi", text: "바닥에 물감 얼룩이 있어! 발자국도... 누가 여기서 오래 서 있었나 봐." },
-    { x: 2800, who: "hexa", text: "......끝이 가깝다. 마지막 그림이 가장 오래 걸릴지도 모른다." },
+    { x: 750, who: "voice", text: "여기가 화랑이에요. 벽에 걸린 그림마다 누군가의 기억이 들어 있었어요." },
+    { x: 2250, who: "lumi", text: "그림들이 전부 잿빛이야... 색이 있던 자리가 텅 비어 버렸어." },
+    { x: 3250, who: "hexa", text: "......얼룩이 떠다닌다. 닿으면 모아 둔 색이 바랜다. 조심해라." },
+    { x: 5250, who: "voice", text: "빈 액자들은 아직 주인을 기다리는 거예요. 그림이 돌아오면 같이 채워질지도 몰라요." },
+    { x: 6500, who: "lumi", text: "화가는 왜 색을 지웠을까? 그림을 이렇게나 좋아했는데..." },
+    { x: 7500, who: "hexa", text: "......그린 이의 손이 떨린 흔적이 있다. 지운 것이 아니라 숨긴 것일지도 모른다." },
+    { x: 9750, who: "voice", text: "남은 색이 아주 희미하게 느껴져요. 그림 앞에 서서 가만히 기다려 주세요." },
+    { x: 11250, who: "lumi", text: "바닥에 물감 얼룩이 있어! 발자국도... 누가 여기서 오래 서 있었나 봐." },
+    { x: 14000, who: "hexa", text: "......끝이 가깝다. 마지막 그림이 가장 오래 걸릴지도 모른다." },
   ],
   allLit: [{ who: null, text: "세 점의 그림에 색이 돌아왔다. 벽 끝에서 누군가의 기척이 느껴진다." }],
   revive: { who: "voice", text: "괜찮아요? 마지막으로 색을 되살린 그림 곁으로 돌아왔어요. 천천히 다시 가요." },
   hurtLine: { who: "lumi", text: "많이 다쳤어! 그림 하나를 되살리면 힘이 조금 돌아와!" },
   wall(g, t, cam, spots) {                                                             // back wall (y 70-190): frames hang here, well above the dialogue box
-    g.fillStyle = "#1b1f26"; g.fillRect(30, 70, 3140, 120);
-    for (let x = 100; x < 3200; x += 120) { g.fillStyle = "#14171c"; g.fillRect(x, 70, 6, 120); }
-    for (let x = 340; x < 3100; x += 420) { g.fillStyle = "#2d333b"; g.fillRect(x - 40, 95, 80, 60); g.strokeStyle = "#566070"; g.lineWidth = 3; g.strokeRect(x - 40, 95, 80, 60); }   // empty frames
+    g.fillStyle = "#1b1f26"; g.fillRect(30, 70, 15940, 120);
+    for (let x = 100 + 120 * Math.max(0, Math.floor((cam - 110) / 120)); x < Math.min(16000, cam + 1000); x += 120) { g.fillStyle = "#14171c"; g.fillRect(x, 70, 6, 120); }
+    for (let x = 340 + 420 * Math.max(0, Math.floor((cam - 420) / 420)); x < Math.min(15900, cam + 1000); x += 420) { g.fillStyle = "#2d333b"; g.fillRect(x - 40, 95, 80, 60); g.strokeStyle = "#566070"; g.lineWidth = 3; g.strokeRect(x - 40, 95, 80, 60); }   // empty frames
     for (const o of spots) {
       const r = o.lit ? Math.min(1, o.lit * 1.5) : 0, y = 130;
       g.fillStyle = "#3a3f47"; g.fillRect(o.x - 60, y - 45, 120, 90);

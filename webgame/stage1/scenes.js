@@ -27,34 +27,34 @@ function drawFairy(g, x, y, t, col, k = 1) {                                    
 
 // ---- 등불 켜기: 긴 회랑을 걸으며(화면 3배) 등불 세 개에 불을 붙인다. 균열과 낙뢰를 피하고, 체력이 0이 되면 마지막 등불 곁에서 다시 시작. 대화는 아래 상자 (explore.js) ----
 ACTS.s1_explore = done => runExplore({
-  worldW: 3200, bond: 1, label: "등불", hint: "이동: 방향키 · 꺼진 등불 곁에 서 있으면 불이 붙어요 · 균열과 낙뢰를 피하세요!",
+  worldW: 16000, bond: 1, label: "등불", hint: "이동: 방향키 · 꺼진 등불 곁에 서 있으면 불이 붙어요 · 균열과 낙뢰를 피하세요!",
   floor: { bg: "#070b1c", fill: "#0e1634", stroke: "#2a3a78" },
   spots: [
-    { x: 900, y: 290, mem: "비 오는 날, 문 앞에서 떨던 어린 등불지기에게 커다란 육각형이 다가와 말없이 우산이 되어 주었다." },
-    { x: 1750, y: 330, mem: "'나는 문을 지킬게. 너는 길을 밝혀.' 두 그림자가 나란히 서서 첫 약속을 했다." },
-    { x: 2550, y: 270, mem: "문이 갈라지던 밤. 육각형은 혼자 봉인을 붙든 채 말했다. '루미, 도망쳐. 불이... 꺼지지 않게...'" },
+    { x: 4500, y: 290, mem: "비 오는 날, 문 앞에서 떨던 어린 등불지기에게 커다란 육각형이 다가와 말없이 우산이 되어 주었다." },
+    { x: 8750, y: 330, mem: "'나는 문을 지킬게. 너는 길을 밝혀.' 두 그림자가 나란히 서서 첫 약속을 했다." },
+    { x: 12750, y: 270, mem: "문이 갈라지던 밤. 육각형은 혼자 봉인을 붙든 채 말했다. '루미, 도망쳐. 불이... 꺼지지 않게...'" },
   ],
-  door: { x: 3100, y: 295 }, wisps: { n: 6, color: "#ff3b5c", speed: 120 }, beams: true,
+  door: { x: 15500, y: 295 }, wisps: { n: 40, color: "#ff3b5c", speed: 120 }, beams: true, barrage: { every: 1.7, n: 5, speed: 170 },
   talks: [
-    { x: 150, who: "lumi", text: "여기가 등불 회랑이야. 예전에는 천장까지 불이 가득해서 밤에도 대낮 같았어." },
-    { x: 420, who: "voice", text: "공기가 떨려요. 저 붉은 균열들이 아직 살아서 돌아다니고 있어요. 닿지 않게 조심해요." },
-    { x: 700, who: "lumi", text: "저기 첫 번째 등불이야! 가까이 서 있으면 내 힘으로 불이 붙어!" },
-    { x: 1200, who: "voice", text: "기억이 켜질 때마다 길이 조금씩 밝아져요. 처음엔 작은 불이어도 괜찮아요." },
-    { x: 1450, who: "lumi", text: "헥사는 원래 이렇지 않았어. 비 오는 날엔 늘 문 앞에서 나한테 우산을 씌워 줬거든." },
-    { x: 1650, who: "voice", text: "붉은 번개는 내리기 전에 줄이 먼저 깜빡여요. 줄이 보이면 옆으로 비켜요!" },
-    { x: 2000, who: "lumi", text: "무서워도 괜찮아. 우리 둘이잖아. 아니, 셋이네! 요정도 있으니까!" },
-    { x: 2300, who: "voice", text: "헥사의 기척이 느껴져요. ......많이 아파하고 있어요." },
-    { x: 2750, who: "lumi", text: "마지막 등불이 바로 앞이야. 이걸 켜면 문이 열릴 거야. 조금만 더!" },
+    { x: 750, who: "lumi", text: "여기가 등불 회랑이야. 예전에는 천장까지 불이 가득해서 밤에도 대낮 같았어." },
+    { x: 2100, who: "voice", text: "공기가 떨려요. 저 붉은 균열들이 아직 살아서 돌아다니고 있어요. 닿지 않게 조심해요." },
+    { x: 3500, who: "lumi", text: "저기 첫 번째 등불이야! 가까이 서 있으면 내 힘으로 불이 붙어!" },
+    { x: 6000, who: "voice", text: "기억이 켜질 때마다 길이 조금씩 밝아져요. 처음엔 작은 불이어도 괜찮아요." },
+    { x: 7250, who: "lumi", text: "헥사는 원래 이렇지 않았어. 비 오는 날엔 늘 문 앞에서 나한테 우산을 씌워 줬거든." },
+    { x: 8250, who: "voice", text: "붉은 번개는 내리기 전에 줄이 먼저 깜빡여요. 줄이 보이면 옆으로 비켜요!" },
+    { x: 10000, who: "lumi", text: "무서워도 괜찮아. 우리 둘이잖아. 아니, 셋이네! 요정도 있으니까!" },
+    { x: 11500, who: "voice", text: "헥사의 기척이 느껴져요. ......많이 아파하고 있어요." },
+    { x: 13750, who: "lumi", text: "마지막 등불이 바로 앞이야. 이걸 켜면 문이 열릴 거야. 조금만 더!" },
   ],
   allLit: [{ who: null, text: "끼이이이... 회랑 끝의 문이 열렸다. 균열이 물러간다." }, { who: "lumi", text: "다 켜졌다! 오른쪽 끝 문으로 가자. 헥사가 기다리고 있을 거야." }],
   revive: { who: "voice", text: "괜찮아요? 마지막으로 켠 등불 곁으로 돌아왔어요. 천천히, 다시 가요." },
   hurtLine: { who: "lumi", text: "많이 다쳤어! 조심해! 등불을 하나 켜면 힘이 조금 돌아와!" },
   wall(g, t, cam, spots) {                                                             // arched pillars along the whole corridor
-    for (let x = 40; x < 3200; x += 160) {
+    for (let x = 40 + 160 * Math.max(0, Math.floor((cam - 200) / 160)); x < Math.min(16000, cam + 1120); x += 160) {                  // only the pillars on screen
       g.strokeStyle = "#1a2552"; g.lineWidth = 3; g.beginPath(); g.moveTo(x, 190); g.lineTo(x, 70); g.arc(x + 80, 70, 80, Math.PI, 0); g.lineTo(x + 160, 190); g.stroke();
     }
     g.globalAlpha = .5 + .3 * Math.sin(t * 7); g.strokeStyle = "#ff3b5c"; g.lineWidth = 2;   // cracks leaking pink glitch light on the floor
-    for (let x = 300; x < 3000; x += 380) { g.beginPath(); g.moveTo(x, 230); g.lineTo(x + 40, 270); g.lineTo(x + 20, 310); g.stroke(); }
+    for (let x = 300 + 380 * Math.max(0, Math.floor((cam - 340) / 380)); x < Math.min(15800, cam + 1000); x += 380) { g.beginPath(); g.moveTo(x, 230); g.lineTo(x + 40, 270); g.lineTo(x + 20, 310); g.stroke(); }
     g.globalAlpha = 1;
   },
   drawSpot(g, l, t) {                                                                   // lamp + charge ring

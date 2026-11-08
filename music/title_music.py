@@ -70,8 +70,9 @@ MEL = [[("F#5", 1), ("A5", 1), ("D6", 2)], [("C#6", 1.5), ("A5", .5), ("E5", 2)]
        [("F#5", 1), ("A5", 1), ("D6", 1), ("E6", 1)], [("F#6", 2), ("E6", 1), ("C#6", 1)], [("D6", 1.5), ("B5", .5), ("F#5", 2)], [("G5", 1), ("A5", 1), ("B5", 2)],
        [("B5", 2), ("D6", 2)], [("D6", 1.5), ("B5", .5), ("G5", 2)], [("A5", 2), ("F#5", 2)], [("E5", 1), ("A5", 1), ("C#6", 2)],
        [("B5", 1), ("D6", 1), ("G6", 2)], [("E6", 2), ("C#6", 1), ("A5", 1)], [("D6", 3), ("F#5", 1)], [("D6", 4)]]
-mel, echo, harp, pad, bas = mk(5)
+mel, echo, harp, pad, bas, spark = mk(6)
 mel.insert(0, tempo.MetronomeMark(number=BPM))
+SPEC = "D6 E6 F#6 A6 B6 D7".split()   # the prism's six colours: a rising run of light at the end of every 4-bar phrase
 for b, c in enumerate(PROG):
     t0 = b * 4.0
     off = t0
@@ -84,4 +85,11 @@ for b, c in enumerate(PROG):
         harp.insert(t0 + k * .5, note.Note(tones[i], quarterLength=.9))
     pad.insert(t0, chord.Chord(tones[:3], quarterLength=4))
     bas.insert(t0, note.Note(ROOT[c], quarterLength=3.8))
-render("Title", BPM, BARS, [(mel, 10, 85), (echo, 9, 38), (harp, 46, 58), (pad, 48, 45), (bas, 42, 65)], (0.85, 0.5))
+    if b % 4 == 3:                                                                  # bars 4, 8, 12, 16: six notes over the last two beats, each a little softer than the last
+        for k, p in enumerate(SPEC):
+            n = note.Note(p, quarterLength=.5)
+            n.volume.velocity = 70 - 5 * k
+            spark.insert(t0 + 2 + k / 3, n)
+    elif b % 2 == 0:                                                                # one bell on the first beat of every other bar: the light the arpeggio is made of
+        spark.insert(t0, note.Note(tones[3].replace("4", "6").replace("3", "6"), quarterLength=1.5))
+render("Title", BPM, BARS, [(mel, 10, 85), (echo, 9, 38), (harp, 46, 58), (pad, 94, 48), (bas, 42, 65), (spark, 8, 52)], (0.9, 0.55))

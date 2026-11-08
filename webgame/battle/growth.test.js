@@ -17,7 +17,13 @@ test("a higher level means more HP and stronger shots, without runaway", () => {
   assert.ok(hp(5) > hp(1) && hp(10) > hp(5), "hp rises with level");
   assert.ok(hitDmg(5) > hitDmg(1) && hitDmg(10) > hitDmg(5), "shot damage rises with level");
   assert.ok(hitDmg(10) <= 2 * hitDmg(1), "level 10 stays under double the damage");
-  assert.strictEqual(hitDmg(1), 2);   // twice the old 1, fired at half the rate
+  assert.strictEqual(hitDmg(1), 3);   // 3 a hit at level 1
+});
+
+test("the player fires one shot per .343 s (30% slower than the old .24 s)", () => {
+  const b = createBattle(quiet, {}); let n = 0;
+  for (let i = 0; i < 600; i++) n += b.step(1 / 60).filter(v => v.type === "playerShot").length;   // 10 s
+  assert.ok(n >= 28 && n <= 30, `${n} shots in 10 s`);
 });
 
 test("later stages: tougher enemy HP and bullets", () => {
@@ -41,7 +47,7 @@ test("stages 1-6 stay clearable: kill time and hits-to-die are in range", () => 
   for (const k of ids) {
     const c = BATTLES[k], st = +k[1], lv = 1 + Math.floor(xp / 100), bond = c.ally ? Math.min(4, st - 1) : 0;
     assert.strictEqual(c.stage, st, `${k} has stage`);
-    const dps = (GROWTH.shotDmg(lv) / .24 + (c.ally ? A.hits[bond] * A.dmg[bond] / A.cd[bond] : 0)) * .5;   // half the shots land
+    const dps = (GROWTH.shotDmg(lv) / GROWTH.shotCd + (c.ally ? A.hits[bond] * A.dmg[bond] / A.cd[bond] : 0)) * .5;   // half the shots land
     const secs = c.hp * GROWTH.stage.hp[st - 1] / dps, hits = ((c.playerHp || 20) + GROWTH.playerHp(lv)) / Math.round(4 * GROWTH.stage.atk[st - 1]);
     assert.ok(secs >= 15 && secs <= 260, `${k} kill time ${secs.toFixed(0)}s at Lv.${lv}`);
     assert.ok(hits >= 4, `${k} survives ${hits} hits`);
