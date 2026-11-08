@@ -41,6 +41,7 @@ BATTLES.s3_study = { stage: 3,
 // ---- 3) 화가: 페이즈마다 이름이 있다. 붉은 탄만 맞는다 (색 규칙). 5페이즈 ----
 BATTLES.s3_painter = { stage: 3,
   ...PARTY3_PRE, speaker: "painter", hp: 960, bgm: "s3_boss", color: "#8aa4c8", colorRule: RED, cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90,
+  phaseRules: [{}, {}, {}, { boxRule: { amp: 40, period: 6 } }, { invertRule: { period: 12, warn: 2, dur: 4 } }],   // 4: 색 위에 판 규칙, 5: 색 위에 조작 반전
   winText: "색이 돌아온다!",
   names: ["화가 「밑그림 지우기」", "화가 「한 점의 붉은색」", "화가 「번지는 수채」", "화가 「마지막 덧칠」", "화가 「텅 빈 캔버스」"],
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 },
@@ -56,7 +57,7 @@ BATTLES.s3_painter = { stage: 3,
     1: [{ who: "painter", t: "......붉은 것만 남겨 두었습니다. 나머지는 이미 지웠으니까요." }, { who: "voice", t: "붉은 탄만 맞아요! 다른 색은 믿어도 돼요!" }],
     2: [{ who: "lumi", t: "붉은 거 한 점이 제일 위험해! 색이 더 선명해졌어!" }, { who: "painter", t: "이 한 점을... 빼앗기지 않으려 했을 뿐입니다." }],
     3: [{ who: "hexa", t: "푸른 나선은 뚫고 지나가라. 붉은 옆탄만 보면 된다." }],
-    4: [{ who: "painter", t: "덧칠하면 사라지지 않습니다. 그래서... 덮어 버렸습니다." }, { who: "lumi", t: "덮는다고 사라지는 게 아니잖아!" }],
-    5: [{ who: "painter", t: "아무것도 그리지 않으면, 아무것도 잃지 않아요." }, { who: "voice", t: "그 빈 캔버스에도 색이 있었어요. 지금 되돌려 줘요!" }],
+    4: [{ who: "painter", t: "덧칠하면 사라지지 않습니다. 그래서... 덮어 버렸습니다." }, { who: "lumi", t: "덮는다고 사라지는 게 아니잖아!" }, { who: "painter", t: "캔버스째 흔들어 지워 드리죠. 발밑의 판이 미끄러집니다." }],
+    5: [{ who: "painter", t: "아무것도 그리지 않으면, 아무것도 잃지 않아요." }, { who: "voice", t: "그 빈 캔버스에도 색이 있었어요. 지금 되돌려 줘요!" }, { who: "painter", t: "붓이 거꾸로 움직입니다. 곧 방향이 반대로 뒤집힐 거예요." }],
   },
 };
