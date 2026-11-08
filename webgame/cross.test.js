@@ -25,7 +25,7 @@ test("battle bgm files and speakers exist; script bgm/speakers exist", () => {
 });
 
 test("battle configs are structurally valid", () => {
-  const RULES = ["colorRule", "rewind", "dirRule", "boxRule", "invertRule", "splitRule", "pageRule", "finale"];
+  const RULES = ["colorRule", "rewind", "dirRule", "boxRule", "invertRule", "splitRule", "pageRule", "darkRule", "finale"];
   for (const [k, b] of Object.entries(D.BATTLES)) {
     if (b.cuts && b.phases) assert.strictEqual(b.phases.length, b.cuts.length + 1, `${k}: phases must be cuts+1`);
     for (const pr of b.phaseRules || []) {
