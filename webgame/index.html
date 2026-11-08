@@ -90,7 +90,7 @@
   <div id="menu" hidden></div>
   <div id="start"><div><h1><span style="--i:0;--c:#8fe6ff">E</span><span style="--i:1;--c:#b4f0ff">C</span><span style="--i:2;--c:#ffffff">H</span><span style="--i:3;--c:#ffe3f6">O</span><span style="--i:4">&nbsp;</span><span style="--i:5;--c:#ffc4ee">P</span><span style="--i:6;--c:#ffd9b0">R</span><span style="--i:7;--c:#fff1a0">I</span><span style="--i:8;--c:#d8f5b0">S</span><span style="--i:9;--c:#9fe8ff">M</span></h1><i class="spec"></i><div id="sub">......들리나요? 아직 꺼지지 않았군요.</div><p>클릭하여 시작</p></div></div>
 </div></div>
-<div id="pad"><div id="dpad"><i></i></div><div id="btns"><b data-k="dash">X</b><b data-k="fire">Z</b><b data-k="swap">A</b><b data-k="menu">C</b><b data-k="skip">Ctrl</b></div></div>
+<div id="pad"><div id="dpad"><i></i></div><div id="btns"><b data-k="dash">X</b><b data-k="fire">Z</b><b data-k="swap">A</b><b data-k="menu">C</b></div></div>
 <script src="script.js"></script>
 <script src="battle/backdrop.js"></script>
 <script src="portraits.js"></script>
@@ -183,12 +183,10 @@ addEventListener("resize", fit); fit();
 {
   const send = (type, code, key = code) => dispatchEvent(new KeyboardEvent(type, { code, key, bubbles: true, cancelable: true }));
   const code = k => k === "menu" ? "KeyC" : MENU.keys[k];
-  const sk = document.querySelector('#btns b[data-k="skip"]');   // 스킵: tap to toggle Ctrl held (fast-forward dialogue)
-  sk.onclick = () => { const on = sk.classList.toggle("on"); send(on ? "keydown" : "keyup", "ControlLeft", "Control"); };
-  for (const b of document.querySelectorAll("#btns b:not([data-k=skip])")) {
-    let c = null;
-    b.onpointerdown = e => { e.preventDefault(); b.setPointerCapture(e.pointerId); c = code(b.dataset.k); b.classList.add("on"); send("keydown", c); };
-    b.onpointerup = b.onpointercancel = () => { if (!c) return; b.classList.remove("on"); send("keyup", c); c = null; };
+  for (const b of document.querySelectorAll("#btns b")) {
+    let c = null, hold, skipping = false;
+    b.onpointerdown = e => { e.preventDefault(); b.setPointerCapture(e.pointerId); c = code(b.dataset.k); b.classList.add("on"); send("keydown", c); if (b.dataset.k === "fire") hold = setTimeout(() => { skipping = true; send("keydown", "ControlLeft", "Control"); }, 1000); };   // Z held 1 s = Ctrl (skip dialogue) until released
+    b.onpointerup = b.onpointercancel = () => { if (!c) return; b.classList.remove("on"); send("keyup", c); c = null; clearTimeout(hold); if (skipping) { skipping = false; send("keyup", "ControlLeft", "Control"); } };
   }
   const pad = document.getElementById("dpad"), dirs = { ArrowLeft: 0, ArrowRight: 0, ArrowUp: 0, ArrowDown: 0 };
   const set = (k, on) => { if (!!dirs[k] !== on) { dirs[k] = on ? 1 : 0; send(on ? "keydown" : "keyup", k); } };
