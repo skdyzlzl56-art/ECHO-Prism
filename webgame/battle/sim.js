@@ -10,7 +10,7 @@
 //
 // cfg: see ../battle.js. Events: start-of-phase, enemyShot{size,speed}, enemyHit{x,y,dmg,ally,combo}, playerShot, allyShot,
 //   graze, playerHurt{dmg}, shieldBlock, shieldReady, heal{amount}, burst{dmg,level,up}, bondStart{level},
-//   rewind, invertWarn, splitWarn, boxSplit, laserWarn, laserFire, split, dashWarn, dashStart, dashEnd, phase{level,name,talk,start}, win, lose.
+//   rewind, invertWarn, splitWarn, boxSplit, pageWarn, pageTurn, laserWarn, laserFire, split, dashWarn, dashStart, dashEnd, phase{level,name,talk,start}, win, lose.
 (function (root) {
   "use strict";
   const TAU = Math.PI * 2, BOX0 = { x: 330, y: 190, w: 300, h: 260 }, EX = 480, E_R = 26, BOND_MAX = 4;
@@ -48,7 +48,7 @@
       cool: {},   // per companion { heal, shield }: seconds left; every companion's timers run whether or not they are out
     };
     const p = s.p, e = s.e, al = s.al;
-    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, invertRule, splitRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
+    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, invertRule, splitRule, pageRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
     // finale: shots deal 0 and only the joint light (bond full, cfg.jointLight) ends the fight.
     const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr && k in pr ? pr[k] : cfg[k]; };   // a key absent from the phase entry falls back to the cfg-level option
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
@@ -73,6 +73,7 @@
     let uid = 0;
     let slid = false;
     let dwSide = -1;
+    let pageSlot = 1;
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -177,6 +178,14 @@
         else if (!ph) s.split = null;
         if (s.split && s.split.active && s.inv <= 0 && (p.x < BOX.x + BOX.w / 2 ? -1 : 1) !== s.split.safe) hit(sr.dmg || 4);
       } else s.split = null;
+      const pr = rl("pageRule");   // 쪽 넘김: a narrow safe strip (one of 3 slots) shown in the warning, live for `dur` s, outside it hurts
+      if (pr) {
+        const ph = cyc(pr), w = pr.width || 70;
+        if (ph === "warn" && !(s.page && !s.page.active)) { pageSlot = (pageSlot + 1 + Math.floor(rng() * 2)) % 3; s.page = { x: BOX.x + BOX.w * (pageSlot + .5) / 3, w, active: false }; emit("pageWarn", { x: s.page.x }); }
+        else if (ph === "on" && s.page && !s.page.active) { s.page.active = true; emit("pageTurn", { x: s.page.x }); }
+        else if (!ph) s.page = null;
+        if (s.page && s.page.active && s.inv <= 0 && Math.abs(p.x - s.page.x) > s.page.w / 2) hit(pr.dmg || 4);
+      } else s.page = null;
       let ox = p.x, oy = p.y; const firing = s.auto, spd = firing ? 150 : 210, sg = s.inverted ? -1 : 1, dx = sg * (input.dx || 0), dy = sg * (input.dy || 0), n = Math.hypot(dx, dy) || 1, m = 10;
       s.lastIn = dx || dy ? { dx: dx / n, dy: dy / n } : null; s.dashCd -= dt;
       const dashing = s.dashT > 0, vx = dashing ? s.dashDir.dx * DASH_D / DASH_T : dx / n * spd, vy = dashing ? s.dashDir.dy * DASH_D / DASH_T : dy / n * spd;
