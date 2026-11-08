@@ -105,7 +105,8 @@
 <script>
 const $ = id => document.getElementById(id);
 // every sound goes through audio.js (one gain per kind "bgm" | "sfx"; MENU.vol is 0..1 and applies at once); other files use these bare names
-const audio = createAudio({ volume: k => MENU.vol[k] });
+let ctx0;   // the AudioContext, kept so the first gesture of any kind can resume it
+const audio = createAudio({ volume: k => MENU.vol[k], makeCtx: () => ctx0 = new AudioContext() });
 const { sweep, noise, blip, bgm, hush, hushLayer, sfxBus } = audio;
 
 // fx table: shout text, flash, shake, sound, wait (ms) before typing starts
@@ -234,6 +235,12 @@ if (matchMedia("(pointer:coarse)").matches) addEventListener("pointerdown", () =
 for (const n in BATTLES) ACTS[n] ||= done => runBattle(BATTLES[n], done);   // every battle config is also a scene of that name; a scene file's own ACTS[n] wins
 player = createLinePlayer({ script: SCRIPT, speakers: SPEAKERS, acts: ACTS, stage: storyStage, audio, text: l => fixKeys(l.text, MENU.keys), paused: () => MENU.open, ready: () => audio.unlocked && !$("start") });
 if ($("start")) { const c = [SPEAKERS.voice]; c.title = true; setCast(c); stage.classList.add("title"); }   // title screen: the cast drifts about
+// Music at page load: browsers only let it play if they allow autoplay for this site; otherwise the first tap / key press of any kind resumes it.
+if ($("start")) {
+  audio.unlock(); bgm.play("title");
+  const wake = () => { if (ctx0 && ctx0.state !== "running") ctx0.resume(); };
+  for (const t of ["pointerdown", "keydown", "touchend"]) addEventListener(t, wake, { capture: true });
+}
 // Load: "불러오기" sets a flag and reloads; here (all scripts ready) the save is applied and the title waits for the click that starts it.
 try {
   const sv = sessionStorage.getItem("echoPrismLoad") && readSave(localStorage.getItem("echoPrismSave"));
