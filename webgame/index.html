@@ -79,6 +79,7 @@
   #dpad i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px;border-radius:50%;background:#ffffff44}
   #btns{position:absolute;right:14px;bottom:14px;display:grid;grid-template-columns:repeat(2,68px);gap:10px}
   #btns b{height:68px;border-radius:50%;background:#ffffff1f;border:2px solid #ffffff55;color:#fff;font:700 16px Galmuri11,sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;user-select:none;text-align:center;line-height:1.1}
+  #fs{position:absolute;right:10px;top:10px;width:44px;height:44px;border-radius:10px;background:#ffffff1f;border:2px solid #ffffff55;color:#fff;font:700 24px sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none}
   #btns b.on,#dpad.on{background:#4fc3ff66}
 </style>
 </head>
@@ -94,7 +95,7 @@
   <div id="menu" hidden></div>
   <div id="start"><div><h1><span style="--i:0;--c:#8fe6ff">E</span><span style="--i:1;--c:#b4f0ff">C</span><span style="--i:2;--c:#ffffff">H</span><span style="--i:3;--c:#ffe3f6">O</span><span style="--i:4">&nbsp;</span><span style="--i:5;--c:#ffc4ee">P</span><span style="--i:6;--c:#ffd9b0">R</span><span style="--i:7;--c:#fff1a0">I</span><span style="--i:8;--c:#d8f5b0">S</span><span style="--i:9;--c:#9fe8ff">M</span></h1><i class="spec"></i><div id="sub">......들리나요? 아직 꺼지지 않았군요.</div><p>클릭하여 시작</p></div></div>
 </div></div>
-<div id="pad"><div id="dpad"><i></i></div><div id="btns"><b data-k="swap">A</b><b data-k="menu">C</b><b data-k="fire">Z</b><b data-k="dash">X</b></div></div>
+<div id="pad"><b id="fs">⛶</b><div id="dpad"><i></i></div><div id="btns"><b data-k="swap">A</b><b data-k="menu">C</b><b data-k="fire">Z</b><b data-k="dash">X</b></div></div>
 <script src="script.js"></script>
 <script src="battle/backdrop.js"></script>
 <script src="portraits.js"></script>
@@ -188,6 +189,7 @@ addEventListener("resize", fit); fit();
 if (matchMedia("(pointer:coarse)").matches) {   // touch: a tap goes fullscreen (hides the address bar) and locks landscape. pointerdown is not a user activation for touch, so listen to pointerup; retry until it works
   const go = () => document.documentElement.requestFullscreen?.().then(() => { removeEventListener("pointerup", go, true); screen.orientation?.lock?.("landscape").catch(() => {}); }).catch(() => {});
   addEventListener("pointerup", go, true);
+  document.getElementById("fs").onpointerup = e => { e.stopPropagation(); if (document.fullscreenElement) document.exitFullscreen(); else go(); };   // ⛶ button: back into fullscreen after leaving it
 }
 {
   const send = (type, code, key = code) => dispatchEvent(new KeyboardEvent(type, { code, key, bubbles: true, cancelable: true }));
