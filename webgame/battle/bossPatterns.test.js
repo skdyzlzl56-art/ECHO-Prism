@@ -8,7 +8,7 @@ const RED = "#ff4d6d";
 
 // every special bullet a boss phase spawns within 8 s (player parked, enemy cannot die)
 const kinds = (id, level) => {
-  const b = createBattle({ ...B[id], hp: 1e6, playerHp: 1e6 }, { rng: () => .5 }); b.state.auto = false; b.state.level = level;
+  const b = createBattle({ ...B[id], hp: 1e6, playerHp: 1e6, talks: {} }, { rng: () => .5 }); b.state.auto = false; b.state.level = level;
   const seen = { home: 0, stall: 0, bn: 0 };
   for (let t = 0; t < 8; t += 1 / 60) { b.step(1 / 60, {}); for (const x of b.state.bullets) for (const k in seen) if (x[k]) seen[k]++; }
   return seen;

@@ -20,6 +20,6 @@ test("phases 1-2 only rewind; phases 3-4 rewind and split the board", () => {
   for (const lv of [2, 3]) { const { n, level } = events(lv); assert.strictEqual(level, lv); assert.ok(n.rewind >= 1 && n.splitWarn >= 1 && n.boxSplit >= 1, `phase ${lv + 1}: ${JSON.stringify(n)}`); }
 });
 
-test("the phase 3 and 4 openers announce the board split", () => {
-  for (const lv of [3, 4]) assert.ok(cfg.talks[lv].some(l => /판/.test(l.t)), `talks[${lv}] mentions 판`);
+test("the phase 3 and 4 openers (talks[2], talks[3]) announce the board split", () => {
+  for (const lv of [2, 3]) assert.ok(cfg.talks[lv].some(l => /판/.test(l.t)), `talks[${lv}] mentions 판`);
 });

@@ -29,8 +29,8 @@ BATTLES.s5_index = { stage: 5,
   ],
   phaseRules: [{ pageRule: { period: 9, warn: 1.8, dur: 3, dmg: 3, width: 90 } }, { pageRule: { period: 8, warn: 1.6, dur: 3, dmg: 3, width: 80 } }],   // 1~2: 쪽 넘김, 느린 주기
   talks: {
-    1: [{ who: "voice", t: "책장이 넘어가기 전에 좁은 띠가 환하게 보여요! 쪽이 넘어가면 그 띠 안에 서 있어야 안전해요!" }, { who: "lumi", t: "띠 밖에 있으면 맞는 거지?! 보이면 바로 뛰어갈게!" }],
-    2: [{ who: "hexa", t: "쪽이 넘어가기 전에 띠를 읽어라. 넘어간 뒤엔 늦다." }],
+    0: [{ who: "voice", t: "책장이 넘어가기 전에 좁은 띠가 환하게 보여요! 쪽이 넘어가면 그 띠 안에 서 있어야 안전해요!" }, { who: "lumi", t: "띠 밖에 있으면 맞는 거지?! 보이면 바로 뛰어갈게!" }],
+    1: [{ who: "hexa", t: "쪽이 넘어가기 전에 띠를 읽어라. 넘어간 뒤엔 늦다." }],
   },
 };
 
@@ -48,12 +48,12 @@ BATTLES.s5_librarian = { stage: 5,
   ],
   phaseRules: [
     { pageRule: { period: 8, warn: 1.6, dur: 3, dmg: 3, width: 80 } }, { pageRule: { period: 7, warn: 1.4, dur: 2.6, dmg: 3, width: 75 } },
-    { pageRule: { period: 6, warn: 1.2, dur: 2.2, dmg: 4, width: 70 } }, { pageRule: { period: 5, warn: 1, dur: 1.9, dmg: 4, width: 65 } },
+    { pageRule: { period: 6, warn: 1.4, dur: 2.2, dmg: 4, width: 70 } }, { pageRule: { period: 5, warn: 1.4, dur: 1.9, dmg: 4, width: 65 } },
   ],   // 쪽이 넘어가는 주기가 8 -> 5초로 짧아진다
   talks: {
-    1: [{ who: "librarian", t: "읽히는 이름은 삼켜집니다. 그러니 읽는 법부터 가르쳐 드리지요." }, { who: "voice", t: "책장이 넘어가요! 쪽이 넘어가면 환하게 비친 띠 안에만 안전해요!" }],
-    2: [{ who: "lumi", t: "쪽 넘어가는 게 점점 빨라져! 띠를 눈으로 먼저 찾자!" }, { who: "librarian", t: "대출 중입니다. 돌아올 사람이 있는 한, 이 책은 반납되지 않습니다." }],
-    3: [{ who: "hexa", t: "나선만 보지 마라. 쪽이 넘어가는 소리를 읽어라." }],
-    4: [{ who: "librarian", t: "마지막 장입니다. ......이 장만 넘기면, 이름들은 제 손을 떠납니다." }, { who: "voice", t: "떠나도 괜찮아요! 불러 주는 사람이 있을 거예요!" }],
+    0: [{ who: "librarian", t: "읽히는 이름은 삼켜집니다. 그러니 읽는 법부터 가르쳐 드리지요." }, { who: "voice", t: "책장이 넘어가요! 쪽이 넘어가면 환하게 비친 띠 안에만 안전해요!" }],
+    1: [{ who: "lumi", t: "쪽 넘어가는 게 점점 빨라져! 띠를 눈으로 먼저 찾자!" }, { who: "librarian", t: "대출 중입니다. 돌아올 사람이 있는 한, 이 책은 반납되지 않습니다." }],
+    2: [{ who: "hexa", t: "나선만 보지 마라. 쪽이 넘어가는 소리를 읽어라." }],
+    3: [{ who: "librarian", t: "마지막 장입니다. ......이 장만 넘기면, 이름들은 제 손을 떠납니다." }, { who: "voice", t: "떠나도 괜찮아요! 불러 주는 사람이 있을 거예요!" }],
   },
 };

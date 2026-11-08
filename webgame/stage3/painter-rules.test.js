@@ -14,8 +14,8 @@ test("painter layers box rule (phase 4) and invert rule (phase 5) over the colou
 });
 
 test("the layered phases announce the new rule in their talk", () => {
-  assert.match(cfg.talks[4].map(l => l.t).join(" "), /판/);
-  assert.match(cfg.talks[5].map(l => l.t).join(" "), /반대|거꾸로|뒤집/);
+  assert.match(cfg.talks[3].map(l => l.t).join(" "), /판/);
+  assert.match(cfg.talks[4].map(l => l.t).join(" "), /반대|거꾸로|뒤집/);
 });
 
 test("ordinary fights are untouched", () => {
