@@ -47,11 +47,11 @@ BATTLES.s3_painter = { stage: 3,
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 },
           { x: "sway", amp: 90, spd: 1.3, dash: 6.5 }, { x: "chase", speed: 105, dash: 5.5 }],
   phases: [
-    h => { h.ring(1.9, 13, 90, 7, { col: RED }); h.rain(.7, 110); },                                                          // 1: 붉은 아치, 푸른 비는 무해
-    h => { h.aim(1.4, 130, 10, { col: RED, split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.wave(1.8, 85); h.rain(.5, 110); h.burster(3.4, 3, { col: RED, burst: { n: 8, sp: 95, size: 6, col: RED } }); },  // 2: 분열탄도 붉다
-    h => { h.spiral(.12, 3, .45, 105, 7, { w: .2 }); h.side(.8, 140, 7, { col: RED }); h.laser(4, false); h.homing(2.2, 120, 7, { col: RED }); },   // 3: 푸른 나선 속 붉은 옆탄, 붉은 한 점이 쫓아온다
-    h => { h.fan(1.5, 5, .35, 110, 12, { col: RED }); h.wall(3, 95, 6, { col: RED }); h.aim(.8, 200, 5); h.bounce(1.6, 150, 7, { col: RED }); },   // 4: 붉은 벽, 벽에 튕기는 붉은 탄
-    h => { h.spiral(.1, 4, .35, 112, 7, { col: RED }); h.ring(1.5, 17, 100, 8); h.wall(3, 95); h.aim(1.8, 130, 14, { col: RED, split: { t: 1, n: 12, sp: 95, size: 6 } }); },   // 5: 텅 빈 캔버스
+    h => { h.ring(1.3, 15, 90, 7, { col: RED }); h.rain(.45, 110); h.rain(.9, 115, 6, { col: RED }); },                                                          // 1: 붉은 아치, 푸른 비는 무해
+    h => { h.aim(1.0, 130, 10, { col: RED, split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.wave(1.2, 85); h.rain(.35, 110); h.rain(.8, 115, 6, { col: RED }); h.burster(2.6, 3, { col: RED, burst: { n: 8, sp: 95, size: 6, col: RED } }); },  // 2: 분열탄도 붉다
+    h => { h.spiral(.09, 3, .45, 105, 7, { w: .2 }); h.side(.55, 140, 7, { col: RED }); h.rain(.9, 110, 6, { col: RED }); h.laser(4, false); h.homing(1.8, 120, 7, { col: RED }); },   // 3: 푸른 나선 속 붉은 옆탄, 붉은 한 점이 쫓아온다
+    h => { h.fan(1.1, 5, .35, 110, 12, { col: RED }); h.wall(2.4, 95, 6, { col: RED }); h.aim(.6, 200, 5); h.rain(.7, 110); h.bounce(1.2, 150, 7, { col: RED }); },   // 4: 붉은 벽, 벽에 튕기는 붉은 탄
+    h => { h.spiral(.075, 4, .35, 112, 7, { col: RED }); h.ring(1.1, 17, 100, 8); h.wall(2.4, 95); h.aim(1.3, 130, 14, { col: RED, split: { t: 1, n: 12, sp: 95, size: 6 } }); },   // 5: 텅 빈 캔버스
   ],
   talks: {
     0: [{ who: "painter", t: "......붉은 것만 남겨 두었습니다. 나머지는 이미 지웠으니까요." }, { who: "voice", t: "붉은 탄만 맞아요! 다른 색은 믿어도 돼요!" }],
