@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ECHO PRISM</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b1026">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-192.png">
 <style>
   @font-face{font-family:Galmuri11;src:url(fonts/Galmuri11.woff2) format("woff2");font-weight:400;font-display:swap}   /* UI: battle HUD, name tag, prompts (quiple/galmuri, OFL) */
   @font-face{font-family:Galmuri11;src:url(fonts/Galmuri11-Bold.woff2) format("woff2");font-weight:700;font-display:swap}
@@ -180,6 +184,7 @@ addEventListener("keydown", e => {
 // screen fit + touch pad: the pad sends the same key events as a keyboard, so every scene works unchanged
 const fit = () => document.getElementById("fit").style.setProperty("--k", Math.min(innerWidth / 960, innerHeight / 540));
 addEventListener("resize", fit); fit();
+if (matchMedia("(pointer:coarse)").matches) addEventListener("pointerdown", () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {}); }, { once: true });
 {
   const send = (type, code, key = code) => dispatchEvent(new KeyboardEvent(type, { code, key, bubbles: true, cancelable: true }));
   const code = k => k === "menu" ? "KeyC" : MENU.keys[k];
