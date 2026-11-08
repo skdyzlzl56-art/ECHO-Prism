@@ -1,5 +1,5 @@
 // STAGE 5 - 이름 없는 도서관. Appended to SCRIPT after stage 4 (stage4/story.js).
-// Flow: 도착(워프, 먹빛 서가) -> 서가 둘러보기(단서) -> 쪽지 전투 -> 색인 서랍(방향 규칙 입문) -> 사서 등장·보스전 -> 사서의 해방(개체의 과거 단서) -> 클리어
+// Flow: 도착(워프, 먹빛 서가) -> 서가 둘러보기(단서) -> 쪽지 전투 -> 색인 서랍 -> 사서 등장·보스전 -> 사서의 해방(개체의 과거 단서) -> 클리어
 // `theme: "library"` = ink-blue stacks, pages drifting up (portraits.js). Music: s5_field (cello+harp), s5_boss (choral synth orchestra); other battles use "battle".
 // Clues for the finale (chapter 6): 침묵 = 개체의 잊힌 첫 기억 (반납되지 못한 한 권), ??? = 이 세계 자체의 의식. 둘 다 여기서는 직접 말하지 않고 암시만 한다.
 // The name "에코" is never spoken here; only "메아리" is hinted. Chapter 6 gives it.

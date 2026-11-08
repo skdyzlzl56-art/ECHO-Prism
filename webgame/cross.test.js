@@ -25,15 +25,13 @@ test("battle bgm files and speakers exist; script bgm/speakers exist", () => {
 });
 
 test("battle configs are structurally valid", () => {
-  const RULES = ["colorRule", "rewind", "dirRule", "boxRule", "invertRule", "splitRule", "pageRule", "darkRule", "finale"];
+  const RULES = ["colorRule", "rewind", "boxRule", "invertRule", "splitRule", "pageRule", "darkRule", "finale"];
   for (const [k, b] of Object.entries(D.BATTLES)) {
     if (b.cuts && b.phases) assert.strictEqual(b.phases.length, b.cuts.length + 1, `${k}: phases must be cuts+1`);
     for (const pr of b.phaseRules || []) {
       for (const key of Object.keys(pr)) assert.ok(RULES.includes(key), `${k}: unknown phase rule ${key}`);
-      if (pr.dirRule) assert.ok(pr.dirRule.name, `${k}: dirRule needs name`);
     }
     if (b.phaseRules) assert.ok(b.phaseRules.length <= b.phases.length, `${k}: more phaseRules than phases`);
-    if (b.dirRule) assert.ok(b.dirRule.name, `${k}: dirRule needs name`);
   }
 });
 

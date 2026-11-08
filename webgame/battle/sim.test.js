@@ -144,21 +144,6 @@ test("rewind: a bullet that already hit the player is not replayed", () => {
   assert.strictEqual(b.state.maxHp - b.state.hp, 4);
 });
 
-// 방향 규칙: cfg.dirRule = {name}; a named bullet is harmless to a player moving the way it moves
-test("direction rule: moving with a named bullet is safe; standing still or moving against it hurts; off by default", () => {
-  for (const [rule, dx, dmg] of [[{ name: "동쪽" }, 1, 0], [{ name: "동쪽" }, 0, 4], [{ name: "동쪽" }, -1, 4], [undefined, 1, 4]]) {
-    const b = still({ dirRule: rule }); const bl = bul(b.state.p, 0, "#f00"); bl.vx = 120; bl.nm = rule && rule.name; b.state.bullets.push(bl);
-    run(b, .05, { dx });
-    assert.strictEqual(b.state.maxHp - b.state.hp, dmg, `rule ${!!rule} dx ${dx}`);
-  }
-});
-
-test("direction rule: bullets carry the configured name for display", () => {
-  const b = createBattle({ ...quiet, dirRule: { name: "동쪽" }, phases: [h => h.rain(.2)] }, { rng: seeded(4) });
-  b.state.auto = false; run(b, 1.5);
-  assert.ok(b.state.bullets.length > 0 && b.state.bullets.every(x => x.nm === "동쪽"));
-});
-
 // 합동 유대의 빛: cfg.jointLight - the burst that fills the bond to the top becomes a joint light of all allies
 test("joint bond light: only when enabled and the bond reaches full; otherwise no event", () => {
   const go = (jointLight, bondBase) => run(createBattle({ ...quiet, hp: 1000, ally: "lumi", allies: ["lumi", "hexa"], gauge0: 100, jointLight }, { rng: seeded(9), bondBase }), .1);
@@ -168,15 +153,14 @@ test("joint bond light: only when enabled and the bond reaches full; otherwise n
   assert.ok(!go(true, 1).some(v => v.type === "jointLight"), "bond not full yet");
 });
 
-// 페이즈별 규칙: cfg.phaseRules[level] switches colour / rewind / direction rule per phase; no phaseRules = cfg-level options as before
-test("phaseRules: colour rule in phase 0 only, direction rule name on bullets in phase 1 only", () => {
-  const cfg = { ...quiet, hp: 100, cuts: [.5], names: ["a", "b"], phaseRules: [{ colorRule: "#ff4d6d" }, { dirRule: { name: "x" } }],
+// 페이즈별 규칙: cfg.phaseRules[level] switches colour / rewind per phase; no phaseRules = cfg-level options as before
+test("phaseRules: colour rule in phase 0 only, rule off in phase 1", () => {
+  const cfg = { ...quiet, hp: 100, cuts: [.5], names: ["a", "b"], phaseRules: [{ colorRule: "#ff4d6d" }, {}],
     phases: [h => h.aim(.3, 120, 8, { col: "#00ff00" }), h => h.aim(.3, 120, 8, { col: "#00ff00" })] };
   const b = createBattle(cfg, { rng: seeded(3) }); b.state.auto = false;
   const hp0 = b.state.hp; run(b, 3); assert.strictEqual(b.state.hp, hp0, "non-red bullets pass in phase 0");
-  assert.ok(b.state.bullets.every(x => !x.nm));
   b.state.eHp = 40; run(b, .1); assert.strictEqual(b.state.level, 1);
-  run(b, 3); assert.ok(b.state.bullets.length && b.state.bullets.every(x => x.nm === "x"), "phase 1 bullets carry the name");
+  run(b, 3);
   assert.ok(b.state.hp < hp0, "the colour rule is off in phase 1: green bullets hurt");
 });
 
@@ -294,13 +278,6 @@ test("rewind: a phase change drops the old history even without phaseRules", () 
   const b = still({ hp: 100, cuts: [.5], rewind: 3 }); b.state.bullets.push(drop(BOX.x + 20, BOX.y + 10, 5));
   run(b, 2); b.state.eHp = 40; run(b, 1.3);                               // phase change at ~2s, rewind due at 3s
   assert.strictEqual(b.state.level, 1); assert.strictEqual(b.state.bullets.length, 0, "no bullets from before the phase change");
-});
-
-test("direction rule: pinned against the wall gives no immunity", () => {
-  const b = still({ dirRule: { name: "동쪽" } }); b.state.p.x = BOX.x + BOX.w - 10;
-  const bl = bul(b.state.p, 0, "#f00"); bl.vx = 120; bl.nm = "동쪽"; b.state.bullets.push(bl);
-  run(b, .05, { dx: 1 });
-  assert.strictEqual(b.state.maxHp - b.state.hp, 4);
 });
 
 test("jointLight event fires only in the finale phase when phaseRules has one", () => {

@@ -48,7 +48,6 @@ test("stage 6 battles: per-phase rules mix colour, rewind, dark, page, invert an
   const boss = D.BATTLES.s6_silence, last = boss.phaseRules[boss.phaseRules.length - 1];
   assert.strictEqual(boss.phaseRules.length, boss.phases.length);
   for (const k of ["colorRule", "rewind", "darkRule", "pageRule", "invertRule", "splitRule"]) assert.ok(boss.phaseRules.some(r => r[k]), `boss uses ${k}`);
-  for (const id of ["s6_echoes", "s6_trial", "s6_silence"]) assert.ok(!/dirRule|dirWall/.test(JSON.stringify(D.BATTLES[id].phaseRules || []) + String(D.BATTLES[id].phases)), `${id} has no direction rule`);
   assert.ok(boss.jointLight && last.finale, "last phase ends with the joint light");
   assert.ok(boss.phaseRules.slice(0, -1).every(r => r.colorRule || r.rewind || r.darkRule || r.pageRule), "every earlier phase has a rule");
 });

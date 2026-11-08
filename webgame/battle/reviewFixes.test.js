@@ -1,4 +1,4 @@
-// review fixes on the combat-feel branch: rewind vs wiped / broken bullets, dirRule vs box carry, stage attack on non-bullet damage
+// review fixes on the combat-feel branch: rewind vs wiped / broken bullets, stage attack on non-bullet damage
 const test = require("node:test"), assert = require("node:assert");
 const { createBattle, BOX } = require("./sim.js");
 
@@ -22,14 +22,6 @@ test("a bullet the player's shot broke stays gone through a rewind", () => {
   assert.strictEqual(b.state.bullets.length, 0);
   run(b, 2.5);
   assert.strictEqual(b.state.bullets.length, 0);
-});
-
-test("dirRule: being carried by the box does not count as the player moving with the bullet", () => {
-  const b = mk({ dirRule: { name: "x" }, boxRule: { amp: 60, period: 4 } });
-  run(b, .3); const p = b.state.p;
-  b.state.bullets.push(bullet({ x: p.x, y: p.y, vy: 0, vx: 100, nm: "x" }));
-  const hp = b.state.hp; b.step(1 / 60);
-  assert.ok(b.state.hp < hp, "a bullet on a standing player hurts");
 });
 
 test("stage attack scales zone damage like bullet damage", () => {
