@@ -48,7 +48,7 @@
       cool: {},   // per companion { heal, shield }: seconds left; every companion's timers run whether or not they are out
     };
     const p = s.p, e = s.e, al = s.al;
-    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, invertRule, splitRule, pageRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
+    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, invertRule, splitRule, pageRule, darkRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
     // finale: shots deal 0 and only the joint light (bond full, cfg.jointLight) ends the fight.
     const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr && k in pr ? pr[k] : cfg[k]; };   // a key absent from the phase entry falls back to the cfg-level option
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
@@ -349,7 +349,11 @@
     return {
       state: s, BOX,
       step(dt, input = {}) { dt = Math.min(dt, .05); if (!s.over && !s.talk) update(dt, input); const out = ev; ev = []; return out; },
-      cooldownRings() {                                                      // display: fill 0..1 per ring, 1 = ready (companion rings follow the one out now)
+      bulletAlpha(b) {                                                       // 어둠 규칙: 0..1 visibility of a bullet (hits ignore it); fades over the outer 20% of the lit radius
+        const dk = rl("darkRule"); if (!dk) return 1;
+        return Math.max(0, Math.min(1, (dk.radius - Math.hypot(b.x - p.x, b.y - p.y)) / (dk.radius * .2)));
+      },
+      cooldownRings() {                                                   // display: fill 0..1 per ring, 1 = ready (companion rings follow the one out now)
         const f = (left, total) => total > 0 ? Math.max(0, Math.min(1, 1 - left / total)) : 1, c = s.cool[s.allyId] || { heal: 0, shield: 0, sig: 0 }, lv = blv();
         const k = kit();                                                     // null = this companion has no such ability (yet): the view draws no ring
         return { dash: f(s.dashCd, DASH_CD), heal: k.heal ? f(c.heal, HEAL_IV[lv]) : null, shield: s.shieldOn ? 1 : k.shield && lv >= SHIELD_LV ? f(c.shield, SHIELD_CD[lv]) : null, sig: SIG[s.allyId] ? f(c.sig, SIG_CD[lv]) : null };
