@@ -36,7 +36,7 @@
   function createBattle(cfg, opts = {}) {
     const rng = opts.rng || Math.random, HITBOX = opts.hitbox == null ? 4 : opts.hitbox, bondBase = opts.bondBase || 0;
     const plv = opts.lv || 1, st = Math.min(6, Math.max(1, cfg.stage || 1)) - 1, atkK = GROWTH.stage.atk[st];
-    const MAX_HP = (cfg.playerHp || 20) + GROWTH.playerHp(plv), E_MAX = cfg.invuln ? cfg.hp : Math.round(cfg.hp * GROWTH.stage.hp[st]), E_W = cfg.ew || 75, cuts = cfg.cuts || [.75, .5, .25], col = cfg.color || "#ff3b5c";
+    const MAX_HP = (cfg.playerHp || 20) + GROWTH.playerHp(plv) + (opts.bonusHp || 0), E_MAX = cfg.invuln ? cfg.hp : Math.round(cfg.hp * GROWTH.stage.hp[st]), E_W = cfg.ew || 75, cuts = cfg.cuts || [.75, .5, .25], col = cfg.color || "#ff3b5c";
     const BOX = { ...BOX0 };   // the box is battle state: move s.BOX and everything follows
     const cx = BOX.x + BOX.w / 2, allies = cfg.allies, SHIELD_LV = allies ? 1 : 2;   // a shield-bearer swapped in guards from bond Lv.1
     const s = {

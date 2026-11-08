@@ -23,6 +23,7 @@
 // The level reached is kept (BOND.base) when a battle is won; a lost battle is retried from the level it started with.
 
 const BATTLES = {};
+const LOSSES = new Map();   // battle config -> times lost; every 5 losses give +5 max HP on the retry, cleared on a win
 const BOND = { base: 0, lv: 1, xp: 0 };   // lv/xp: level and exp, kept on a win; a loss retries from the values the battle started with
 
 // ---- 첫 전투: 글리치 ----
@@ -80,7 +81,7 @@ function drawEnemyBody(g, key, x, y, t, warn) {
 function runBattle(cfg, done) {
   stage.classList.add("battle"); act.hidden = false; setPortrait(SPEAKERS[cfg.speaker]);
   act.innerHTML = `<canvas id="ar" width="960" height="540"></canvas>`;
-  const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bondBase: BOND.base, hitbox: HITBOX, lv: BOND.lv, xp: BOND.xp }), s = battle.state, BOX = s.BOX;
+  const g = $("ar").getContext("2d"), battle = createBattle(cfg, { bonusHp: Math.floor((LOSSES.get(cfg) || 0) / 5) * 5, bondBase: BOND.base, hitbox: HITBOX, lv: BOND.lv, xp: BOND.xp }), s = battle.state, BOX = s.BOX;
   const ALLY_SHOT = { hexa: 6, glitch: 3, keeper: 4 };                              // ally bullet = n-gon (lumi: dot), so companions read apart by their shots too
   const col = cfg.color || "#ff3b5c", keys = {}; let allyCol = cfg.ally && SPEAKERS[cfg.ally].color;
   if (cfg.silent) hush(true);
@@ -127,10 +128,12 @@ function runBattle(cfg, done) {
         if (v.talk) box.reset();
         break;
       case "lose":
+        LOSSES.set(cfg, (LOSSES.get(cfg) || 0) + 1);
         bgm.stop();
         setTimeout(() => { act.onclick = () => { cleanup(); runBattle(cfg, done); }; }, 600);
         break;
       case "win":
+        LOSSES.delete(cfg);
         BOND.lv = s.lv; BOND.xp = s.xp;
         if (cfg.ally) BOND.base = Math.max(BOND.base, s.bondLv);                         // the bond carries over to the next battle / stage
         bgm.stop();

@@ -80,7 +80,8 @@
             ev.push({ type: "barrage" });
           }
           for (let i = bullets.length - 1; i >= 0; i--) {
-            const b = bullets[i]; b.x += b.vx * dt; b.y += b.vy * dt; b.age += dt;
+            const b = bullets[i]; if (!b) continue;                                        // a fatal hit in this loop clears them all
+            b.x += b.vx * dt; b.y += b.vy * dt; b.age += dt;
             if (Math.hypot(b.x - p.x, b.y - p.y) < b.r + hitbox && inv <= 0 && dashT <= 0) { hurt(b.x, b.y); bullets.splice(i, 1); }
             else if (b.age > 6 || b.y < FL.y - 20 || b.y > FL.y + FL.h + 20 || b.x < p.x - 700) bullets.splice(i, 1);
           }
