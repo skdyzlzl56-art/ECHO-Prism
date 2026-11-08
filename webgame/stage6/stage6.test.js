@@ -38,18 +38,19 @@ test("stage 6 is about 150 lines, ends on the title, and the individual speaks e
   assert.ok(prior.every(l => !/에코(?! 프리즘)/.test(l.text || "")), "에코 is never spoken before chapter 6");
 });
 
-test("stage 6 battles: per-phase rules mix colour, rewind and direction; the last phase is the joint-light finale", () => {
+test("stage 6 battles: per-phase rules mix colour, rewind, dark, page, invert and split (no direction rule); the last phase is the joint-light finale", () => {
   for (const id of ["s6_echoes", "s6_trial", "s6_silence"]) {
     const cfg = D.BATTLES[id]; assert.ok(bgms.has(cfg.bgm), id); assert.strictEqual(cfg.phases.length, cfg.names.length, id);
     assert.strictEqual(cfg.allies.length, 4, id);
   }
   const rules = id => D.BATTLES[id].phaseRules.map(r => Object.keys(r).join("+"));
-  assert.deepStrictEqual([...rules("s6_trial")], ["colorRule", "rewind", "dirRule"]);
+  assert.deepStrictEqual([...rules("s6_trial")], ["colorRule", "rewind", "darkRule"]);
   const boss = D.BATTLES.s6_silence, last = boss.phaseRules[boss.phaseRules.length - 1];
   assert.strictEqual(boss.phaseRules.length, boss.phases.length);
-  for (const k of ["colorRule", "rewind", "dirRule"]) assert.ok(boss.phaseRules.some(r => r[k]), `boss uses ${k}`);
+  for (const k of ["colorRule", "rewind", "darkRule", "pageRule", "invertRule", "splitRule"]) assert.ok(boss.phaseRules.some(r => r[k]), `boss uses ${k}`);
+  for (const id of ["s6_echoes", "s6_trial", "s6_silence"]) assert.ok(!/dirRule|dirWall/.test(JSON.stringify(D.BATTLES[id].phaseRules || []) + String(D.BATTLES[id].phases)), `${id} has no direction rule`);
   assert.ok(boss.jointLight && last.finale, "last phase ends with the joint light");
-  assert.ok(boss.phaseRules.slice(0, -1).every(r => r.colorRule || r.rewind || r.dirRule), "every earlier phase has a rule");
+  assert.ok(boss.phaseRules.slice(0, -1).every(r => r.colorRule || r.rewind || r.darkRule || r.pageRule), "every earlier phase has a rule");
 });
 
 test("stage 6 boss: every phase fires bullets under its own rule, and the finale is won by the joint light at full bond", () => {
@@ -60,7 +61,6 @@ test("stage 6 boss: every phase fires bullets under its own rule, and the finale
     let n = 0, rw = 0; for (let t = 0; t < 12; t += 1 / 60) { const ev = b.step(1 / 60, {}); rw += ev.filter(v => v.type === "rewind").length; n = Math.max(n, b.state.bullets.length); }
     assert.strictEqual(b.state.level, lv); assert.ok(n > 0, `phase ${lv} fires`);
     assert.strictEqual(rw > 0, !!boss.phaseRules[lv].rewind, `phase ${lv} rewind`);
-    if (boss.phaseRules[lv].dirRule) assert.ok(b.state.bullets.every(x => x.nm === boss.phaseRules[lv].dirRule.name));
   });
   const b = createBattle({ ...boss, playerHp: 1e6, talks: {}, gauge0: 100 }, { rng: Math.random, bondBase: 3 }); b.state.auto = false;
   b.state.eHp = b.state.eMax * .1; for (let t = 0; t < 2; t += 1 / 60) b.step(1 / 60, {});
