@@ -185,7 +185,10 @@ addEventListener("keydown", e => {
 // screen fit + touch pad: the pad sends the same key events as a keyboard, so every scene works unchanged
 const fit = () => document.getElementById("fit").style.setProperty("--k", Math.min(innerWidth / 960, innerHeight / 540));
 addEventListener("resize", fit); fit();
-if (matchMedia("(pointer:coarse)").matches) addEventListener("pointerdown", () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {}); }, { once: true });
+if (matchMedia("(pointer:coarse)").matches) {   // touch: a tap goes fullscreen (hides the address bar) and locks landscape. pointerdown is not a user activation for touch, so listen to pointerup; retry until it works
+  const go = () => document.documentElement.requestFullscreen?.().then(() => { removeEventListener("pointerup", go, true); screen.orientation?.lock?.("landscape").catch(() => {}); }).catch(() => {});
+  addEventListener("pointerup", go, true);
+}
 {
   const send = (type, code, key = code) => dispatchEvent(new KeyboardEvent(type, { code, key, bubbles: true, cancelable: true }));
   const code = k => k === "menu" ? "KeyC" : MENU.keys[k];
