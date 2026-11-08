@@ -86,7 +86,8 @@
   #pad.edit #zone{pointer-events:none}
   #done{display:none;position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:8px 26px;border-radius:10px;background:#2a5b8c;border:2px solid #fff;color:#fff;font:700 18px Galmuri11,sans-serif;pointer-events:auto}
   #pad.edit #done{display:block}
-  #btns{position:absolute;left:0;top:0;display:grid;grid-template-columns:repeat(2,var(--bs,68px));gap:10px}
+  #pad,#pad *{-webkit-tap-highlight-color:transparent}
+  #btns{pointer-events:auto;position:absolute;left:0;top:0;display:grid;grid-template-columns:repeat(2,var(--bs,68px));gap:10px}
   #btns b{height:var(--bs,68px);border-radius:50%;background:#ffffff1f;border:2px solid #ffffff55;color:#fff;font:700 16px Galmuri11,sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;user-select:none;text-align:center;line-height:1.1}
   #fs{position:absolute;right:10px;top:10px;width:44px;height:44px;border-radius:10px;background:#ffffff1f;border:2px solid #ffffff55;color:#fff;font:700 24px sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none}
   #btns b.on,#dpad.on{background:#4fc3ff66}
@@ -203,6 +204,8 @@ if (matchMedia("(pointer:coarse)").matches) {   // touch: a tap goes fullscreen 
 }
 {
   const P = document.getElementById("pad");
+  document.getElementById("btns").addEventListener("pointerdown", e => e.preventDefault());   // gaps between buttons must not fall through to the stage (battle: any touch = fire toggle)
+  document.getElementById("stage").addEventListener("mousedown", e => { if (matchMedia("(pointer:coarse)").matches && document.getElementById("stage").classList.contains("battle")) e.stopPropagation(); }, true);   // touch in battle: only the buttons act, a stray tap no longer toggles fire
   const send = (type, code, key = code) => dispatchEvent(new KeyboardEvent(type, { code, key, bubbles: true, cancelable: true }));
   const code = k => k === "menu" ? "KeyC" : MENU.keys[k];
   for (const b of document.querySelectorAll("#btns b")) {
