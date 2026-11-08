@@ -205,7 +205,7 @@ if (matchMedia("(pointer:coarse)").matches) {   // touch: a tap goes fullscreen 
 {
   const P = document.getElementById("pad");
   document.getElementById("btns").addEventListener("pointerdown", e => e.preventDefault());   // gaps between buttons must not fall through to the stage (battle: any touch = fire toggle)
-  document.getElementById("stage").addEventListener("mousedown", e => { if (matchMedia("(pointer:coarse)").matches && document.getElementById("stage").classList.contains("battle")) e.stopPropagation(); }, true);   // touch in battle: only the buttons act, a stray tap no longer toggles fire
+  document.getElementById("stage").addEventListener("mousedown", e => { if (matchMedia("(pointer:coarse)").matches && document.getElementById("stage").classList.contains("battle")) { e.stopPropagation(); if (e.clientX > innerWidth / 2) { send("keydown", code("dash")); send("keyup", code("dash")); } } }, true);   // touch in battle: a stray tap no longer toggles fire; a tap on the empty right half dashes
   const send = (type, code, key = code) => dispatchEvent(new KeyboardEvent(type, { code, key, bubbles: true, cancelable: true }));
   const code = k => k === "menu" ? "KeyC" : MENU.keys[k];
   for (const b of document.querySelectorAll("#btns b")) {
