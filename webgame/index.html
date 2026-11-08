@@ -75,7 +75,10 @@
   .battle #portrait{z-index:6;bottom:auto;left:0;top:100px;transform:none;width:960px;height:300px}  /* full-width strip above the dialogue box; portraits.js draws the cast side by side */
   #pad{display:none;position:fixed;inset:0;pointer-events:none;z-index:50;touch-action:none}
   @media (pointer:coarse){#pad{display:block}}
-  #dpad{position:absolute;left:14px;bottom:14px;width:150px;height:150px;border-radius:50%;background:#ffffff1a;border:2px solid #ffffff44;pointer-events:auto;touch-action:none}
+  #dpad{position:absolute;left:14px;bottom:14px;width:150px;height:150px;border-radius:50%;background:#ffffff1a;border:2px solid #ffffff44;pointer-events:none}
+  #zone{position:absolute;left:0;top:0;width:50%;height:100%;pointer-events:auto;touch-action:none}
+  #dpad{opacity:.45}
+  #dpad.on{opacity:1}
   #dpad i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px;border-radius:50%;background:#ffffff44}
   #btns{position:absolute;right:14px;bottom:14px;display:grid;grid-template-columns:repeat(2,68px);gap:10px}
   #btns b{height:68px;border-radius:50%;background:#ffffff1f;border:2px solid #ffffff55;color:#fff;font:700 16px Galmuri11,sans-serif;display:flex;align-items:center;justify-content:center;pointer-events:auto;touch-action:none;user-select:none;text-align:center;line-height:1.1}
@@ -95,7 +98,7 @@
   <div id="menu" hidden></div>
   <div id="start"><div><h1><span style="--i:0;--c:#8fe6ff">E</span><span style="--i:1;--c:#b4f0ff">C</span><span style="--i:2;--c:#ffffff">H</span><span style="--i:3;--c:#ffe3f6">O</span><span style="--i:4">&nbsp;</span><span style="--i:5;--c:#ffc4ee">P</span><span style="--i:6;--c:#ffd9b0">R</span><span style="--i:7;--c:#fff1a0">I</span><span style="--i:8;--c:#d8f5b0">S</span><span style="--i:9;--c:#9fe8ff">M</span></h1><i class="spec"></i><div id="sub">......들리나요? 아직 꺼지지 않았군요.</div><p>클릭하여 시작</p></div></div>
 </div></div>
-<div id="pad"><b id="fs">⛶</b><div id="dpad"><i></i></div><div id="btns"><b data-k="swap">A</b><b data-k="menu">C</b><b data-k="fire">Z</b><b data-k="dash">X</b></div></div>
+<div id="pad"><b id="fs">⛶</b><div id="zone"></div><div id="dpad"><i></i></div><div id="btns"><b data-k="swap">A</b><b data-k="menu">C</b><b data-k="fire">Z</b><b data-k="dash">X</b></div></div>
 <script src="script.js"></script>
 <script src="battle/backdrop.js"></script>
 <script src="portraits.js"></script>
@@ -201,15 +204,22 @@ if (matchMedia("(pointer:coarse)").matches) {   // touch: a tap goes fullscreen 
   }
   const pad = document.getElementById("dpad"), dirs = { ArrowLeft: 0, ArrowRight: 0, ArrowUp: 0, ArrowDown: 0 };
   const set = (k, on) => { if (!!dirs[k] !== on) { dirs[k] = on ? 1 : 0; send(on ? "keydown" : "keyup", k); } };
-  const aim = e => {
-    const r = pad.getBoundingClientRect(), x = e.clientX - (r.left + r.width / 2), y = e.clientY - (r.top + r.height / 2), dead = r.width * .14, t = r.width * .12;
+  // floating stick: touch anywhere on the left half and the pad appears under the finger. A quick tap is passed through to what is underneath (dialogue, buttons).
+  const zone = document.getElementById("zone"); let t0 = 0, x0 = 0, y0 = 0, cx = 0, cy = 0, id = null;
+  const aim2 = e => { const x = e.clientX - cx, y = e.clientY - cy, r = pad.offsetWidth, dead = r * .14, t = r * .12;
     set("ArrowLeft", x < -dead && -x > Math.abs(y) * .45 - t); set("ArrowRight", x > dead && x > Math.abs(y) * .45 - t);
     set("ArrowUp", y < -dead && -y > Math.abs(x) * .45 - t); set("ArrowDown", y > dead && y > Math.abs(x) * .45 - t);
-    pad.firstChild.style.transform = `translate(${Math.max(-40, Math.min(40, x))}px,${Math.max(-40, Math.min(40, y))}px)`;
-  };
-  pad.onpointerdown = e => { e.preventDefault(); pad.setPointerCapture(e.pointerId); pad.classList.add("on"); aim(e); };
-  pad.onpointermove = e => { if (pad.classList.contains("on")) aim(e); };
-  pad.onpointerup = pad.onpointercancel = () => { pad.classList.remove("on"); pad.firstChild.style.transform = ""; for (const k in dirs) set(k, false); };
+    const m = r / 2 - 28, k = Math.min(1, m / (Math.hypot(x, y) || 1)); pad.firstChild.style.transform = `translate(${x * k}px,${y * k}px)`; };
+  zone.onpointerdown = e => { e.preventDefault(); zone.setPointerCapture(e.pointerId); id = e.pointerId; t0 = performance.now(); x0 = cx = e.clientX; y0 = cy = e.clientY;
+    pad.style.left = cx - pad.offsetWidth / 2 + "px"; pad.style.top = cy - pad.offsetHeight / 2 + "px"; pad.style.bottom = "auto"; pad.classList.add("on"); };
+  zone.onpointermove = e => { if (e.pointerId === id) aim2(e); };
+  zone.onpointerup = zone.onpointercancel = e => {
+    if (e.pointerId !== id) return; id = null; pad.classList.remove("on"); pad.firstChild.style.transform = ""; for (const k in dirs) set(k, false);
+    pad.style.left = pad.style.top = pad.style.bottom = "";
+    if (e.type === "pointerup" && performance.now() - t0 < 250 && Math.hypot(e.clientX - x0, e.clientY - y0) < 12) {   // tap: click what is under the zone
+      zone.style.pointerEvents = "none"; const el = document.elementFromPoint(e.clientX, e.clientY); zone.style.pointerEvents = "";
+      if (el) for (const t of ["mousedown", "mouseup", "click"]) el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, clientX: e.clientX, clientY: e.clientY }));
+    } };
 }
 </script>
 <script src="game.js"></script>
