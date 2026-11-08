@@ -22,7 +22,7 @@ BATTLES.s1_fragments = { stage: 1,
 
 // ---- 2) 문지기 헥사: 루미가 곁에서 돕는다. 무거운 구슬(size 12~14)일수록 소리도 크고 길다 ----
 BATTLES.s1_boss = { stage: 1,
-  speaker: "hexa", hp: 740, bgm: "s1_boss", color: "#ffb347", cuts: [.83, .66, .5, .33, .16],
+  speaker: "hexa", hp: 592, bgm: "s1_boss", color: "#ffb347", cuts: [.83, .66, .5, .33, .16],
   phaseRules: [{}, {}, { boxRule: { amp: 40, period: 6 } }, {}, {}, {}],   // 3페이즈: 판이 미끄러진다
   ally: "lumi", playerHp: 24, ew: 90, winText: "해방!",
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 },
