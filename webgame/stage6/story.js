@@ -1,5 +1,5 @@
 // STAGE 6 - 프리즘 코어. Appended to SCRIPT after stage 5 (stage5/story.js). The finale.
-// Flow: 도착(코어) -> 둘러보기(앞 챕터의 메아리) -> 조각 전투 -> 세 갈래 시험(색·되감기·방향) -> 침묵 등장 -> 결전(마지막은 합동 유대의 빛) -> 침묵 구제 -> ???의 정체 -> 이름 "에코" -> 개체의 마지막 한 줄 -> 타이틀 복귀
+// Flow: 도착(코어) -> 둘러보기(앞 챕터의 메아리) -> 조각 전투 -> 세 갈래 시험(색·되감기·어둠) -> 침묵 등장 -> 결전(마지막은 합동 유대의 빛) -> 침묵 구제 -> ???의 정체 -> 이름 "에코" -> 개체의 마지막 한 줄 -> 타이틀 복귀
 // `theme: "core"` = violet light rising like breath (portraits.js). Music: s6_field, s6_boss (core field / final boss); other battles use "battle", ending uses "intro".
 // Truth (set up in stage 5): 침묵 = 개체의 잊힌 첫 기억. ??? = 세계 자체의 의식 (찢어진 쪽지의 필자). The individual speaks exactly once, at the very end.
 
@@ -56,7 +56,7 @@ const STAGE6 = [
   { act: "s6_trial", bgm: "battle" },
 
   // ---- 4. 시험 이후, 침묵의 등장 ----
-  { who: "lumi", bgm: "s6_field", text: "해냈다! 색도, 시간도, 방향도 전부 읽혔어!" },
+  { who: "lumi", bgm: "s6_field", text: "해냈다! 색도, 시간도, 어둠도 전부 읽혔어!" },
   { who: "keeper", text: "읽는다는 건 두려워하지 않는다는 뜻이지요. 처음 이 규칙들을 만났을 때보다 훨씬 가볍습니다." },
   { who: "hexa", text: "......몸이 기억하고 있다. 말로 배운 게 아니라 걸음으로 배운 것이다." },
   { who: "voice", text: "개체의 도형이 이상하게 밝아요. 코어에 가까워질수록 빛이 짙어져요." },
@@ -78,7 +78,7 @@ const STAGE6 = [
   { who: "silence", fx: "alert", text: "......돌려줘. 내 이름을. 마지막 남은 것을. ......너한테서...... 돌려받을 거야." },
   { who: "lumi", text: "안 돼! 개체의 이름은 개체 거야! 우리가 같이 찾을 거란 말이야!" },
   { who: "hexa", text: "......물러서지 않는다. 문을 지킨다. 이 길 끝까지." },
-  { who: "voice", text: "여러분, 모든 걸 쏟아부어요. 색, 시간, 방향. 그리고 마지막은 우리 모두의 빛으로요!" },
+  { who: "voice", text: "여러분, 모든 걸 쏟아부어요. 색, 시간, 어둠과 중력. 그리고 마지막은 우리 모두의 빛으로요!" },
   { who: "silence", fx: "name", bgm: "s6_boss", text: "......소리부터...... 지운다." },
   { act: "s6_silence", bgm: "s6_boss" },
 

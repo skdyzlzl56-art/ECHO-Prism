@@ -33,30 +33,31 @@ BATTLES.s3_study = { stage: 3,
     h => { h.rain(.4, 125, 6, { col: RED }); h.wave(1.6, 85); h.fan(1.6, 7, .28, 110); h.aim(1.4, 150, 8, { col: RED }); },
   ],
   talks: {
-    1: [{ who: "voice", t: "잘 보세요! 붉은 탄만 맞아요. 푸른 탄은 그냥 지나가요!" }, { who: "lumi", t: "그럼 파란 건 뚫고 가도 돼?! 신기하다!" }],
-    2: [{ who: "hexa", t: "방패는 붉은 것만 신경 쓰면 된다. 눈을 속이지 마라." }],
+    0: [{ who: "voice", t: "잘 보세요! 붉은 탄만 맞아요. 푸른 탄은 그냥 지나가요!" }, { who: "lumi", t: "그럼 파란 건 뚫고 가도 돼?! 신기하다!" }],
+    1: [{ who: "hexa", t: "방패는 붉은 것만 신경 쓰면 된다. 눈을 속이지 마라." }],
   },
 };
 
 // ---- 3) 화가: 페이즈마다 이름이 있다. 붉은 탄만 맞는다 (색 규칙). 5페이즈 ----
 BATTLES.s3_painter = { stage: 3,
   ...PARTY3_PRE, speaker: "painter", hp: 960, bgm: "s3_boss", color: "#8aa4c8", colorRule: RED, cuts: [.8, .6, .4, .2], playerHp: 26, ew: 90,
+  phaseRules: [{}, {}, {}, { boxRule: { amp: 40, period: 6 } }, { invertRule: { period: 12, warn: 2, dur: 4 } }],   // 4: 색 위에 판 규칙, 5: 색 위에 조작 반전
   winText: "색이 돌아온다!",
   names: ["화가 「밑그림 지우기」", "화가 「한 점의 붉은색」", "화가 「번지는 수채」", "화가 「마지막 덧칠」", "화가 「텅 빈 캔버스」"],
   moves: [{ x: "sway", amp: 70, spd: .9 }, { x: "sway", amp: 90, spd: 1.1, dash: 8 }, { x: "chase", speed: 90 },
           { x: "sway", amp: 90, spd: 1.3, dash: 6.5 }, { x: "chase", speed: 105, dash: 5.5 }],
   phases: [
-    h => { h.ring(1.9, 13, 90, 7, { col: RED }); h.rain(.7, 110); },                                                          // 1: 붉은 아치, 푸른 비는 무해
-    h => { h.aim(1.4, 130, 10, { col: RED, split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.wave(1.8, 85); h.rain(.5, 110); h.burster(3.4, 3, { col: RED, burst: { n: 8, sp: 95, size: 6, col: RED } }); },  // 2: 분열탄도 붉다
-    h => { h.spiral(.12, 3, .45, 105, 7, { w: .2 }); h.side(.8, 140, 7, { col: RED }); h.laser(4, false); h.homing(2.2, 120, 7, { col: RED }); },   // 3: 푸른 나선 속 붉은 옆탄, 붉은 한 점이 쫓아온다
-    h => { h.fan(1.5, 5, .35, 110, 12, { col: RED }); h.wall(3, 95, 6, { col: RED }); h.aim(.8, 200, 5); h.bounce(1.6, 150, 7, { col: RED }); },   // 4: 붉은 벽, 벽에 튕기는 붉은 탄
-    h => { h.spiral(.1, 4, .35, 112, 7, { col: RED }); h.ring(1.5, 17, 100, 8); h.wall(3, 95); h.aim(1.8, 130, 14, { col: RED, split: { t: 1, n: 12, sp: 95, size: 6 } }); },   // 5: 텅 빈 캔버스
+    h => { h.ring(1.3, 15, 90, 7, { col: RED }); h.rain(.45, 110); h.rain(.9, 115, 6, { col: RED }); },                                                          // 1: 붉은 아치, 푸른 비는 무해
+    h => { h.aim(1.0, 130, 10, { col: RED, split: { t: 1.1, n: 10, sp: 90, size: 6 } }); h.wave(1.2, 85); h.rain(.35, 110); h.rain(.8, 115, 6, { col: RED }); h.burster(2.6, 3, { col: RED, burst: { n: 8, sp: 95, size: 6, col: RED } }); },  // 2: 분열탄도 붉다
+    h => { h.spiral(.09, 3, .45, 105, 7, { w: .2 }); h.side(.55, 140, 7, { col: RED }); h.rain(.9, 110, 6, { col: RED }); h.laser(4, false); h.homing(1.8, 120, 7, { col: RED }); },   // 3: 푸른 나선 속 붉은 옆탄, 붉은 한 점이 쫓아온다
+    h => { h.fan(1.1, 5, .35, 110, 12, { col: RED }); h.wall(2.4, 95, 6, { col: RED }); h.aim(.6, 200, 5); h.rain(.7, 110); h.bounce(1.2, 150, 7, { col: RED }); },   // 4: 붉은 벽, 벽에 튕기는 붉은 탄
+    h => { h.spiral(.075, 4, .35, 112, 7, { col: RED }); h.ring(1.1, 17, 100, 8); h.wall(2.4, 95); h.aim(1.3, 130, 14, { col: RED, split: { t: 1, n: 12, sp: 95, size: 6 } }); },   // 5: 텅 빈 캔버스
   ],
   talks: {
-    1: [{ who: "painter", t: "......붉은 것만 남겨 두었습니다. 나머지는 이미 지웠으니까요." }, { who: "voice", t: "붉은 탄만 맞아요! 다른 색은 믿어도 돼요!" }],
-    2: [{ who: "lumi", t: "붉은 거 한 점이 제일 위험해! 색이 더 선명해졌어!" }, { who: "painter", t: "이 한 점을... 빼앗기지 않으려 했을 뿐입니다." }],
-    3: [{ who: "hexa", t: "푸른 나선은 뚫고 지나가라. 붉은 옆탄만 보면 된다." }],
-    4: [{ who: "painter", t: "덧칠하면 사라지지 않습니다. 그래서... 덮어 버렸습니다." }, { who: "lumi", t: "덮는다고 사라지는 게 아니잖아!" }],
-    5: [{ who: "painter", t: "아무것도 그리지 않으면, 아무것도 잃지 않아요." }, { who: "voice", t: "그 빈 캔버스에도 색이 있었어요. 지금 되돌려 줘요!" }],
+    0: [{ who: "painter", t: "......붉은 것만 남겨 두었습니다. 나머지는 이미 지웠으니까요." }, { who: "voice", t: "붉은 탄만 맞아요! 다른 색은 믿어도 돼요!" }],
+    1: [{ who: "lumi", t: "붉은 거 한 점이 제일 위험해! 색이 더 선명해졌어!" }, { who: "painter", t: "이 한 점을... 빼앗기지 않으려 했을 뿐입니다." }],
+    2: [{ who: "hexa", t: "푸른 나선은 뚫고 지나가라. 붉은 옆탄만 보면 된다." }],
+    3: [{ who: "painter", t: "덧칠하면 사라지지 않습니다. 그래서... 덮어 버렸습니다." }, { who: "lumi", t: "덮는다고 사라지는 게 아니잖아!" }, { who: "painter", t: "캔버스째 흔들어 지워 드리죠. 발밑의 판이 미끄러집니다." }],
+    4: [{ who: "painter", t: "아무것도 그리지 않으면, 아무것도 잃지 않아요." }, { who: "voice", t: "그 빈 캔버스에도 색이 있었어요. 지금 되돌려 줘요!" }, { who: "painter", t: "붓이 거꾸로 움직입니다. 곧 방향이 반대로 뒤집힐 거예요." }],
   },
 };

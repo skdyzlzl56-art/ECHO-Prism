@@ -39,6 +39,13 @@ test("frame loop survives a plain battle", () => {
   drive(rafs, 300);
 });
 
+test("frame loop survives the 중력 / 정지 overlays (warning and live)", () => {
+  for (const rule of [{ gravityRule: { period: 3, warn: 1.2, dur: 1, pull: 50 } }, { stillRule: { period: 3, warn: 1.2, dur: 1, dmg: 1 } }]) {
+    const { ctx, rafs } = load(); ctx.__run(cfg({ ...rule, playerHp: 1e6 }), () => {});
+    drive(rafs, 600);
+  }
+});
+
 test("holding Ctrl (skip) through the last dialogue line keeps the loop alive", () => {
   const { ctx, rafs, handlers } = load();
   ctx.__run(cfg({ hp: 100, cuts: [.99], talks: { 1: [{ who: "glitch", t: "첫 줄" }, { who: "glitch", t: "마지막 줄" }] } }), () => {});

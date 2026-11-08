@@ -25,15 +25,13 @@ test("battle bgm files and speakers exist; script bgm/speakers exist", () => {
 });
 
 test("battle configs are structurally valid", () => {
-  const RULES = ["colorRule", "rewind", "dirRule", "boxRule", "invertRule", "splitRule", "finale"];
+  const RULES = ["colorRule", "rewind", "boxRule", "invertRule", "splitRule", "gravityRule", "stillRule", "darkRule", "finale"];
   for (const [k, b] of Object.entries(D.BATTLES)) {
     if (b.cuts && b.phases) assert.strictEqual(b.phases.length, b.cuts.length + 1, `${k}: phases must be cuts+1`);
     for (const pr of b.phaseRules || []) {
       for (const key of Object.keys(pr)) assert.ok(RULES.includes(key), `${k}: unknown phase rule ${key}`);
-      if (pr.dirRule) assert.ok(pr.dirRule.name, `${k}: dirRule needs name`);
     }
     if (b.phaseRules) assert.ok(b.phaseRules.length <= b.phases.length, `${k}: more phaseRules than phases`);
-    if (b.dirRule) assert.ok(b.dirRule.name, `${k}: dirRule needs name`);
   }
 });
 
@@ -71,4 +69,28 @@ test("every act in the story is a battle or a scene that exists (a typo would on
   assert.ok(acts.length > 15);
   for (const a of acts) assert.ok(D.BATTLES[a] || scenes.has(a), `act "${a}" is neither a BATTLES entry nor an ACTS scene`);
   for (const b in D.BATTLES) assert.ok(!scenes.has(b), `${b} is both a battle and a scene`);
+});
+
+// talks[] is keyed by the 0-based phase level (talks[0] plays before the first pattern)
+test("talks keys are reachable phase levels, and a phase that adds a rule announces it", () => {
+  for (const [k, b] of Object.entries(D.BATTLES)) {
+    for (const key of Object.keys(b.talks || {})) assert.ok(+key < b.phases.length, `${k}: talks[${key}] is unreachable (${b.phases.length} phases)`);
+    (b.phaseRules || []).forEach((pr, i) => {
+      const prev = i ? b.phaseRules[i - 1] : {};
+      const added = Object.keys(pr).filter(r => r !== "finale" && JSON.stringify(pr[r]) !== JSON.stringify(prev[r]));
+      if (added.length && i) assert.ok(b.talks && b.talks[i], `${k}: phase ${i} adds ${added} but talks[${i}] is empty`);
+    });
+  }
+});
+
+test("gravityRule, stillRule and darkRule values are real numbers; the warnings leave time to react; gravity is always weaker than walking", () => {
+  const WALK = 150, MIN_WARN = 1.2, fin = (k, r, fs) => { for (const f of fs) assert.ok(Number.isFinite(r[f]) && r[f] > 0, `${k}: ${f}`); assert.ok(r.warn >= MIN_WARN, `${k}: warn ${r.warn}s is too short to react`); assert.ok(r.warn + r.dur <= r.period, `${k}: warn+dur must fit in the period`); };
+  for (const [k, b] of Object.entries(D.BATTLES)) {
+    for (const o of [b, ...(b.phaseRules || [])]) {
+      if (o.gravityRule) { fin(`${k} gravityRule`, o.gravityRule, ["period", "warn", "dur", "pull"]); assert.ok(o.gravityRule.pull < WALK * .75, `${k}: pull ${o.gravityRule.pull} must stay well under walking speed ${WALK}`); }
+      if (o.stillRule) fin(`${k} stillRule`, o.stillRule, ["period", "warn", "dur", "dmg"]);
+      if (o.gravityRule || o.stillRule) assert.ok(!(o.gravityRule && o.stillRule) && !((o.gravityRule || o.stillRule) && o.invertRule), `${k}: gravity / still never share a phase with each other or with invertRule`);
+      if (o.darkRule) assert.ok(Number.isFinite(o.darkRule.radius) && o.darkRule.radius > 0, `${k}: darkRule.radius`);
+    }
+  }
 });

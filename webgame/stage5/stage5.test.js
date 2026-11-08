@@ -1,4 +1,4 @@
-// Data check for stage 5 (and the whole script so far) + the direction-rule battles. Run: node --test webgame/stage5/stage5.test.js
+// Data check for stage 5 (and the whole script so far). Run: node --test webgame/stage5/stage5.test.js
 const test = require("node:test"), assert = require("node:assert"), fs = require("node:fs"), path = require("node:path"), vm = require("node:vm");
 const { createBattle } = require("../battle/sim.js");
 const dir = path.join(__dirname, ".."), rd = f => fs.readFileSync(path.join(dir, f), "utf8");
@@ -33,18 +33,29 @@ test("stage 5 speakers have a drawable shape, about 150 lines, and the finale na
   assert.ok(D.STAGE5.some(l => /메아리/.test(l.text || "")), "echo hint planted");
 });
 
-test("stage 5 boss and practice fight use the direction rule, named bullets, and keep the 4-ally party", () => {
+test("stage 5 boss and practice fight use the gravity rule (no direction rule), and keep the 4-ally party", () => {
   for (const id of ["s5_pages", "s5_index", "s5_librarian"]) {
     const cfg = D.BATTLES[id]; assert.ok(bgms.has(cfg.bgm), id); assert.strictEqual(cfg.phases.length, cfg.names.length, id);
     assert.strictEqual(cfg.allies.length, 4, id);
+    assert.ok(!(cfg.phaseRules || []).some(r => r.darkRule), id);
   }
-  assert.strictEqual(D.BATTLES.s5_pages.dirRule, undefined);
+  assert.strictEqual(D.BATTLES.s5_pages.gravityRule, undefined);
+  const periods = id => D.BATTLES[id].phaseRules.map(r => r.gravityRule.period);
+  const idx = periods("s5_index"), lib = periods("s5_librarian");
+  assert.strictEqual(idx.length, 2); assert.strictEqual(lib.length, 4);
+  assert.ok(lib.every((p, i) => !i || p < lib[i - 1]), "librarian gravity cycles shorten each phase");
+  assert.ok(Math.min(...idx) >= Math.max(...lib), "practice cycle is longer than any boss cycle");
   for (const id of ["s5_index", "s5_librarian"]) {
-    const cfg = D.BATTLES[id]; assert.ok(cfg.dirRule && cfg.dirRule.name, `${id} names its bullets`);
-    const b = createBattle({ ...cfg, playerHp: 1e6, hp: 1e6, talks: {} }, { rng: Math.random }); b.state.auto = false;
-    for (let t = 0; t < 6; t += 1 / 60) b.step(1 / 60, {});
-    assert.ok(b.state.bullets.length > 0 && b.state.bullets.every(x => x.nm === cfg.dirRule.name), id);
+    const b = createBattle({ ...D.BATTLES[id], playerHp: 1e6, hp: 1e6, talks: {} }, { rng: Math.random }); b.state.auto = false;
+    const ev = []; for (let t = 0; t < 12; t += 1 / 60) ev.push(...b.step(1 / 60, {}));
+    assert.ok(ev.some(v => v.type === "gravityWarn") && ev.some(v => v.type === "gravityOn"), id);
   }
+  const pulls = D.BATTLES.s5_librarian.phaseRules.map(r => r.gravityRule.pull);
+  assert.ok(pulls.every((p, i) => !i || p > pulls[i - 1]), "librarian pull grows each phase");
+  const text = JSON.stringify([D.BATTLES.s5_index.talks, D.BATTLES.s5_librarian.talks, D.BATTLES.s5_librarian.names]);
+  assert.ok(!/방향|가는 쪽|같은 방향|탄에 「/.test(text), "no direction-rule wording left");
+  assert.ok(!/쪽 넘김|넘어가|페이지|띠/.test(text + JSON.stringify(D.STAGE5.map(l => l.text))), "no page-turn wording left");
+  for (const l of D.STAGE5) assert.ok(!/방향|같이 움직|거슬러|따라가는 법|탄의 흐름/.test(l.text || ""), `story still teaches the direction rule: ${l.text}`);
 });
 
 test("stage 5 has its own music: librarian boss uses s5_boss and no stage 5 line uses stage 2 tracks", () => {

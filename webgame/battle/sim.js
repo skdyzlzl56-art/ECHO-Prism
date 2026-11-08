@@ -10,7 +10,7 @@
 //
 // cfg: see ../battle.js. Events: start-of-phase, enemyShot{size,speed}, enemyHit{x,y,dmg,ally,combo}, playerShot, allyShot,
 //   graze, playerHurt{dmg}, shieldBlock, shieldReady, heal{amount}, burst{dmg,level,up}, bondStart{level},
-//   rewind, invertWarn, splitWarn, boxSplit, laserWarn, laserFire, split, dashWarn, dashStart, dashEnd, phase{level,name,talk,start}, win, lose.
+//   rewind, invertWarn, splitWarn, boxSplit, gravityWarn, gravityOn, stillWarn, stillOn, laserWarn, laserFire, split, dashWarn, dashStart, dashEnd, phase{level,name,talk,start}, win, lose.
 (function (root) {
   "use strict";
   const TAU = Math.PI * 2, BOX0 = { x: 330, y: 190, w: 300, h: 260 }, EX = 480, E_R = 26, BOND_MAX = 4;
@@ -48,7 +48,7 @@
       cool: {},   // per companion { heal, shield }: seconds left; every companion's timers run whether or not they are out
     };
     const p = s.p, e = s.e, al = s.al;
-    // cfg.phaseRules[level] = { colorRule, rewind, dirRule, boxRule, invertRule, splitRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
+    // cfg.phaseRules[level] = { colorRule, rewind, boxRule, invertRule, splitRule, gravityRule, stillRule, darkRule, finale }: per-phase rules (chapter 6 mixes all three). Without phaseRules the cfg-level options apply as before.
     // finale: shots deal 0 and only the joint light (bond full, cfg.jointLight) ends the fight.
     const rl = k => { const pr = cfg.phaseRules && cfg.phaseRules[Math.min(s.level, cfg.phaseRules.length - 1)]; return pr && k in pr ? pr[k] : cfg[k]; };   // a key absent from the phase entry falls back to the cfg-level option
     const kit = () => allies ? (cfg.kits && cfg.kits[s.allyId]) || KIT[s.allyId] : KIT.all;
@@ -73,6 +73,9 @@
     let uid = 0;
     let slid = false;
     let dwSide = -1;
+    let gDir = 0;
+    let stillCd = 0;
+    const GDIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
     const blv = () => Math.min(BOND_MAX, bondBase + bonus);
     const emit = (type, o) => ev.push(o ? { type, ...o } : { type });
 
@@ -83,7 +86,7 @@
 
     // o = { col, w (curve rad/s), acc (speed change per s), split: {t, n, sp, size}, sa/sf (sine amplitude / freq) }
     const add = (x, y, a, sp, size = 6, o = {}) => {
-      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: Math.round((size >= 10 ? 6 : 4) * atkK), col: o.col || col, nm: rl("dirRule") && rl("dirRule").name,   // 방향 규칙: name written on the bullet
+      s.bullets.push({ x, y, bx: x, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: size, dmg: Math.round((size >= 10 ? 6 : 4) * atkK), col: o.col || col,
         id: uid++, hp: o.hp, burst: o.burst, det: o.det, blast: o.blast, w: o.w || 0, acc: o.acc || 0, split: o.split, sa: o.sa || 0, sf: o.sf || 3, ph: o.ph || 0, bn: o.bn || 0, stall: o.stall, home: o.home, gr: o.gr, r0: size, age: 0, tr: [] });
       if (!s.over) emit("enemyShot", { size, speed: sp });
     };
@@ -117,8 +120,6 @@
         const c0 = C("rain", o).col, st = o.states || [{ vx: 0, vy: 0, col: c0 }, { vx: 90, vy: 0, col: `hsl(${(hue + 180) % 360},100%,70%)` }];
         add(p.x, BOX.y + 40, 0, 0, size, { col: st[0].col }); const b = s.bullets[s.bullets.length - 1]; b.tg = st; b.st = 0; b.life = o.life || 8;   // expires, so still ones cannot pile up and block shots
       }),
-      // 방향 벽: a full-height column with no gap sweeps the box sideways, alternating sides; under a dirRule only moving WITH it is safe (sp must beat the player's speed so it overtakes)
-      dirWall: (iv, sp = 260, size = 8, o) => every("dw", iv, () => { dwSide = -dwSide; for (let y = BOX.y + 6; y < BOX.y + BOX.h; y += 14) add(dwSide > 0 ? BOX.x - 10 : BOX.x + BOX.w + 10, y, dwSide > 0 ? 0 : Math.PI, sp, size, C("wall", o)); }),
       // boss-only barrages. door: a full-height row from alternating sides with one gap; bloom: ring whose bullets curve alternately left / right (petals);
       // closing: ring drawn around the player's position with one gap, bullets converge slowly
       door: (iv, sp = 150, size = 7, o) => every("dr", iv, () => { dwSide = -dwSide; const gap = BOX.y + 40 + rng() * (BOX.h - 80); for (let y = BOX.y + 6; y < BOX.y + BOX.h; y += 16) if (Math.abs(y - gap) > 34) add(dwSide > 0 ? BOX.x - 10 : BOX.x + BOX.w + 10, y, dwSide > 0 ? 0 : Math.PI, sp, size, C("door", o)); }),
@@ -177,7 +178,21 @@
         else if (!ph) s.split = null;
         if (s.split && s.split.active && s.inv <= 0 && (p.x < BOX.x + BOX.w / 2 ? -1 : 1) !== s.split.safe) hit(sr.dmg || 4);
       } else s.split = null;
-      let ox = p.x, oy = p.y; const firing = s.auto, spd = firing ? 150 : 210, sg = s.inverted ? -1 : 1, dx = sg * (input.dx || 0), dy = sg * (input.dy || 0), n = Math.hypot(dx, dy) || 1, m = 10;
+      const gr = rl("gravityRule");   // 중력 규칙: the arrow shows in the warning (a new direction each cycle, never the same twice), then the player is dragged that way at `pull` px/s for `dur` s
+      if (gr) {
+        const ph = cyc(gr);
+        if (ph === "warn" && !(s.gravity && !s.gravity.active)) { gDir = (gDir + 1 + Math.floor(rng() * 3)) % 4; const [dx, dy] = GDIRS[gDir]; s.gravity = { dx, dy, active: false }; emit("gravityWarn", { dx, dy }); }
+        else if (ph === "on" && s.gravity && !s.gravity.active) { s.gravity.active = true; emit("gravityOn", { dx: s.gravity.dx, dy: s.gravity.dy }); }
+        else if (!ph) s.gravity = null;
+      } else s.gravity = null;
+      const str = rl("stillRule");   // 정지 규칙: "멈춰!" in the warning; while live, moving or dashing hurts (at most every .5 s); standing still is safe
+      if (str) {
+        const ph = cyc(str);
+        if (ph === "warn" && !(s.still && !s.still.active)) { s.still = { active: false }; emit("stillWarn"); }
+        else if (ph === "on" && s.still && !s.still.active) { s.still.active = true; emit("stillOn"); }
+        else if (!ph) s.still = null;
+      } else s.still = null;
+      const firing = s.auto, spd = firing ? 150 : 210, sg = s.inverted ? -1 : 1, dx = sg * (input.dx || 0), dy = sg * (input.dy || 0), n = Math.hypot(dx, dy) || 1, m = 10;
       s.lastIn = dx || dy ? { dx: dx / n, dy: dy / n } : null; s.dashCd -= dt;
       const dashing = s.dashT > 0, vx = dashing ? s.dashDir.dx * DASH_D / DASH_T : dx / n * spd, vy = dashing ? s.dashDir.dy * DASH_D / DASH_T : dy / n * spd;
       if (dashing) { s.dashT -= dt; s.inv = Math.max(s.inv, .02); }                  // 대시: untouchable while it lasts
@@ -188,9 +203,11 @@
         if (wall !== carried && s.inv <= 0) hit(br.dmg || 4);
         slid = true;
       } else if (slid) { BOX.x = BOX0.x; slid = false; }   // the rule ended with the phase: the box settles home
-      ox = p.x;   // dirRule compares the player's own displacement: the box carry above does not count
-      p.x = Math.min(BOX.x + BOX.w - m, Math.max(BOX.x + m, p.x + vx * dt));
-      p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + vy * dt));
+      stillCd -= dt;
+      if (s.still && s.still.active && (dx || dy || dashing) && stillCd <= 0 && (s.inv <= 0 || dashing)) { hit(str.dmg); stillCd = .5; }
+      const gv = s.gravity && s.gravity.active ? gr.pull : 0;   // on top of normal movement; bullets are untouched
+      p.x = Math.min(BOX.x + BOX.w - m, Math.max(BOX.x + m, p.x + (vx + (gv && s.gravity.dx * gv)) * dt));
+      p.y = Math.min(BOX.y + BOX.h - m, Math.max(BOX.y + m, p.y + (vy + (gv && s.gravity.dy * gv)) * dt));
       s.t += dt; s.inv -= dt; s.swapCd -= dt; cd -= dt; comboT -= dt; dtc = dt; if (comboT <= 0) s.combo = 0;
       if (!started && s.t > 1) {
         started = true; const l0 = cfg.talks && cfg.talks[0];                  // talks[0]: spoken before the first pattern
@@ -327,7 +344,7 @@
       s.zones = s.zones.filter(z => z.age < z.warn + z.dur);
       s.lasers = s.lasers.filter(l => l.age < l.warn + l.dur + .15);
       if (s.inv <= 0) {
-        const i = s.bullets.findIndex(b => (!rl("colorRule") || b.col === rl("colorRule")) && !(b.nm && (p.x - ox) * b.vx + (p.y - oy) * b.vy > 0) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
+        const i = s.bullets.findIndex(b => (!rl("colorRule") || b.col === rl("colorRule")) && Math.hypot(b.x - p.x, b.y - p.y) < b.r + HITBOX);
         if (i >= 0) { const d = s.bullets[i].dmg; spent.add(s.bullets[i].id); s.bullets.splice(i, 1); hurt(d); }
       }
       if (cfg.survive) s.surviveLeft = Math.max(0, cfg.survive - Math.max(0, s.t - 1));   // escape battle: outlast the clock after the 1s grace
@@ -340,7 +357,11 @@
     return {
       state: s, BOX,
       step(dt, input = {}) { dt = Math.min(dt, .05); if (!s.over && !s.talk) update(dt, input); const out = ev; ev = []; return out; },
-      cooldownRings() {                                                      // display: fill 0..1 per ring, 1 = ready (companion rings follow the one out now)
+      bulletAlpha(b) {                                                       // 어둠 규칙: 0..1 visibility of a bullet (hits ignore it); fades over the outer 20% of the lit radius
+        const dk = rl("darkRule"); if (!dk) return 1;
+        return Math.max(0, Math.min(1, (dk.radius - Math.hypot(b.x - p.x, b.y - p.y)) / (dk.radius * .2)));
+      },
+      cooldownRings() {                                                   // display: fill 0..1 per ring, 1 = ready (companion rings follow the one out now)
         const f = (left, total) => total > 0 ? Math.max(0, Math.min(1, 1 - left / total)) : 1, c = s.cool[s.allyId] || { heal: 0, shield: 0, sig: 0 }, lv = blv();
         const k = kit();                                                     // null = this companion has no such ability (yet): the view draws no ring
         return { dash: f(s.dashCd, DASH_CD), heal: k.heal ? f(c.heal, HEAL_IV[lv]) : null, shield: s.shieldOn ? 1 : k.shield && lv >= SHIELD_LV ? f(c.shield, SHIELD_CD[lv]) : null, sig: SIG[s.allyId] ? f(c.sig, SIG_CD[lv]) : null };
