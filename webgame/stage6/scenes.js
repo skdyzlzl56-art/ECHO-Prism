@@ -56,3 +56,22 @@ ACTS.s6_reveal = done => {
   } });
   g = $("rv").getContext("2d");
 };
+
+// ---- 회상: 미술관의 이름 없는 그림이 개체의 얼굴로 채워지고, 시계탑의 종이 함께 울린다 (about 5s, auto-advances) ----
+ACTS.s6_recall = done => {
+  let g, t = 0;
+  const scene = openScene({ html: `<canvas id="rc" width="960" height="540"></canvas>`, done, step(dt) {
+    t += dt;
+    g.globalAlpha = 1; g.fillStyle = "#06030f"; g.fillRect(0, 0, 960, 540); g.textAlign = "center"; g.textBaseline = "middle";
+    const fill = Math.min(1, Math.max(0, (t - .8) / 1.8));                                 // portrait frame: empty at first, then filled with the individual's light
+    g.globalAlpha = 1; g.strokeStyle = "#d8b45a"; g.lineWidth = 6; g.strokeRect(380, 100, 200, 260);
+    g.globalAlpha = fill * .9; const gr = g.createRadialGradient(480, 230, 10, 480, 230, 120); gr.addColorStop(0, "#fff"); gr.addColorStop(1, "#9ad0ff"); g.fillStyle = gr;
+    g.beginPath(); g.arc(480, 230, 28 + fill * 60, 0, TAU); g.fill();
+    if (t > 2.8) for (let k = 0; k < 3; k++) {                                              // the bell: three rings spread from the frame
+      const r = ((t - 2.8) * 140 + k * 70) % 320; g.globalAlpha = Math.max(0, 1 - r / 320) * .8; g.strokeStyle = "#e6dcff"; g.lineWidth = 3; g.beginPath(); g.arc(480, 230, 100 + r, 0, TAU); g.stroke();
+    }
+    g.globalAlpha = Math.min(1, Math.max(0, t - 1.5)); g.fillStyle = "#e6dcff"; g.font = "bold 22px Galmuri11,'Malgun Gothic'"; g.fillText("이름 없는 그림 — 처음 눈을 뜬 얼굴", 480, 410);
+    if (t > 5.2) scene.close();
+  } });
+  g = $("rc").getContext("2d");
+};
