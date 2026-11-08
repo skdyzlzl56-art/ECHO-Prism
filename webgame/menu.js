@@ -10,7 +10,8 @@
     { id: "dash", label: "대시", ctx: "battle", def: "KeyX" },
     { id: "fast", label: "대화 빨리 출력", ctx: "talk", def: "KeyX" },
   ];
-  const ITEMS = [{ id: "keys", label: "키 설정" }, { id: "volume", label: "볼륨" }, { id: "save", label: "저장" }, { id: "load", label: "불러오기" }, { id: "quit", label: "종료" }, { id: "close", label: "닫기" }];
+  const TOUCH = [{ id: "type" }, { id: "mode" }, { id: "pad" }, { id: "btn" }, { id: "corner" }, { id: "move" }];
+  const ITEMS = [{ id: "keys", label: "키 설정" }, { id: "touch", label: "터치 설정" },{ id: "volume", label: "볼륨" }, { id: "save", label: "저장" }, { id: "load", label: "불러오기" }, { id: "quit", label: "종료" }, { id: "close", label: "닫기" }];
   // movement, the menu itself and the dialogue-advance keys cannot be bound
   const RESERVED = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyS", "KeyD", "KeyC", "Space", "Enter", "Escape"]);
   const keyLabel = c => c.replace(/^Key|^Digit/, "").replace("Numpad", "N");
@@ -20,7 +21,9 @@
   function createMenu(dk = { advance: ["Space", "Enter", "KeyZ"], fast: "KeyX" }, store = NOSTORE) {   // dk = dialogue.js KEYS: the "fast" binding is written through to it; store = { get(k), set(k, v) } for the volume
     const keys = Object.fromEntries(ACTIONS.map(a => [a.id, a.def])); keys.fast = dk.fast;
     const vol = Object.fromEntries(VOLS.map(v => { const n = parseFloat(store.get("vol_" + v.id)); return [v.id, n >= 0 && n <= 1 ? n : 1]; }));   // 0..1 in tenths; index.html applies it to the sound
-    const m = { open: false, page: "list", sel: 0, msg: "", items: ITEMS, keys, actions: ACTIONS, vol, vols: VOLS };
+    const ti = k => { const n = parseInt(store.get("t_" + k)); return n >= 5 && n <= 18 ? n : 10; };   // sizes in tenths (0.5x..1.8x)
+    const touch = { type: store.get("t_type") === "stick" ? "stick" : "dpad", mode: store.get("t_mode") === "fixed" ? "fixed" : "float", pad: ti("pad"), btn: ti("btn"), corner: store.get("t_corner") === "fire" ? "fire" : "dash" };   // corner = which key sits on the bottom-right touch button
+    const m = { open: false, page: "list", sel: 0, msg: "", items: ITEMS, keys, actions: ACTIONS, vol, vols: VOLS, touch };
     const close = () => { m.open = false; m.page = "list"; m.msg = ""; };
     m.toggle = () => { if (m.open) close(); else { m.open = true; m.page = "list"; m.sel = 0; m.msg = ""; } return m.open; };
     m.rebind = (id, code) => {
@@ -54,6 +57,14 @@
           const id = VOLS[m.sel].id; vol[id] = Math.min(1, Math.max(0, Math.round(vol[id] * 10 + (code === "ArrowRight" ? 1 : -1)) / 10));
           store.set("vol_" + id, String(vol[id]));
         }
+      } else if (m.page === "touch") {
+        if (code === "Escape") return go("list", m.items.findIndex(i => i.id === "touch"));
+        const id = TOUCH[m.sel] && TOUCH[m.sel].id, dir = code === "ArrowRight" ? 1 : code === "ArrowLeft" ? -1 : 0;
+        if (d) wrap(TOUCH.length + 1, d);
+        else if (!id) { if (ok) go("list", m.items.findIndex(i => i.id === "touch")); }
+        else if (id === "move") { if (ok) return "move"; }
+        else if (id === "pad" || id === "btn") { if (dir) { touch[id] = Math.min(18, Math.max(5, touch[id] + dir)); store.set("t_" + id, String(touch[id])); } }
+        else if (dir || ok) { touch[id] = id === "type" ? (touch.type === "dpad" ? "stick" : "dpad") : id === "mode" ? (touch.mode === "float" ? "fixed" : "float") : (touch.corner === "dash" ? "fire" : "dash"); store.set("t_" + id, touch[id]); }
       } else if (m.page === "keys") {
         if (code === "Escape") return go("list");
         if (d) wrap(ACTIONS.length + 1, d);
@@ -63,7 +74,7 @@
         if (d) wrap(m.items.length, d);
         else if (ok) {
           const id = m.items[m.sel].id;
-          if (id === "keys") go("keys"); else if (id === "volume") go("volume"); else if (id === "save" || id === "load") return id; else if (id === "quit") go("confirm", 1); else close();
+          if (id === "keys") go("keys"); else if (id === "touch") go("touch"); else if (id === "volume") go("volume"); else if (id === "save" || id === "load") return id; else if (id === "quit") go("confirm", 1); else close();
         }
       }
     };
@@ -79,6 +90,10 @@
     if (m.page === "list") rows = m.items.map((i, k) => row(i.label, k === m.sel)).join("");
     else if (m.page === "confirm") rows = `<div class="ask">타이틀로 돌아갈까요?</div>` + ["예", "아니오"].map((t, k) => row(t, k === m.sel)).join("");
     else if (m.page === "volume") rows = m.vols.map((v, k) => row(`${v.label}: ◀ ${Math.round(m.vol[v.id] * 10)}/10 ▶`, k === m.sel)).join("") + row("뒤로", m.sel === m.vols.length);
+    else if (m.page === "touch") {
+      const t = m.touch, L = [`패드 종류: ◀ ${t.type === "stick" ? "조이스틱" : "방향키"} ▶`, `패드 방식: ◀ ${t.mode === "fixed" ? "고정" : "유동"} ▶`, `패드 크기: ◀ ${t.pad}/10 ▶`, `버튼 크기: ◀ ${t.btn}/10 ▶`, `우측 아래 버튼: ◀ ${t.corner === "fire" ? keyLabel(m.keys.fire) : keyLabel(m.keys.dash)} ▶`, "위치 이동"];
+      rows = L.map((s, k) => row(s, k === m.sel)).join("") + row("뒤로", m.sel === L.length);
+    }
     else rows = m.actions.map((a, k) => row(`${a.label}: ${m.page === "capture" && k === m.sel ? "키를 누르세요" : keyLabel(m.keys[a.id])}`, k === m.sel)).join("") + row("뒤로", m.sel === m.actions.length);
     return `<div class="mn"><h2>MENU</h2>${rows}<div class="msg">${m.msg}</div><div class="help">↑↓ 선택 · Enter 확인 · Esc/X 뒤로 · C 닫기</div></div>`;
   };
