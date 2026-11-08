@@ -19,8 +19,8 @@ test("hush: slow bullets close in from every edge of the box", () => {
   assert.ok(s.bullets.length >= 16 && s.bullets.some(b => b.x < cx) && s.bullets.some(b => b.x > cx));
 });
 
-test("사서 uses shelf; 침묵 uses hush in the finale only, and no earlier boss uses it", () => {
-  assert.ok(used("s5_librarian", "shelf"));
+test("사서 uses no book-themed shelf bullets (gravity chapter); 침묵 uses hush in the finale only, and no earlier boss uses it", () => {
+  assert.ok(!used("s5_librarian", "shelf"));
   assert.ok(B.s6_silence.phases[4].toString().includes("h.hush("));
   for (const id of Object.keys(B)) if (id !== "s6_silence") assert.ok(!used(id, "hush"), id);
 });

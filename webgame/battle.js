@@ -245,10 +245,22 @@ function runBattle(cfg, done) {
       g.fillStyle = "#f33"; g.globalAlpha = s.split.active ? .45 : .15 + .15 * Math.abs(Math.sin(t * 10)); g.fillRect(ux, BOX.y, hw, BOX.h);
       g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 3; g.setLineDash([8, 6]); g.beginPath(); g.moveTo(BOX.x + hw, BOX.y); g.lineTo(BOX.x + hw, BOX.y + BOX.h); g.stroke(); g.restore();
     }
-    if (s.page) {                                                                       // 쪽 넘김: only the narrow page strip is safe (green); the rest is red (hatched pulse while warning, solid once live)
-      const pg = s.page, sx = pg.x - pg.w / 2;
-      g.save(); g.fillStyle = "#f33"; g.globalAlpha = pg.active ? .45 : .15 + .15 * Math.abs(Math.sin(t * 10)); g.fillRect(BOX.x, BOX.y, sx - BOX.x, BOX.h); g.fillRect(sx + pg.w, BOX.y, BOX.x + BOX.w - sx - pg.w, BOX.h);
-      g.fillStyle = "#3f6"; g.globalAlpha = .25; g.fillRect(sx, BOX.y, pg.w, BOX.h); g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 2; g.strokeRect(sx, BOX.y, pg.w, BOX.h); g.restore();
+    if (s.gravity) {                                                                    // 중력 규칙: arrows on the box showing the pull (blinking while warning, edge glow + drifting arrows once live)
+      const gv = s.gravity, on = gv.active, cx = BOX.x + BOX.w / 2, cy = BOX.y + BOX.h / 2, ang = Math.atan2(gv.dy, gv.dx);
+      g.save(); g.strokeStyle = "#7df"; g.fillStyle = "#7df"; g.lineWidth = 4;
+      if (on) { g.globalAlpha = .5; g.shadowColor = "#7df"; g.shadowBlur = 24; g.beginPath(); if (gv.dx) { const x = gv.dx > 0 ? BOX.x + BOX.w : BOX.x; g.moveTo(x, BOX.y); g.lineTo(x, BOX.y + BOX.h); } else { const y = gv.dy > 0 ? BOX.y + BOX.h : BOX.y; g.moveTo(BOX.x, y); g.lineTo(BOX.x + BOX.w, y); } g.stroke(); g.shadowBlur = 0; }
+      for (let i = 0; i < 3; i++) {
+        const o = on ? (t * 90 + i * 70) % 210 - 105 : (i - 1) * 70;
+        g.save(); g.translate(cx + gv.dx * o + gv.dy * (i - 1) * 90 * (on ? 1 : 0), cy + gv.dy * o + gv.dx * (i - 1) * 90 * (on ? 1 : 0)); g.rotate(ang);
+        g.globalAlpha = on ? .55 : .15 + .45 * Math.abs(Math.sin(t * 8)); g.beginPath(); g.moveTo(-22, -20); g.lineTo(22, 0); g.lineTo(-22, 20); g.lineTo(-10, 0); g.closePath(); g.fill(); g.restore();
+      }
+      g.restore();
+    }
+    if (s.still) {                                                                      // 정지 규칙: "멈춰!" banner; red frame once live (any move hurts)
+      const on = s.still.active;
+      g.save(); g.textAlign = "center"; g.textBaseline = "middle"; g.font = "bold 44px Galmuri11,'Malgun Gothic'"; g.fillStyle = on ? "#f55" : "#ff0"; g.globalAlpha = on ? .9 : .4 + .5 * Math.abs(Math.sin(t * 10));
+      g.fillText(on ? "멈춰!" : "멈춰! 곧 움직이면 아파요", BOX.x + BOX.w / 2, BOX.y + 50);
+      g.strokeStyle = on ? "#f33" : "#ff0"; g.lineWidth = 6; g.globalAlpha = on ? .7 : .3; g.strokeRect(BOX.x - 3, BOX.y - 3, BOX.w + 6, BOX.h + 6); g.restore();
     }
     if (hud.invert) {                                                     // 조작 반전: a side panel left of the box with a draining bar (bigger than the old label, which sat on the enemy HP bar), plus a pulsing frame
       const on = hud.invert.on, c = on ? "#f6f" : "#ff0", pu = .6 + .4 * Math.abs(Math.sin(t * (on ? 8 : 14))), px = 40, py = BOX.y + 40, pw = BOX.x - 70, fr = hud.invert.frac;

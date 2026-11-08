@@ -48,9 +48,11 @@ test("stage 6 battles: per-phase rules mix colour, rewind, dark, page, invert an
   assert.deepStrictEqual([...rules("s6_trial")], ["colorRule", "rewind", "darkRule"]);
   const boss = D.BATTLES.s6_silence, last = boss.phaseRules[boss.phaseRules.length - 1];
   assert.strictEqual(boss.phaseRules.length, boss.phases.length);
-  for (const k of ["colorRule", "rewind", "darkRule", "pageRule", "invertRule", "splitRule"]) assert.ok(boss.phaseRules.some(r => r[k]), `boss uses ${k}`);
+  for (const k of ["colorRule", "rewind", "darkRule", "gravityRule", "stillRule", "invertRule", "splitRule"]) assert.ok(boss.phaseRules.some(r => r[k]), `boss uses ${k}`);
+  assert.ok(boss.phaseRules[0].colorRule && boss.phaseRules[0].stillRule && boss.talks[0].some(l => /멈춰/.test(l.t)), "phase 1: colour + still rule, announced");
+  assert.ok(boss.phaseRules[2].darkRule && boss.phaseRules[2].gravityRule, "phase 3: dark + gravity");
   assert.ok(boss.jointLight && last.finale, "last phase ends with the joint light");
-  assert.ok(boss.phaseRules.slice(0, -1).every(r => r.colorRule || r.rewind || r.darkRule || r.pageRule), "every earlier phase has a rule");
+  assert.ok(boss.phaseRules.slice(0, -1).every(r => r.colorRule || r.rewind || r.darkRule || r.gravityRule), "every earlier phase has a rule");
 });
 
 test("stage 6 boss: every phase fires bullets under its own rule, and the finale is won by the joint light at full bond", () => {
