@@ -96,7 +96,7 @@ const STAGE3 = [
   { act: "s3_painter", bgm: "s3_boss" },
 
   // ---- 6. 화가의 해방 ----
-  { who: "painter", bgm: "s3_field", theme: "atelier", fx: "impact", text: "아." },
+  { who: "painter", bgm: "s3_field", theme: "atelier", fx: "impact", text: "......아." },
   { who: "painter", text: "붓이... 손에서 미끄러졌습니다. 그렇군요. 이제야 알겠습니다." },
   { who: "lumi", fx: "color", text: "와! 방 전체가 물들어! 파랑, 노랑, 빨강... 전부 돌아왔어!" },
   { who: "painter", text: "제가 지웠던 색은... 사라진 게 아니라, 제 안에 숨어 있었군요." },

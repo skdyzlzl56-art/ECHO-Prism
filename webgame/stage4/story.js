@@ -83,7 +83,7 @@ const STAGE4 = [
   { act: "s4_keeper", bgm: "s4_boss" },
 
   // ---- 4. 시계지기의 해방 ----
-  { who: "keeper", bgm: "s4_field", fx: "impact", text: "아." },
+  { who: "keeper", bgm: "s4_field", fx: "impact", text: "......아." },
   { who: "keeper", text: "톱니 하나가... 맞물리지 않았습니다. 이상합니다. 이런 일은 처음이에요." },
   { who: "lumi", text: "괜찮아?! 아프지 않아?" },
   { who: "keeper", text: "아프지 않습니다. 다만... 시계가 움직이려 하고 있습니다. 제 손을 떠나서." },
