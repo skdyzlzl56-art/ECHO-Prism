@@ -96,6 +96,7 @@ function runBattle(cfg, done) {
     keys[ev.code] = true; if (ev.key === KEYS.skip) keys.skip = true;
     if (ev.code.startsWith("Arrow") || ev.code === "Space") ev.preventDefault();
     if (ev.repeat) return;
+    if (s.over === "lose" && act.onclick) { if (ev.code === "KeyZ" || ev.code === MENU.keys.fire) act.onclick(); return; }   // GAME OVER: Z retries like a click
     if (s.talk) { if (KEYS.advance.includes(ev.code)) advTalk(); }
     else if (ev.code === MENU.keys.fire) toggle();
     else if (ev.code === MENU.keys.swap) battle.swap();                                  // 교대
