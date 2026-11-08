@@ -245,6 +245,11 @@ function runBattle(cfg, done) {
       g.fillStyle = "#f33"; g.globalAlpha = s.split.active ? .45 : .15 + .15 * Math.abs(Math.sin(t * 10)); g.fillRect(ux, BOX.y, hw, BOX.h);
       g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 3; g.setLineDash([8, 6]); g.beginPath(); g.moveTo(BOX.x + hw, BOX.y); g.lineTo(BOX.x + hw, BOX.y + BOX.h); g.stroke(); g.restore();
     }
+    if (s.page) {                                                                       // 쪽 넘김: only the narrow page strip is safe (green); the rest is red (hatched pulse while warning, solid once live)
+      const pg = s.page, sx = pg.x - pg.w / 2;
+      g.save(); g.fillStyle = "#f33"; g.globalAlpha = pg.active ? .45 : .15 + .15 * Math.abs(Math.sin(t * 10)); g.fillRect(BOX.x, BOX.y, sx - BOX.x, BOX.h); g.fillRect(sx + pg.w, BOX.y, BOX.x + BOX.w - sx - pg.w, BOX.h);
+      g.fillStyle = "#3f6"; g.globalAlpha = .25; g.fillRect(sx, BOX.y, pg.w, BOX.h); g.globalAlpha = 1; g.strokeStyle = "#fff"; g.lineWidth = 2; g.strokeRect(sx, BOX.y, pg.w, BOX.h); g.restore();
+    }
     if (hud.invert) {                                                     // 조작 반전: a side panel left of the box with a draining bar (bigger than the old label, which sat on the enemy HP bar), plus a pulsing frame
       const on = hud.invert.on, c = on ? "#f6f" : "#ff0", pu = .6 + .4 * Math.abs(Math.sin(t * (on ? 8 : 14))), px = 40, py = BOX.y + 40, pw = BOX.x - 70, fr = hud.invert.frac;
       g.save(); g.fillStyle = "rgba(10,5,30,.88)"; g.fillRect(px, py, pw, 130); g.strokeStyle = c; g.lineWidth = 4; g.globalAlpha = pu; g.strokeRect(px, py, pw, 130); g.globalAlpha = 1;
