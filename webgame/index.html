@@ -80,6 +80,7 @@
   #dpad{opacity:.45}
   #dpad.on{opacity:1}
   #dpad i{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px;border-radius:50%;background:#ffffff44}
+  #dpad.cross i{display:none}
   #dpad.cross{border-radius:0;border:0;clip-path:polygon(33% 0,67% 0,67% 33%,100% 33%,100% 67%,67% 67%,67% 100%,33% 100%,33% 67%,0 67%,0 33%,33% 33%)}
   #pad.edit #dpad,#pad.edit #btns{pointer-events:auto;touch-action:none;opacity:1;outline:2px dashed #ffe27a}
   #pad.edit #zone{pointer-events:none}
@@ -213,7 +214,7 @@ if (matchMedia("(pointer:coarse)").matches) {   // touch: a tap goes fullscreen 
   const set = (k, on) => { if (!!dirs[k] !== on) { dirs[k] = on ? 1 : 0; send(on ? "keydown" : "keyup", k); } };
   // floating stick: touch anywhere on the left half and the pad appears under the finger. A quick tap is passed through to what is underneath (dialogue, buttons).
   const zone = document.getElementById("zone"); let t0 = 0, x0 = 0, y0 = 0, cx = 0, cy = 0, id = null;
-  const T = MENU.touch, pos = (() => { try { return JSON.parse(localStorage.getItem("touch_pos")) || {}; } catch { return {}; } })();
+  const T = MENU.touch, fixedPad = () => T.type === "dpad" || T.mode === "fixed", pos = (() => { try { return JSON.parse(localStorage.getItem("touch_pos")) || {}; } catch { return {}; } })();
   const place = (el, key) => { const p = pos[key] || (key === "dpad" ? [0, 1] : [1, 1]);   // saved as 0..1 fractions of the free space, so a resize or rotation keeps the spot
     el.style.left = 14 + p[0] * Math.max(0, innerWidth - el.offsetWidth - 28) + "px"; el.style.top = 14 + p[1] * Math.max(0, innerHeight - el.offsetHeight - 28) + "px"; };
   window.applyTouch = () => {
@@ -223,7 +224,7 @@ if (matchMedia("(pointer:coarse)").matches) {   // touch: a tap goes fullscreen 
     for (const k of T.corner === "fire" ? ["swap", "menu", "dash", "fire"] : ["swap", "menu", "fire", "dash"]) { const b = btns.querySelector(`[data-k=${k}]`); b.textContent = k === "menu" ? "C" : keyLabel(MENU.keys[k]); btns.append(b); }
     place(pad, "dpad"); place(btns, "btns");
     // fixed: only the pad itself is a touch target; floating: the left half of the screen
-    if (T.mode === "fixed") Object.assign(zone.style, { left: pad.offsetLeft - 20 + "px", top: pad.offsetTop - 20 + "px", width: pad.offsetWidth + 40 + "px", height: pad.offsetHeight + 40 + "px" });
+    if (fixedPad()) Object.assign(zone.style, { left: pad.offsetLeft - 20 + "px", top: pad.offsetTop - 20 + "px", width: pad.offsetWidth + 40 + "px", height: pad.offsetHeight + 40 + "px" });
     else Object.assign(zone.style, { left: "0", top: "0", width: "50%", height: "100%" });
   };
   window.editTouch = on => { P.classList.toggle("edit", on); if (!on) { applyTouch(); try { localStorage.setItem("touch_pos", JSON.stringify(pos)); } catch {} } };
@@ -236,21 +237,21 @@ if (matchMedia("(pointer:coarse)").matches) {   // touch: a tap goes fullscreen 
   }
   document.getElementById("done").onpointerup = e => { e.stopPropagation(); editTouch(false); };
   addEventListener("resize", applyTouch); applyTouch();
-  const aim2 = e => { const x = e.clientX - cx, y = e.clientY - cy, r = pad.offsetWidth, dead = r * .14, t = r * .12;
+  const aim2 = e => { const x = e.clientX - cx, y = e.clientY - cy, r = pad.offsetWidth, dead = r * (T.type === "dpad" ? .1 : .14), t = r * .12;
     if (T.type === "dpad") { const h = Math.abs(x) > Math.abs(y), far = Math.hypot(x, y) > dead;   // dpad: one of four directions, no diagonals
       set("ArrowLeft", far && h && x < 0); set("ArrowRight", far && h && x > 0); set("ArrowUp", far && !h && y < 0); set("ArrowDown", far && !h && y > 0); }
     else { set("ArrowLeft", x < -dead && -x > Math.abs(y) * .45 - t); set("ArrowRight", x > dead && x > Math.abs(y) * .45 - t);
       set("ArrowUp", y < -dead && -y > Math.abs(x) * .45 - t); set("ArrowDown", y > dead && y > Math.abs(x) * .45 - t); }
     const m = r / 2 - 28, k = Math.min(1, m / (Math.hypot(x, y) || 1)); pad.firstChild.style.transform = `translate(${x * k}px,${y * k}px)`; };
   zone.onpointerdown = e => { e.preventDefault(); zone.setPointerCapture(e.pointerId); id = e.pointerId; t0 = performance.now(); x0 = e.clientX; y0 = e.clientY;
-    if (T.mode === "fixed") { cx = pad.offsetLeft + pad.offsetWidth / 2; cy = pad.offsetTop + pad.offsetHeight / 2; aim2(e); }   // fixed: aim from the pad's centre
+    if (fixedPad()) { cx = pad.offsetLeft + pad.offsetWidth / 2; cy = pad.offsetTop + pad.offsetHeight / 2; aim2(e); }   // fixed: aim from the pad's centre
     else { cx = x0; cy = y0; pad.style.left = cx - pad.offsetWidth / 2 + "px"; pad.style.top = cy - pad.offsetHeight / 2 + "px"; }
     pad.classList.add("on"); };
   zone.onpointermove = e => { if (e.pointerId === id) aim2(e); };
   zone.onpointerup = zone.onpointercancel = e => {
     if (e.pointerId !== id) return; id = null; pad.classList.remove("on"); pad.firstChild.style.transform = ""; for (const k in dirs) set(k, false);
     place(pad, "dpad");
-    if (e.type === "pointerup" && T.mode === "float" && performance.now() - t0 < 250 && Math.hypot(e.clientX - x0, e.clientY - y0) < 12) {   // tap: click what is under the zone
+    if (e.type === "pointerup" && !fixedPad() && performance.now() - t0 < 250 && Math.hypot(e.clientX - x0, e.clientY - y0) < 12) {   // tap: click what is under the zone
       zone.style.pointerEvents = "none"; const el = document.elementFromPoint(e.clientX, e.clientY); zone.style.pointerEvents = "";
       if (el) for (const t of ["mousedown", "mouseup", "click"]) el.dispatchEvent(new MouseEvent(t, { bubbles: true, cancelable: true, clientX: e.clientX, clientY: e.clientY }));
     } };
